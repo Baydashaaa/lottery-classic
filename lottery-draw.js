@@ -1,6 +1,18 @@
 // lottery-draw.js
 // Runs via GitHub Actions at 20:00 UTC daily/weekly
-// Winner selection: block_hash % total_entries (verifiable on-chain)
+//
+// Winner selection: winner_index = block_hash % total_tickets
+// The block is NOT "whatever is latest when the script runs" — it is the first
+// block at or after the round deadline (the most recent 20:00 UTC). That makes
+// the outcome independent of WHEN the draw is triggered, so re-running the
+// workflow can no longer change the winner. See getRoundBlockInfo().
+//
+// Anyone can verify a past draw from winners.json alone:
+//   1. take block_height, fetch that block from any Terra Classic LCD;
+//   2. its block_id.hash (base64 → hex, uppercase) must equal block_hash;
+//   3. BigInt("0x" + block_hash) % entries must equal winner_index;
+//   4. the ticket list is rebuilt from the worker: /round-stats returns mints
+//      ordered by usedAt; each wallet repeats `entries` times, in that order.
 //
 // Source of participants (NEW): Cloudflare Worker /round-stats?pool=daily|weekly
 // After successful draw: POST /round-complete → marks activations consumed
@@ -146,34 +158,101 @@ function buildTickets(participants) {
   return tickets;
 }
 
-// ── Select winner using block hash ───────────────────────────────────────────
+// ── Выбор победителя по хешу блока ───────────────────────────────────────────
 // winner_index = BigInt(block_hash_hex) % BigInt(total_tickets)
-// Returns { hash: <hex>, height: <block number string> }
-async function getBlockInfo() {
+//
+// ВАЖНО про грайндинг. Раньше брался хеш ПОСЛЕДНЕГО блока на момент запуска.
+// Это делало результат зависимым от времени запуска: оператор мог прогнать
+// розыгрыш, посмотреть победителя и, если не понравилось, перезапустить через
+// минуту — уже с другим хешем. Бесплатно и без следов в самом winners.json.
+//
+// Теперь высота блока предопределена: берётся ПЕРВЫЙ блок, чей timestamp
+// не раньше дедлайна раунда (ближайшие прошедшие 20:00 UTC). Дедлайн одинаков
+// для всех запусков внутри окна, поэтому сколько бы раз розыгрыш ни запускали,
+// блок будет тот же и победитель тот же. Перезапуск больше ничего не меняет.
+//
+// Побочный плюс: участник может проверить розыгрыш сам, зная только round_id —
+// дедлайн из него вычисляется, блок находится однозначно.
+function getDrawDeadlineTs() {
+  const now = new Date();
+  const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 20, 0, 0));
+  if (now.getTime() < d.getTime()) d.setUTCDate(d.getUTCDate() - 1);
+  return d.getTime();
+}
+
+async function fetchBlock(heightOrLatest) {
+  const suffix = heightOrLatest === 'latest' ? 'latest' : String(heightOrLatest);
   for (const base of LCD_NODES) {
     try {
-      const res = await fetch(base + '/cosmos/base/tendermint/v1beta1/blocks/latest', {
+      const res = await fetch(base + '/cosmos/base/tendermint/v1beta1/blocks/' + suffix, {
         headers: { 'Accept': 'application/json' },
         signal: AbortSignal.timeout(10000),
       });
       if (!res.ok) continue;
       const data = await res.json();
-      // LCD returns block_id.hash as base64 — convert to hex
-      const hashRaw = data?.block_id?.hash || null;
-      const height  = data?.block?.header?.height || null;
-      if (hashRaw) {
-        const hashHex = Buffer.from(hashRaw, 'base64').toString('hex').toUpperCase();
-        console.log('Block height: ' + height + ', hash: ' + hashHex + ' from ' + base);
-        return { hash: hashHex, height: String(height) };
-      }
+      const hashRaw = data && data.block_id && data.block_id.hash;
+      const header  = data && data.block && data.block.header;
+      if (!hashRaw || !header) continue;
+      return {
+        hash:   Buffer.from(hashRaw, 'base64').toString('hex').toUpperCase(),
+        height: Number(header.height),
+        timeMs: new Date(header.time).getTime(),
+      };
     } catch (e) {
-      console.warn('Block info fetch failed from ' + base + ':', e.message);
+      console.warn('Block fetch failed from ' + base + ': ' + e.message);
     }
   }
-  // Fallback
-  console.warn('Using timestamp as fallback randomness source');
-  const fallbackHash = crypto.createHash('sha256').update(String(Date.now())).digest('hex').toUpperCase();
-  return { hash: fallbackHash, height: null };
+  return null;
+}
+
+// Первый блок с timestamp >= targetMs. Высота и время растут монотонно,
+// поэтому бинарный поиск сходится за ~15 запросов.
+async function findBlockAtOrAfter(targetMs) {
+  const latest = await fetchBlock('latest');
+  if (!latest) return null;
+  if (latest.timeMs < targetMs) {
+    console.warn('Latest block is older than the round deadline — too early to draw');
+    return null;
+  }
+
+  const AVG_BLOCK_MS = 6000;
+  const span = Math.ceil((latest.timeMs - targetMs) / AVG_BLOCK_MS * 2) + 100;
+  let lo = Math.max(1, latest.height - span);
+  let hi = latest.height;
+
+  const loBlock = await fetchBlock(lo);
+  if (!loBlock) return null;
+  if (loBlock.timeMs >= targetMs) return loBlock;   // нижняя граница уже за дедлайном
+
+  let best = latest;
+  while (lo + 1 < hi) {
+    const mid = Math.floor((lo + hi) / 2);
+    const b = await fetchBlock(mid);
+    if (!b) return null;
+    if (b.timeMs >= targetMs) { best = b; hi = b.height; }
+    else { lo = b.height; }
+  }
+  return best;
+}
+
+// Возвращает { hash, height, timeMs } блока дедлайна.
+// Фолбэка на sha256(Date.now()) больше НЕТ: такая случайность непроверяема,
+// а в winners.json отличалась бы только block_height: null. Если блок
+// недоступен — розыгрыш не проводится, активации переходят в следующий раунд.
+async function getRoundBlockInfo() {
+  const deadline = getDrawDeadlineTs();
+  console.log('Round deadline (UTC): ' + new Date(deadline).toISOString());
+  const b = await findBlockAtOrAfter(deadline);
+  if (!b) {
+    throw new Error(
+      'Could not resolve the deadline block — draw aborted. ' +
+      'Using any other randomness source would make the result unverifiable. ' +
+      'Activations roll over; re-run once the LCD nodes respond.'
+    );
+  }
+  console.log('Deadline block: height ' + b.height + ', time ' + new Date(b.timeMs).toISOString());
+  console.log('Block hash: ' + b.hash);
+  return { hash: b.hash, height: String(b.height), timeMs: b.timeMs };
 }
 
 function selectWinner(tickets, blockHash) {
@@ -292,7 +371,7 @@ async function runDailyDraw(client, operatorAddr) {
   console.log('Pool balance: ' + fmt(balance / 1e6) + ' LUNC');
 
   // Select winner
-  const blockInfo = await getBlockInfo();
+  const blockInfo = await getRoundBlockInfo();
   const blockHash = blockInfo.hash;
   const blockHeight = blockInfo.height;
   const { winner, index } = selectWinner(tickets, blockHash);
@@ -328,6 +407,8 @@ async function runDailyDraw(client, operatorAddr) {
     participants: Object.keys(participants).length,
     block_hash:   blockHash,
     block_height: blockHeight,
+    block_time:   new Date(blockInfo.timeMs).toISOString(),
+    randomness:   'terra-classic-block-hash-at-round-deadline',
     winner_index: index,
     tx_winner:   txWinner,
     tx_treasury: txTreasury,
@@ -391,7 +472,7 @@ async function runWeeklyDraw(client, operatorAddr) {
   const placesCount = Math.min(3, uniqueParticipants);
   console.log('Unique participants: ' + uniqueParticipants + ' — selecting ' + placesCount + ' winner(s)');
 
-  const blockInfo = await getBlockInfo();
+  const blockInfo = await getRoundBlockInfo();
   const blockHash = blockInfo.hash;
   const blockHeight = blockInfo.height;
   console.log('Block height: ' + blockHeight + ', hash: ' + blockHash);
@@ -456,6 +537,8 @@ async function runWeeklyDraw(client, operatorAddr) {
     participants: Object.keys(participants).length,
     block_hash:   blockHash,
     block_height: blockHeight,
+    block_time:   new Date(blockInfo.timeMs).toISOString(),
+    randomness:   'terra-classic-block-hash-at-round-deadline',
     tx_treasury: txTreasury,
     seeds_lunc:  Math.floor(prizePot * WEEKLY_SEEDS / 1e6),
   });
