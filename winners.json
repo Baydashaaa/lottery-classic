@@ -738,6 +738,32 @@
       "skipped": true,
       "reason": "Not enough entries: 2",
       "entries": 2
+    },
+    {
+      "date": "2026-07-27",
+      "round_id": "weekly_2026-07-27",
+      "winners": [
+        {
+          "place": 1,
+          "address": "terra1kalqu6gtjxma4jnfxpkjmh3jghk86lnrahhdjd",
+          "amount_lunc": 561426,
+          "tx": "E0E8258461FDF4ED811F16A18CFBCC5F9557E7CAFFD59EDD23D9E2DA87D49636"
+        },
+        {
+          "place": 2,
+          "address": "terra180wgtfvhmxcarmddhwzpapt8pasmvgv5skegx7",
+          "amount_lunc": 233927,
+          "tx": "63F6F5A4B327A972A1E409A81BFEE6BE4B46F8B83D56512998C177AF398AC4F4"
+        }
+      ],
+      "entries": 24,
+      "participants": 2,
+      "block_hash": "775B792ABF21516AC0C48207D69E865F53E0B234D998927B922431D4EA2407FF",
+      "block_height": "29686451",
+      "block_time": "2026-07-27T20:00:03.547Z",
+      "randomness": "terra-classic-block-hash-at-round-deadline",
+      "tx_treasury": "FC5050C12DDC8CE6C177C7AF3A1D39E1980EEA4CF57B39DC341A7464572B43AD",
+      "seeds_lunc": 116963
     }
   ]
 }
