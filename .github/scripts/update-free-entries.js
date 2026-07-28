@@ -33,6 +33,19 @@ const FCD_NODES = [
 
 const JSON_PATH = path.resolve('free-entries.json');
 
+// ── Weekly round boundary ─────────────────────────────────────────────────────
+// Start of the current weekly draw round (Mon 20:00 UTC). Identical to the
+// worker's getCurrentRoundId('weekly') and the frontend fallback in app.js, so
+// all three agree on when the week rolls over.
+function weeklyRoundStartSec() {
+  const now = new Date();
+  const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 20, 0, 0));
+  const diffToMon = (d.getUTCDay() + 6) % 7;
+  d.setUTCDate(d.getUTCDate() - diffToMon);
+  if (now.getTime() < d.getTime()) d.setUTCDate(d.getUTCDate() - 7);
+  return Math.floor(d.getTime() / 1000);
+}
+
 // ── FCD fetch with fallback ──────────────────────────────────────────────────
 async function fcdFetch(endpoint) {
   for (const base of FCD_NODES) {
@@ -103,28 +116,32 @@ async function fetchTxsTo(wallet, cutoffSec) {
 
 // ── Main ─────────────────────────────────────────────────────────────────────
 async function main() {
-  const now        = Math.floor(Date.now() / 1000);
-  const windowCut  = now - WINDOW_SEC;
-
   // Load existing JSON
   let existing = { _meta: {}, entries: {} };
   if (fs.existsSync(JSON_PATH)) {
     try { existing = JSON.parse(fs.readFileSync(JSON_PATH, 'utf8')); } catch (e) {}
   }
 
-  // Respect history_from set by resetFreeEntries() after a weekly draw.
-  // Entries accumulate only since the last weekly reset. If history_from is
-  // missing or older than the 90-day window, fall back to the window.
-  let cutoff = windowCut;
+  // Variant A — weekly reset. Cutoff = start of the CURRENT weekly draw round
+  // (Mon 20:00 UTC). Entries reset automatically every Monday when the draw rolls
+  // over, so a single question grants entries in ONE weekly draw only — no
+  // carry-over, no re-counting in later draws. Computing the boundary here means
+  // it no longer depends on an external resetFreeEntries() call (which was never
+  // advancing history_from — it was stuck at the very first date, so 90 days of
+  // questions kept counting). A history_from LATER than the weekly boundary is
+  // still honored (lets an admin force a mid-week reset); an older/stale one is
+  // ignored.
+  let cutoff = weeklyRoundStartSec();
   const histRaw = existing && existing._meta && existing._meta.history_from;
   if (histRaw) {
     const histSec = Math.floor(new Date(histRaw).getTime() / 1000);
-    if (!Number.isNaN(histSec) && histSec > windowCut) {
+    if (!Number.isNaN(histSec) && histSec > cutoff) {
       cutoff = histSec;
-      console.log('Using history_from as cutoff (since last weekly reset):', histRaw);
+      console.log('Honoring manual history_from (later than weekly boundary):', histRaw);
     }
   }
   const cutoffIso = new Date(cutoff * 1000).toISOString();
+  console.log('Weekly cutoff (round start):', cutoffIso);
 
   // ── Fetch txs to TREASURY_WALLET (chat) ───────────────────────────────────
   console.log('Fetching txs to TREASURY_WALLET (chat fees)...');
@@ -246,8 +263,8 @@ async function main() {
         streak:    '2 one-time entries at 14-day streak milestone',
       },
       updated:     new Date().toISOString(),
-      history_from: cutoffIso,  // preserved reset marker — entries counted since here
-      window_days: 90,  // historical window for entry tracking
+      history_from: cutoffIso,  // start of current weekly round — entries counted since here
+      resets:       'weekly (Mon 20:00 UTC)',
     },
     entries: entries,
   };
