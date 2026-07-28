@@ -135,8 +135,21 @@ async function loadFreeEntries() {
 }
 
 // Fallback: scrape on-chain if JSON not available
+// Start of the current weekly draw round (Mon 20:00 UTC) — mirrors the worker's
+// getCurrentRoundId('weekly') so free entries reset when the weekly draw rolls over.
+function weeklyRoundStartSec() {
+  const now = new Date();
+  const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 20, 0, 0));
+  const diffToMon = (d.getUTCDay() + 6) % 7;
+  d.setUTCDate(d.getUTCDate() - diffToMon);
+  if (now.getTime() < d.getTime()) d.setUTCDate(d.getUTCDate() - 7);
+  return Math.floor(d.getTime() / 1000);
+}
+
 async function loadFreeEntriesOnChain() {
-  const cutoff = Math.floor(Date.now() / 1000) - 30 * 86400; // 30 days fallback
+  // Window = current weekly round (Mon 20:00 UTC → now), NOT a rolling 30 days,
+  // so free entries clear after each weekly draw and are never double-counted.
+  const cutoff = weeklyRoundStartSec();
   const days = {};
   const qa   = {};
 
