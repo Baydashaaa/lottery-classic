@@ -14,10 +14,18 @@ const WEEKLY_WALLET     = 'terra1p5l6q95kfl3hes7edy76tywav9f79n6xlkz6qz';
 // Exclude these senders — they send protocol funds, not user payments
 const EXCLUDED_SENDERS  = new Set([DAILY_WALLET, WEEKLY_WALLET, TREASURY_WALLET]);
 
-const CHAT_MIN_ULUNA    = 5_000_000_000;    // 5,000 LUNC — chat message (to TREASURY_WALLET)
-const Q_MIN_ULUNA       = 100_000_000_000;  // 100,000 LUNC — kept for chat upper bound
+// A chat message is identified by its EXACT amount (±1%), not by a range.
+// The old range [5,000 … 100,000) also swallowed the Treasury leg of questions:
+// 25,000 for Basic, 100,000 for Priority, and less than that whenever a rank
+// discount applied — every such payment was miscounted as a chat message.
+const CHAT_ULUNA          = 5_000_000_000;   // exactly 5,000 LUNC
+const CHAT_TOLERANCE      = 0.01;            // ±1%
 const CHAT_ENTRIES_PER_10 = 1;
-const QUESTION_ENTRIES    = 2;
+const MAX_CHAT_ENTRIES_PER_ROUND = 20;       // cap per round, not per day —
+                                             // entries reset weekly anyway, so a
+                                             // weekly cap keeps the remainder of
+                                             // messages from burning every day.
+const QUESTION_ENTRIES_LEGACY    = 2;        // questions with no `entries` field
 const STREAK_14D_ENTRIES  = 2;   // one-time free entries at 14-day streak milestone
 const WINDOW_DAYS         = 90;  // scan 90 days back — entries accumulate
 const WINDOW_SEC          = WINDOW_DAYS * 86400;
@@ -152,13 +160,15 @@ async function main() {
   const questionByWallet = {};
   const streakByWallet = {};
 
-  // ── Chat: txs to TREASURY_WALLET, 5k LUNC per message ───────────────────
+  // ── Chat: txs to TREASURY_WALLET, exactly 5k LUNC per message (±1%) ───────
+  const CHAT_LO = CHAT_ULUNA * (1 - CHAT_TOLERANCE);
+  const CHAT_HI = CHAT_ULUNA * (1 + CHAT_TOLERANCE);
   for (const tx of treasuryTxs) {
     if (EXCLUDED_SENDERS.has(tx.from)) continue;
     const uluna = tx.coins.find(function(c) { return c.denom === 'uluna'; });
     if (!uluna) continue;
     const amount = Number(uluna.amount);
-    if (amount >= CHAT_MIN_ULUNA && amount < Q_MIN_ULUNA) {
+    if (amount >= CHAT_LO && amount <= CHAT_HI) {
       const day = new Date(tx.ts * 1000).toISOString().slice(0, 10);
       if (!chatByWallet[tx.from]) chatByWallet[tx.from] = {};
       chatByWallet[tx.from][day] = (chatByWallet[tx.from][day] || 0) + 1;
@@ -168,6 +178,9 @@ async function main() {
   // ── Questions: from authoritative questions.json (via Worker /questions) ───
   // NOT from on-chain payments — NFT mints also pay WEEKLY_WALLET and would be
   // miscounted. A question only counts if it's actually recorded as a question.
+  // Entries come from the question's own `entries` field, which the Worker
+  // derives from the VERIFIED on-chain pool leg (Basic +1, Priority +4).
+  // Questions written before tariffs existed have no field → legacy default.
   console.log('Fetching questions from Worker /questions...');
   try {
     const qRes = await fetch(ORACLE_WORKER + '/questions', {
@@ -180,7 +193,8 @@ async function main() {
         if (!q.wallet) continue;
         const created = Number(q.createdAt) || 0;   // unix seconds
         if (created < cutoff) continue;               // only this round
-        questionByWallet[q.wallet] = (questionByWallet[q.wallet] || 0) + 1;
+        const qe = Number(q.entries) > 0 ? Number(q.entries) : QUESTION_ENTRIES_LEGACY;
+        questionByWallet[q.wallet] = (questionByWallet[q.wallet] || 0) + qe;
       }
       console.log('Counted questions from ' + questions.length + ' total records');
     } else {
@@ -225,19 +239,22 @@ async function main() {
   console.log('Chat: ' + Object.keys(chatByWallet).length + ', Questions: ' + Object.keys(questionByWallet).length + ', Streak: ' + Object.keys(streakByWallet).length);
 
   const entries = {};
+  let cappedWallets = 0;
   for (const wallet of allWallets) {
-    // Chat entries: floor(total_msgs/10) — every 10th message = 1 entry, no daily cap
+    // Chat entries: floor(total_msgs/10), capped per round
     let chatTotal = 0;
     if (chatByWallet[wallet]) {
       let totalMsgs = 0;
       for (const day of Object.values(chatByWallet[wallet])) {
         totalMsgs += day;
       }
-      chatTotal = Math.floor(totalMsgs / 10) * CHAT_ENTRIES_PER_10;
+      const uncapped = Math.floor(totalMsgs / 10) * CHAT_ENTRIES_PER_10;
+      chatTotal = Math.min(uncapped, MAX_CHAT_ENTRIES_PER_ROUND);
+      if (uncapped > chatTotal) cappedWallets++;
     }
 
-    // Question entries: 2 per question
-    const qEntries = (questionByWallet[wallet] || 0) * QUESTION_ENTRIES;
+    // Question entries: already summed per tariff above
+    const qEntries = questionByWallet[wallet] || 0;
 
     // Streak 14-day milestone entries (one-time)
     const sEntries = streakByWallet[wallet] || 0;
@@ -252,14 +269,15 @@ async function main() {
       };
     }
   }
+  if (cappedWallets) console.log('Chat cap applied to ' + cappedWallets + ' wallet(s)');
 
   // ── Write JSON ────────────────────────────────────────────────────────────
   const output = {
     _meta: {
       description:  'Free Weekly Draw entries — Terra Oracle protocol',
       sources: {
-        chat:      '1 entry per 10 messages total (no daily cap)',
-        questions: '2 entries per Oracle question (from questions.json)',
+        chat:      '1 entry per 10 messages, max ' + MAX_CHAT_ENTRIES_PER_ROUND + ' per round',
+        questions: 'entries per question tariff (Basic +1, Priority +4)',
         streak:    '2 one-time entries at 14-day streak milestone',
       },
       updated:     new Date().toISOString(),
