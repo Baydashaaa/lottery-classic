@@ -4,11 +4,20 @@
     "sources": {
       "chat": "1 entry per 10 messages, max 20 per round",
       "questions": "entries per question tariff (Basic +1, Priority +4)",
-      "streak": "2 one-time entries at 14-day streak milestone"
+      "streak": "2 one-time entries at 14-day streak milestone",
+      "trusted": "1 entry per round for Trusted Users (30-day streak), backed from Reserve"
     },
-    "updated": "2026-07-30T17:19:06.994Z",
+    "updated": "2026-07-30T19:15:32.163Z",
     "history_from": "2026-07-27T20:00:00.000Z",
     "resets": "weekly (Mon 20:00 UTC)"
   },
-  "entries": {}
+  "entries": {
+    "terra180wgtfvhmxcarmddhwzpapt8pasmvgv5skegx7": {
+      "chat": 0,
+      "questions": 6,
+      "streak": 0,
+      "trusted": 0,
+      "total": 6
+    }
+  }
 }
