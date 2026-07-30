@@ -193,7 +193,7 @@ async function main() {
         if (!q.wallet) continue;
         const created = Number(q.createdAt) || 0;   // unix seconds
         if (created < cutoff) continue;               // only this round
-        const qe = Number(q.entries) > 0 ? Number(q.entries) : QUESTION_ENTRIES_LEGACY;
+        const qe = (q.entries === undefined || q.entries === null) ? QUESTION_ENTRIES_LEGACY : (Number(q.entries) || 0);
         questionByWallet[q.wallet] = (questionByWallet[q.wallet] || 0) + qe;
       }
       console.log('Counted questions from ' + questions.length + ' total records');
