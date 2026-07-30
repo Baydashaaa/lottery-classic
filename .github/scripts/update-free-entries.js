@@ -27,6 +27,7 @@ const MAX_CHAT_ENTRIES_PER_ROUND = 20;       // cap per round, not per day —
                                              // messages from burning every day.
 const QUESTION_ENTRIES_LEGACY    = 2;        // questions with no `entries` field
 const STREAK_14D_ENTRIES  = 2;   // one-time free entries at 14-day streak milestone
+const TRUSTED_ENTRIES     = 1;   // Trusted User (30-day streak): +1 per round, backed from RESERVE
 const WINDOW_DAYS         = 90;  // scan 90 days back — entries accumulate
 const WINDOW_SEC          = WINDOW_DAYS * 86400;
 
@@ -159,6 +160,7 @@ async function main() {
   const chatByWallet = {};
   const questionByWallet = {};
   const streakByWallet = {};
+  const trustedByWallet = {};
 
   // ── Chat: txs to TREASURY_WALLET, exactly 5k LUNC per message (±1%) ───────
   const CHAT_LO = CHAT_ULUNA * (1 - CHAT_TOLERANCE);
@@ -193,7 +195,7 @@ async function main() {
         if (!q.wallet) continue;
         const created = Number(q.createdAt) || 0;   // unix seconds
         if (created < cutoff) continue;               // only this round
-        const qe = (q.entries === undefined || q.entries === null) ? QUESTION_ENTRIES_LEGACY : (Number(q.entries) || 0);
+        const qe = Number(q.entries) > 0 ? Number(q.entries) : QUESTION_ENTRIES_LEGACY;
         questionByWallet[q.wallet] = (questionByWallet[q.wallet] || 0) + qe;
       }
       console.log('Counted questions from ' + questions.length + ' total records');
@@ -230,13 +232,40 @@ async function main() {
     console.warn('ACTIONS_SECRET not set — skipping 14-day streak entries');
   }
 
+  // ── Trusted User (30-day streak): +1 entry per round ──────────────────────
+  // The Worker only lists wallets whose 25,000 LUNC backing transfer has already
+  // landed in the Weekly pool, so this entry is always paid for before it counts.
+  if (ACTIONS_SECRET) {
+    console.log('Fetching Trusted User entries...');
+    try {
+      const tRes = await fetch(ORACLE_WORKER + '/streak/trusted-entries?secret=' + encodeURIComponent(ACTIONS_SECRET), {
+        headers: { 'Accept': 'application/json', 'User-Agent': 'TerraOracle/1.0' },
+      });
+      if (tRes.ok) {
+        const tData = await tRes.json();
+        for (const t of (tData.wallets || [])) {
+          if (!t.wallet) continue;
+          trustedByWallet[t.wallet] = TRUSTED_ENTRIES;   // one per round, not cumulative
+        }
+        console.log('Trusted User wallets credited: ' + Object.keys(trustedByWallet).length);
+      } else {
+        console.warn('Worker /streak/trusted-entries returned ' + tRes.status);
+      }
+    } catch (e) {
+      console.error('Trusted entries fetch error:', e.message);
+    }
+  } else {
+    console.warn('ACTIONS_SECRET not set — skipping Trusted User entries');
+  }
+
   // ── Calculate entries ─────────────────────────────────────────────────────
   const allWallets = new Set([
     ...Object.keys(chatByWallet),
     ...Object.keys(questionByWallet),
     ...Object.keys(streakByWallet),
+    ...Object.keys(trustedByWallet),
   ]);
-  console.log('Chat: ' + Object.keys(chatByWallet).length + ', Questions: ' + Object.keys(questionByWallet).length + ', Streak: ' + Object.keys(streakByWallet).length);
+  console.log('Chat: ' + Object.keys(chatByWallet).length + ', Questions: ' + Object.keys(questionByWallet).length + ', Streak: ' + Object.keys(streakByWallet).length + ', Trusted: ' + Object.keys(trustedByWallet).length);
 
   const entries = {};
   let cappedWallets = 0;
@@ -259,12 +288,16 @@ async function main() {
     // Streak 14-day milestone entries (one-time)
     const sEntries = streakByWallet[wallet] || 0;
 
-    const total = chatTotal + qEntries + sEntries;
+    // Trusted User entry (30-day streak, one per round)
+    const tEntries = trustedByWallet[wallet] || 0;
+
+    const total = chatTotal + qEntries + sEntries + tEntries;
     if (total > 0) {
       entries[wallet] = {
         chat:      chatTotal,
         questions: qEntries,
         streak:    sEntries,
+        trusted:   tEntries,
         total:     total,
       };
     }
@@ -279,6 +312,7 @@ async function main() {
         chat:      '1 entry per 10 messages, max ' + MAX_CHAT_ENTRIES_PER_ROUND + ' per round',
         questions: 'entries per question tariff (Basic +1, Priority +4)',
         streak:    '2 one-time entries at 14-day streak milestone',
+        trusted:   '1 entry per round for Trusted Users (30-day streak), backed from Reserve',
       },
       updated:     new Date().toISOString(),
       history_from: cutoffIso,  // start of current weekly round — entries counted since here
