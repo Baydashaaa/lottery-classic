@@ -650,6 +650,21 @@
       "skipped": true,
       "reason": "Not enough entries: 4",
       "entries": 4
+    },
+    {
+      "date": "2026-08-01",
+      "round_id": "daily_2026-08-01",
+      "winner": "terra180wgtfvhmxcarmddhwzpapt8pasmvgv5skegx7",
+      "prize_lunc": 216183,
+      "entries": 5,
+      "participants": 2,
+      "block_hash": "2BCA64EA80E4859590B35C49E54408744D049016797BA2F6F054F3F4F34A6F03",
+      "block_height": "29759094",
+      "block_time": "2026-08-01T20:00:05.229Z",
+      "randomness": "terra-classic-block-hash-at-round-deadline",
+      "winner_index": 2,
+      "tx_winner": "DE34B316CA08BBEF73E3E191FF7E03B9687563E33737D63F7EDEA972FCFA1298",
+      "tx_treasury": "DECD4DACB09B52D9BCA2D2336E5BDA8353B5FA4927D90E11FABEF8C8D3EF4CF2"
     }
   ],
   "weekly": [
