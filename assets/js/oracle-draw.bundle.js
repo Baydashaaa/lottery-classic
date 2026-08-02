@@ -1,7 +1,7 @@
 /* Oracle Draw V2 — собранный бандл. НЕ РЕДАКТИРОВАТЬ.
    Источники: assets/js/wheel/ и assets/js/draw-v2/
    Пересобрать: node dev/_build_bundle.js
-   Версия сборки: 202608021233 */
+   Версия сборки: 202608021434 */
 
 /* ── WheelTheme.js ─────────────────────────────────── */
 /**
@@ -2603,12 +2603,32 @@ class DrawBridge {
         ui.card(this.lastCard);
     }
 
-    /** Вернуть карточку, если её спрятали снаружи */
-    restoreCard() {
-        if (!this.lastCard || this.engine.state.revealing) return;
+    /**
+     * Держать карточку победителя в актуальном виде.
+     *
+     * Зовётся каждую секунду и сама решает, надо ли что-то делать:
+     *  - карточки нет, а победитель в состоянии есть → показать;
+     *  - карточку спрятал switchLottery из app.js → вернуть;
+     *  - всё на месте → выйти, ничего не трогая (иначе CSS-анимация
+     *    появления перезапускалась бы каждую секунду).
+     *
+     * Через события это не решается: DATA_UPDATED движок эмитит ДО того,
+     * как подставит раунд в state, а следующий раз он придёт только при
+     * изменении winners.json — раз в сутки.
+     */
+    ensureCard() {
+        if (this.engine.state.revealing) return;
+
+        const round = this.engine.state.round;
+        if (!round || round.skipped || !round.winners.length) return;
+
         const el = document.getElementById("wheel-winner-card");
-        if (!el || el.style.display !== "none") return;
-        if (this.ui && this.ui.card) this.ui.card(this.lastCard);
+        if (!el) return;
+
+        const hidden = !el.style.display || el.style.display === "none";
+        if (this.lastCard && !hidden) return;
+
+        this.syncCard();
     }
 
     /** Показать колесо в холостом вращении, даже если данных ещё нет */
@@ -2679,7 +2699,7 @@ class DrawBridge {
     }
 
     onTick({ phase, remaining }) {
-        this.restoreCard();
+        this.ensureCard();
         const ui = this.ui;
         if (!ui || phase === PHASE.REVEALING || phase === PHASE.REVEALED) return;
         const text = PHASE_TEXT[phase];
