@@ -112,9 +112,15 @@ export default class WheelRenderer {
         return this;
     }
 
-    /** Шаг вручную — для превью и тестов без rAF */
+    /**
+     * Шаг вручную — для превью и тестов без rAF.
+     * Часы стартуют от now(), а не от нуля: spinToIndex ставит t0 по
+     * performance.now(), и при отсчёте с нуля прошедшее время выходило
+     * отрицательным — анимация не доходила до конца.
+     */
     frame(dt = 1 / 60) {
-        this._t = (this._t || 0) + dt * 1000;
+        if (this._t === undefined) this._t = now();
+        this._t += dt * 1000;
         this.anim.step(this._t);
         this.angle = this.anim.angle;
         if (this.winner) this.revealProgress = Math.min(1, this.revealProgress + 0.035);
