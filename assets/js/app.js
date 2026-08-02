@@ -646,10 +646,10 @@ function updatePoolDisplay() {
   const _ms  = document.getElementById('modal-sub');
   if (!isDaily) {
     if (_tpd) _tpd.textContent = 'Common · Rare · Legendary';
-    if (_ms)  _ms.textContent  = 'Choose your NFT tier · Burn to enter draw';
+    if (_ms)  _ms.textContent  = 'Choose your NFT tier · Activate to enter draw';
   } else {
     if (_tpd) _tpd.textContent = 'Common · Rare · Legendary';
-    if (_ms)  _ms.textContent  = 'Choose your NFT tier · Burn to enter draw';
+    if (_ms)  _ms.textContent  = 'Choose your NFT tier · Activate to enter draw';
   }
   // Update buy button with current tier price
   if (typeof updateBuyBtn === 'function') updateBuyBtn();
@@ -759,15 +759,15 @@ function switchLottery(type) {
   const heroTitle = document.getElementById('hero-title');
   const heroSub   = document.getElementById('hero-sub');
   if (heroTitle) heroTitle.innerHTML   = isDaily ? 'DAILY <span class="gold" id="hero-subtitle">DRAW</span>' : 'WEEKLY <span class="blue-text" id="hero-subtitle">DRAW</span>';
-  if (heroSub)   heroSub.textContent   = isDaily ? 'Mint an NFT. Burn it. Win the daily pool.' : 'Mint an NFT. Burn it. Win the weekly pool.';
+  if (heroSub)   heroSub.textContent   = isDaily ? 'Mint an NFT. Activate it. Win the daily pool.' : 'Mint an NFT. Activate it. Win the weekly pool.';
 
   // Steps
   const wp = weeklyTicketPrice();
   const step1El = document.getElementById('step1-text');
   const step2El = document.getElementById('step2-text');
   if (step1El) step1El.textContent = isDaily
-    ? 'Choose your tier - Common, Rare or Legendary. Burn to enter draw.'
-    : 'Choose your tier - Common, Rare or Legendary. Burn to enter draw.';
+    ? 'Choose your tier - Common, Rare or Legendary. Activate to enter draw.'
+    : 'Choose your tier - Common, Rare or Legendary. Activate to enter draw.';
   if (step2El) step2El.textContent = isDaily
     ? 'Mint an NFT to enter - your purchase is automatically registered. Draw happens every day at 20:00 UTC.'
     : 'Mint an NFT to enter - your purchase is automatically registered. Pool accumulates all week until Monday 20:00 UTC.';
@@ -2149,6 +2149,9 @@ function initWheel() {
 
 // ── Draw the wheel ────────────────────────────────────────────────────────────
 function drawWheel(tickets, angle) {
+  // Draw V2 рисует колесо взвешенными секторами (сектор = кошелёк).
+  // Пока оно владеет канвасом, старый равнодольный рендер молчит.
+  if (window.oracleDrawV2 && window.oracleDrawV2.ownsWheel) return;
   if (!wheelCtx) return;
   const W = wheelCanvas.width, H = wheelCanvas.height;
   const cx = W/2, cy = H/2, r = cx - 6;
@@ -2706,98 +2709,62 @@ function updateWheelTickets() {
 }
 
 // ── Trigger spin (called at draw time OR by admin) ────────────────────────────
+// ── ADMIN DEMO SPIN ONLY ─────────────────────────────────────────────────────
+// Настоящий розыгрыш ведёт Draw V2 (DrawBridge): сектор ищется по адресу
+// победителя из winners.json. Здесь остался только демо-прогон для админа,
+// и он честно помечен как демо.
 function triggerWheelSpin(isAdmin) {
-  const tickets = currentLottery === 'daily' ? dailyTickets : weeklyTickets;
-  const isDaily = currentLottery === 'daily';
-  const currency = 'LUNC';
+  if (!isAdmin) return;                    // не-админский путь больше не рисует победителя
 
+  const tickets = currentLottery === 'daily' ? dailyTickets : weeklyTickets;
   if (tickets.length <= MIN_TICKETS) {
-    setWheelMsg('<svg class="oi oi--amber"><use href="#i-warning"/></svg> Not enough tickets', 'Minimum ' + MIN_TICKETS + ' required for draw · Rolling over', '#ff9944');
+    setWheelMsg('<svg class="oi oi--amber"><use href="#i-warning"/></svg> Not enough tickets',
+      'Minimum ' + MIN_TICKETS + ' required for draw · Rolling over', '#ff9944');
     return;
   }
 
   updateWheelTickets();
   document.getElementById('wheel-winner-card').style.display = 'none';
-  const lastWinner = winnersData.find(function(w){return w.type===currentLottery && w.winner && !w.skipped;});
+  if (!wheelTickets.length || wheelTickets[0].placeholder) return;
 
-  if (isDaily) {
-    // Daily - 1 spin, 1 winner
-    let targetIdx = 0;
-    if (lastWinner && lastWinner.drawBlock) {
-      targetIdx = lastWinner.drawBlock % Math.min(tickets.length, MAX_SECTORS);
-    } else if (isAdmin) {
-      targetIdx = Math.floor(Math.random() * wheelTickets.length);
-    }
-    setWheelMsg('<svg class="oi oi--cyan"><use href="#i-wheel"/></svg> Spinning...', 'Selecting winner on-chain', '#00c8ff');
-    spinWheel(targetIdx, function(idx) {
-      const winner = wheelTickets[idx];
-      const prize  = tickets.length * LUNC_PER_TICKET * 0.80;
-      setWheelMsg('✦ Winner Selected ✦', 'Payout sent automatically', '#66ffaa');
-      const card = document.getElementById('wheel-winner-card');
-      document.getElementById('ww-address').textContent = winner ? winner.address : '-';
-      document.getElementById('ww-prize').textContent   = fmt(prize) + ' ' + currency;
-      document.getElementById('ww-tx').innerHTML = '';
-      card.style.display = 'block';
-      card.classList.remove('show');
-      void card.offsetWidth;
-      card.classList.add('show');
-      // Reset wheel after 1 hour
-      setTimeout(function() {
-        wheelSpunThisSession = false;
-        wheelAngle = 0;
-        document.getElementById('wheel-winner-card').style.display = 'none';
-        document.getElementById('wheel-winner-card').classList.remove('show');
-        updateWheelTickets();
-        setWheelMsg('<svg class="oi oi--cyan"><use href="#i-hourglass"/></svg> Next draw in ' + formatDiffShort(getNextDrawTime('daily') - Date.now()), 'Wheel spins automatically at 20:00 UTC', 'rgba(0,200,255,0.7)');
-      }, 3600000); // 1 hour
+  const targetIdx = Math.floor(Math.random() * wheelTickets.length);
+  setWheelMsg('<svg class="oi oi--violet"><use href="#i-wheel"/></svg> DEMO spin',
+    'Admin preview — not a real draw', '#a78bfa');
+
+  spinWheel(targetIdx, function(idx) {
+    const winner = wheelTickets[idx];
+    setWheelMsg('DEMO result', 'Preview only — no payout', '#a78bfa');
+    showWinnerCard({
+      address: winner ? winner.address : '-',
+      prize:   0,
+      tx:      null,
+      label:   'DEMO'
     });
-  } else {
-    // Weekly - 3 spins, 3 winners
-    const prizes = [0.48, 0.20, 0.12];
-    const labels = ['<svg class="oi oi--gold"><use href="#i-medal"/></svg> 1st Place', '<svg class="oi oi--muted"><use href="#i-medal"/></svg> 2nd Place', '<svg class="oi oi--amber"><use href="#i-medal"/></svg> 3rd Place'];
-    const pool   = tickets.length * LUNC_PER_TICKET;
-    const usedIdx = new Set();
-    let spinNum = 0;
+  });
+}
 
-    function doNextSpin() {
-      if (spinNum >= 3) return;
-      const place = spinNum;
-      setWheelMsg('<svg class="oi oi--cyan"><use href="#i-wheel"/></svg> Spin ' + (place+1) + '/3...', labels[place] + ' · Selecting winner', '#a78bfa');
+// ── Winner card — единственный писатель карточки результата ──────────────────
+function showWinnerCard(data) {
+  const card = document.getElementById('wheel-winner-card');
+  if (!card) return;
+  const a = document.getElementById('ww-address');
+  const p = document.getElementById('ww-prize');
+  const t = document.getElementById('ww-tx');
 
-      // Pick random unused sector
-      let targetIdx = Math.floor(Math.random() * wheelTickets.length);
-      let attempts = 0;
-      while (usedIdx.has(wheelTickets[targetIdx]?.address) && attempts < wheelTickets.length) {
-        targetIdx = (targetIdx + 1) % wheelTickets.length;
-        attempts++;
-      }
-
-      spinWheel(targetIdx, function(idx) {
-        const winner = wheelTickets[idx];
-        const prize  = Math.floor(pool * prizes[place]);
-        usedIdx.add(winner ? winner.address : '');
-
-        setWheelMsg(labels[place] + ' ✦', (winner ? winner.address.slice(0,10)+'...' : '-') + ' wins ' + fmt(prize) + ' LUNC', '#a78bfa');
-
-        const card = document.getElementById('wheel-winner-card');
-        document.getElementById('ww-address').textContent = winner ? winner.address : '-';
-        document.getElementById('ww-prize').textContent   = fmt(prize) + ' LUNC · ' + labels[place];
-        document.getElementById('ww-tx').innerHTML = '<span style="font-size:11px;color:rgba(167,139,250,0.6);">' + labels[place] + '</span>';
-        card.style.display = 'block';
-        card.classList.remove('show');
-        void card.offsetWidth;
-        card.classList.add('show');
-
-        spinNum++;
-        if (spinNum < 3) {
-          setTimeout(doNextSpin, 5000); // 5s pause between spins
-        } else {
-          setWheelMsg('✦ All Winners Selected ✦', 'Payouts sent automatically', '#66ffaa');
-        }
-      });
-    }
-    doNextSpin();
+  if (a) a.textContent = data.address || '-';
+  if (p) p.textContent = (data.prize ? fmt(data.prize) + ' LUNC' : '-') +
+                         (data.label ? ' · ' + data.label : '');
+  if (t) {
+    t.innerHTML = data.tx
+      ? '<a href="https://finder.terra-classic.hexxagon.io/mainnet/tx/' + data.tx +
+        '" target="_blank" rel="noopener" style="font-size:11px;color:rgba(0,200,255,0.8);">View transaction</a>'
+      : (data.label ? '<span style="font-size:11px;color:rgba(167,139,250,0.6);">' + data.label + '</span>' : '');
   }
+
+  card.style.display = 'block';
+  card.classList.remove('show');
+  void card.offsetWidth;
+  card.classList.add('show');
 }
 
 function setWheelMsg(msg, sub, color) {
@@ -2809,7 +2776,7 @@ function setWheelMsg(msg, sub, color) {
 
 // ── Auto check draw time (every second) ──────────────────────────────────────
 let wheelSpunThisSession = false;
-const BURN_DEADLINE_MS = 15 * 60 * 1000; // 15 minutes before draw
+const ENTRY_DEADLINE_MS = 15 * 60 * 1000; // 15 minutes before draw
 
 function checkDrawTime() {
   const drawTime = getNextDrawTime(currentLottery);
@@ -2817,19 +2784,25 @@ function checkDrawTime() {
   const msgEl    = document.getElementById('wheel-msg');
   if (!msgEl) return;
 
-  if (diff <= 0 && diff > -90000 && !wheelSpunThisSession && !wheelSpinning) {
-    wheelSpunThisSession = true;
-    triggerWheelSpin(false);
-    updateBurnButtonState(false); // Block burns during/after draw
+  // Авто-спин удалён. Раньше здесь колесо запускалось в момент 20:00 по
+  // локальным часам — то есть ДО того, как GitHub Action записал результат
+  // в winners.json, и крутилось на вычисленный сектор, а не на победителя.
+  if (diff <= 0 && !wheelSpinning) {
+    setWheelMsg(
+      '<svg class="oi oi--cyan"><use href="#i-wheel"/></svg> Draw in progress',
+      'Waiting for the on-chain result',
+      '#00c8ff'
+    );
+    updateBurnButtonState(false);
   } else if (diff > 0 && !wheelSpinning) {
-    if (diff <= BURN_DEADLINE_MS) {
+    if (diff <= ENTRY_DEADLINE_MS) {
       // 🔴 Last 15 minutes - burns closing soon
       const burnDiff = diff;
       const bm = Math.floor(burnDiff / 60000);
       const bs = Math.floor((burnDiff % 60000) / 1000);
       const timeStr = bm > 0 ? bm + 'm ' + bs + 's' : bs + 's';
       setWheelMsg(
-        '<svg class="oi oi--red"><use href="#i-dot"/></svg> Burns close in ' + timeStr,
+        '<svg class="oi oi--red"><use href="#i-dot"/></svg> Entries close in ' + timeStr,
         'Last chance to enter this round!',
         'rgba(255,80,80,0.9)'
       );
@@ -2852,7 +2825,7 @@ function updateBurnButtonState(open) {
     btn.disabled = !open;
     btn.style.opacity = open ? '1' : '0.4';
     btn.style.cursor  = open ? 'pointer' : 'not-allowed';
-    btn.title = open ? '' : 'Burns closed - draw starting soon';
+    btn.title = open ? '' : 'Entries closed - draw starting soon';
   });
   // Update buy button state
   const buyBtn = document.getElementById('btn-buy');
@@ -2871,6 +2844,31 @@ function formatDiffShort(ms) {
   if (m>0) return m+'m '+s+'s';
   return s+'s';
 }
+
+
+// ── BRIDGE FOR DRAW V2 ───────────────────────────────────────────────────────
+// Единственная точка, через которую новое ядро трогает старый UI.
+window.OracleDrawUI = {
+  spin:           function(idx, cb) { return spinWheel(idx, cb); },
+  sectors:        function() { return wheelTickets; },
+  isSpinning:     function() { return wheelSpinning; },
+  rebuildTickets: function() { return updateWheelTickets(); },
+  msg:            function(m, s, c) { return setWheelMsg(m, s, c); },
+  card:           function(d) { return showWinnerCard(d); },
+  burnOpen:       function(open) { return updateBurnButtonState(open); },
+  fmt:            function(v) { return fmt(v); },
+  fmtShort:       function(ms) { return formatDiffShort(ms); },
+  resetWheel:     function() { return resetWheel(); },
+  colorFor:       function(addr) { return getParticipantColor(addr); },
+  entriesOpen:    function(open) { return updateBurnButtonState(open); },
+  wakeOracleEye:  function(on) {
+    document.body.classList.toggle('oracle-predraw', !!on);
+    if (window.oracleEye && typeof window.oracleEye.wake === 'function') {
+      window.oracleEye.wake(!!on);
+    }
+  }
+};
+window.loadWinners = loadWinners;
 
 // ── Admin panel wheel demo ────────────────────────────────────────────────────
 function adminSpinDemo() {
@@ -3619,7 +3617,9 @@ function disconnectWallet() {
 
   // Refresh every 60s
   setInterval(loadAllData, 60000);
-  setInterval(checkDrawTime, 1000);
+  // checkDrawTime отключён: колесо теперь запускает Draw V2 по факту
+  // появления результата в winners.json, а не по локальным часам.
+  if (!window.oracleDrawV2) setInterval(checkDrawTime, 1000);
 })();
 
 // ── MY BAG ────────────────────────────────────────────────────────────────────
