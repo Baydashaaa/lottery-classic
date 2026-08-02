@@ -122,7 +122,7 @@ pointer-events:none}.particles{position:fixed;inset:0;z-index:0;pointer-events:n
   transform:translateY(-3px);
   border-color:rgba(124,92,255,0.3);
   box-shadow:0 0 30px rgba(124,92,255,0.12);
-}.distrib-pct{font-family:'Cinzel',serif;font-size:36px;font-weight:900;margin-bottom:8px}.distrib-pct.gold{color:var(--gold-light);text-shadow:0 0 20px rgba(212,160,23,0.4)}.distrib-pct.red{color:#ff4422;text-shadow:0 0 20px rgba(255,68,34,0.4)}.distrib-pct.blue{color:#7eb8ff;text-shadow:0 0 20px rgba(126,184,255,0.4)}.distrib-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px}.distrib-desc{font-size:12px;color:var(--muted);line-height:1.5}.lottery-nav{display:flex;justify-content:center;gap:0;max-width:500px;margin:0 auto 40px;border:1px solid rgba(212,160,23,0.2);border-radius:8px;overflow:hidden}.lottery-nav-btn{flex:1;padding:12px 20px;cursor:pointer;font-family:'Cinzel',serif;font-size:12px;letter-spacing:0.1em;background:var(--surface);border:none;color:var(--muted);transition:all 0.2s;text-transform:uppercase}.lottery-nav-btn.active{background:rgba(212,160,23,0.1);color:var(--gold-light)}.lottery-nav-btn.active.weekly{background:rgba(74,144,217,0.1);color:#7eb8ff}.winners-table{width:100%;border-collapse:collapse;font-size:13px}.winners-table th{text-align:left;padding:12px 16px;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)}.winners-table td{padding:14px 16px;border-bottom:1px solid rgba(42,24,0,0.5);color:var(--text)}.winners-table tr:hover td{background:rgba(212,160,23,0.03)}.winner-addr{font-family:monospace;font-size:12px;color:var(--gold-light)}.winner-prize{color:#66ffaa;font-weight:700}.winner-tx{font-size:10px;color:var(--muted);text-decoration:none}.winner-tx:hover{color:var(--gold)}.badge-daily{font-size:9px;background:rgba(212,160,23,0.1);color:var(--gold);border:1px solid rgba(212,160,23,0.2);border-radius:4px;padding:2px 6px}.badge-weekly{font-size:9px;background:rgba(74,144,217,0.1);color:#7eb8ff;border:1px solid rgba(74,144,217,0.2);border-radius:4px;padding:2px 6px}.rolled-over{font-size:10px;color:#ff9944}.modal-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.3s}.modal-overlay.open{opacity:1;pointer-events:all}.modal{background:linear-gradient(135deg,#1a0d00,#0f0800);border:1px solid rgba(212,160,23,0.3);border-radius:16px;padding:36px;max-width:440px;width:90%;position:relative;box-shadow:0 24px 80px rgba(0,0,0,0.8),0 0 0 1px rgba(212,160,23,0.1)}.modal.weekly-modal{border-color:rgba(74,144,217,0.3)}.modal-close{position:absolute;top:16px;right:16px;background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;transition:color 0.2s}.modal-close:hover{color:var(--text)}.modal-title{font-family:'Cinzel',serif;font-size:20px;font-weight:700;color:var(--gold-light);margin-bottom:6px}.modal-title.blue{color:#7eb8ff}.modal-sub{font-size:12px;color:var(--muted);margin-bottom:24px}.ticket-count{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:20px}.count-btn{width:40px;height:40px;border-radius:8px;background:rgba(212,160,23,0.1);border:1px solid rgba(212,160,23,0.3);color:var(--gold-light);font-size:20px;cursor:pointer;transition:all 0.2s}.count-btn:hover{background:rgba(212,160,23,0.2)}.modal-total{text-align:center;margin-bottom:20px;padding:14px;background:rgba(212,160,23,0.04);border:1px solid rgba(212,160,23,0.1);border-radius:8px}.modal-total-label{font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}.modal-total-val{font-family:'Cinzel',serif;font-size:22px;font-weight:700;color:var(--gold-light)}.modal-note{font-size:10px;color:var(--muted);text-align:center;margin-bottom:16px;line-height:1.6}.btn-confirm{width:100%;padding:16px;border-radius:8px;cursor:pointer;font-family:'Cinzel',serif;font-size:13px;letter-spacing:0.1em;font-weight:700;text-transform:uppercase;background:linear-gradient(135deg,#8b0000,#cc1100);border:1px solid rgba(255,100,0,0.4);color:var(--gold-light);box-shadow:0 4px 20px rgba(139,0,0,0.4);transition:all 0.25s}.btn-confirm.weekly{background:linear-gradient(135deg,#7C5CFF,#5B8CFF);border-color:rgba(124,92,255,0.5);color:#FFFFFF;box-shadow:0 0 20px rgba(124,92,255,0.4);}.btn-confirm:hover{transform:translateY(-1px)}.btn-confirm:disabled{opacity:0.5;cursor:not-allowed;transform:none}.loading-pulse{animation:pulse 1.5s ease-in-out infinite}@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}footer{position:relative;z-index:1;text-align:center;padding:40px 20px;border-top:1px solid var(--border);color:var(--muted);font-size:12px;line-height:2}footer a{color:var(--gold-dim);text-decoration:none}footer a:hover{color:var(--gold)}.footer-logo{font-family:'Cinzel',serif;font-size:16px;letter-spacing:0.3em;color:var(--gold-dim);margin-bottom:12px}@keyframes ring-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}@keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}@keyframes hub-pulse{0%,100%{box-shadow:0 0 10px #00c8ff,0 0 20px #6400ff}50%{box-shadow:0 0 20px #00c8ff,0 0 40px #6400ff,0 0 60px rgba(0,200,255,0.3)}}@keyframes winner-appear{0%{opacity:0;transform:scale(0.9) translateY(10px)}60%{transform:scale(1.02) translateY(-2px)}100%{opacity:1;transform:scale(1) translateY(0)}}@keyframes neon-pulse{0%,100%{box-shadow:0 0 10px rgba(0,200,255,0.2),0 0 20px rgba(100,0,255,0.1)}50%{box-shadow:0 0 30px rgba(0,200,255,0.5),0 0 60px rgba(100,0,255,0.3)}}#wheel-winner-card.show{animation:winner-appear 0.6s cubic-bezier(0.34,1.56,0.64,1) forwards,neon-pulse 2s ease-in-out infinite 0.6s}@media (max-width:900px){.hero-split{grid-template-columns:1fr;min-height:unset;padding:32px 20px 40px;gap:40px}.hero{text-align:center}.timer{justify-content:center}.stats-bar{justify-items:center}.wheel-panel{padding:24px 16px}}@media (max-width:600px){nav{padding:12px 16px}.nav-logo-text{font-size:14px}.stats-bar{grid-template-columns:repeat(2,1fr)}.distrib{grid-template-columns:1fr}.lottery-tabs{flex-direction:column}.steps{grid-template-columns:repeat(2,1fr) !important}.hero-split{padding:24px 16px 32px;gap:32px}.wheel-mini-stats{gap:8px}}
+}.distrib-pct{font-family:'Cinzel',serif;font-size:36px;font-weight:900;margin-bottom:8px}.distrib-pct.gold{color:var(--gold-light);text-shadow:0 0 20px rgba(212,160,23,0.4)}.distrib-pct.red{color:#ff4422;text-shadow:0 0 20px rgba(255,68,34,0.4)}.distrib-pct.blue{color:#7eb8ff;text-shadow:0 0 20px rgba(126,184,255,0.4)}.distrib-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px}.distrib-desc{font-size:12px;color:var(--muted);line-height:1.5}.lottery-nav{display:flex;justify-content:center;gap:0;max-width:500px;margin:0 auto 40px;border:1px solid rgba(212,160,23,0.2);border-radius:8px;overflow:hidden}.lottery-nav-btn{flex:1;padding:12px 20px;cursor:pointer;font-family:'Cinzel',serif;font-size:12px;letter-spacing:0.1em;background:var(--surface);border:none;color:var(--muted);transition:all 0.2s;text-transform:uppercase}.lottery-nav-btn.active{background:rgba(212,160,23,0.1);color:var(--gold-light)}.lottery-nav-btn.active.weekly{background:rgba(74,144,217,0.1);color:#7eb8ff}.winners-table{width:100%;border-collapse:collapse;font-size:13px}.winners-table th{text-align:left;padding:12px 16px;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)}.winners-table td{padding:14px 16px;border-bottom:1px solid rgba(42,24,0,0.5);color:var(--text)}.winners-table tr:hover td{background:rgba(212,160,23,0.03)}.winner-addr{font-family:monospace;font-size:12px;color:var(--gold-light)}.winner-prize{color:#66ffaa;font-weight:700}.winner-tx{font-size:10px;color:var(--muted);text-decoration:none}.winner-tx:hover{color:var(--gold)}.badge-daily{font-size:9px;background:rgba(212,160,23,0.1);color:var(--gold);border:1px solid rgba(212,160,23,0.2);border-radius:4px;padding:2px 6px}.badge-weekly{font-size:9px;background:rgba(74,144,217,0.1);color:#7eb8ff;border:1px solid rgba(74,144,217,0.2);border-radius:4px;padding:2px 6px}.rolled-over{font-size:10px;color:#ff9944}.modal-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.3s}.modal-overlay.open{opacity:1;pointer-events:all}.modal{background:linear-gradient(135deg,#1a0d00,#0f0800);border:1px solid rgba(212,160,23,0.3);border-radius:16px;padding:36px;max-width:440px;width:90%;position:relative;box-shadow:0 24px 80px rgba(0,0,0,0.8),0 0 0 1px rgba(212,160,23,0.1)}.modal.weekly-modal{border-color:rgba(74,144,217,0.3)}.modal-close{position:absolute;top:16px;right:16px;background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;transition:color 0.2s}.modal-close:hover{color:var(--text)}.modal-title{font-family:'Cinzel',serif;font-size:20px;font-weight:700;color:var(--gold-light);margin-bottom:6px}.modal-title.blue{color:#7eb8ff}.modal-sub{font-size:12px;color:var(--muted);margin-bottom:24px}.ticket-count{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:20px}.count-btn{width:40px;height:40px;border-radius:8px;background:rgba(212,160,23,0.1);border:1px solid rgba(212,160,23,0.3);color:var(--gold-light);font-size:20px;cursor:pointer;transition:all 0.2s}.count-btn:hover{background:rgba(212,160,23,0.2)}.modal-total{text-align:center;margin-bottom:20px;padding:14px;background:rgba(212,160,23,0.04);border:1px solid rgba(212,160,23,0.1);border-radius:8px}.modal-total-label{font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}.modal-total-val{font-family:'Cinzel',serif;font-size:22px;font-weight:700;color:var(--gold-light)}.modal-note{font-size:10px;color:var(--muted);text-align:center;margin-bottom:16px;line-height:1.6}.btn-confirm{width:100%;padding:16px;border-radius:8px;cursor:pointer;font-family:'Cinzel',serif;font-size:13px;letter-spacing:0.1em;font-weight:700;text-transform:uppercase;background:linear-gradient(135deg,#8b0000,#cc1100);border:1px solid rgba(255,100,0,0.4);color:var(--gold-light);box-shadow:0 4px 20px rgba(139,0,0,0.4);transition:all 0.25s}.btn-confirm.weekly{background:linear-gradient(135deg,#7C5CFF,#5B8CFF);border-color:rgba(124,92,255,0.5);color:#FFFFFF;box-shadow:0 0 20px rgba(124,92,255,0.4);}.btn-confirm:hover{transform:translateY(-1px)}.btn-confirm:disabled{opacity:0.5;cursor:not-allowed;transform:none}.loading-pulse{animation:pulse 1.5s ease-in-out infinite}@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}footer{position:relative;z-index:1;text-align:center;padding:40px 20px;border-top:1px solid var(--border);color:var(--muted);font-size:12px;line-height:2}footer a{color:var(--gold-dim);text-decoration:none}footer a:hover{color:var(--gold)}.footer-logo{font-family:'Cinzel',serif;font-size:16px;letter-spacing:0.3em;color:var(--gold-dim);margin-bottom:12px}@keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}@keyframes winner-appear{0%{opacity:0;transform:scale(0.9) translateY(10px)}60%{transform:scale(1.02) translateY(-2px)}100%{opacity:1;transform:scale(1) translateY(0)}}@keyframes neon-pulse{0%,100%{box-shadow:0 0 10px rgba(0,200,255,0.2),0 0 20px rgba(100,0,255,0.1)}50%{box-shadow:0 0 30px rgba(0,200,255,0.5),0 0 60px rgba(100,0,255,0.3)}}#wheel-winner-card.show{animation:winner-appear 0.6s cubic-bezier(0.34,1.56,0.64,1) forwards,neon-pulse 2s ease-in-out infinite 0.6s}@media (max-width:900px){.hero-split{grid-template-columns:1fr;min-height:unset;padding:32px 20px 40px;gap:40px}.hero{text-align:center}.timer{justify-content:center}.stats-bar{justify-items:center}.wheel-panel{padding:24px 16px}}@media (max-width:600px){nav{padding:12px 16px}.nav-logo-text{font-size:14px}.stats-bar{grid-template-columns:repeat(2,1fr)}.distrib{grid-template-columns:1fr}.lottery-tabs{flex-direction:column}.steps{grid-template-columns:repeat(2,1fr) !important}.hero-split{padding:24px 16px 32px;gap:32px}.wheel-mini-stats{gap:8px}}
 
 /* ── WEEKLY SWITCH ANIMATION ──────────────────────────────── */
 @keyframes weeklyReveal {
@@ -136,8 +136,6 @@ pointer-events:none}.particles{position:fixed;inset:0;z-index:0;pointer-events:n
 .hero-switch-weekly { animation: weeklyReveal 0.5s cubic-bezier(0.22,1,0.36,1) both; }
 .hero-switch-daily  { animation: dailyReveal  0.5s cubic-bezier(0.22,1,0.36,1) both; }
 .wheel-switch { animation: scaleIn 0.5s cubic-bezier(0.22,1,0.36,1) 0.1s both; }
-
-
 
 /* ══════════════════════════════════════════════════════════════
    WEEKLY MODE — FULL DESIGN SYSTEM
@@ -246,9 +244,7 @@ body.weekly-mode .btn-confirm.weekly {
 }
 
 /* ── WHEEL — violet/cyan glow, deeper segments ──────────────── */
-body.weekly-mode #wheel-canvas {
-  filter: drop-shadow(0 0 25px rgba(124,92,255,0.5)) drop-shadow(0 0 50px rgba(0,212,255,0.15)) !important;
-}
+
 body.weekly-mode .wheel-panel {
   background: #0B0F1A;
   border-color: rgba(124,92,255,0.25);
@@ -327,7 +323,6 @@ body.weekly-mode .rolled-over         { color: #9D80FF; }
   .hero { text-align: center; }
   .timer { justify-content: center; }
   .wheel-panel { width: 100%; max-width: 480px; margin: 0 auto; padding: 24px 16px; }
-  /* wheel canvas sized via responsive CSS below */
 }
 
 /* ── 600px — mobile ─────────────────────────────────────────── */
@@ -390,7 +385,6 @@ body.weekly-mode .rolled-over         { color: #9D80FF; }
   /* WHEEL */
   .wheel-panel { padding: 16px 12px; border-radius: 16px; }
   .wheel-panel > div:nth-child(2) { gap: 12px !important; }
-  #wheel-ring-1, #wheel-ring-2, #wheel-ring-3 { display: none !important; }
   .wheel-mini-stats { gap: 6px; }
   .wheel-mini-val   { font-size: 13px; }
   .wheel-mini-lbl   { font-size: 7px; }
@@ -447,7 +441,6 @@ body.weekly-mode .rolled-over         { color: #9D80FF; }
   .nav-link      { display: none; }
   .hero h1       { font-size: 28px !important; }
   .timer-num     { font-size: 18px !important; padding: 4px 6px; }
-  /* wheel canvas sized via responsive CSS */
   .steps         { grid-template-columns: 1fr !important; }
 }
 
@@ -556,17 +549,6 @@ body.weekly-mode .rolled-over         { color: #9D80FF; }
   #wheel-ticks {
     max-width: 100% !important;
   }
-  /* Ring overlays — scale with canvas */
-  #wheel-ring-1,
-  #wheel-ring-2,
-  #wheel-ring-3 {
-    display: none;
-  }
-  /* Pointer triangle */
-  #wheel-canvas + div svg,
-  .wheel-panel svg[width="24"] {
-    transform: scale(0.85);
-  }
 }
 
 /* ── HOME PAGE GRIDS — mobile fix ───────────────────────────── */
@@ -593,8 +575,6 @@ body.weekly-mode .rolled-over         { color: #9D80FF; }
   }
 }
 
-
-
 /* ── WHEEL MOBILE — single canvas, responsive ── */
 @media (max-width: 768px) {
   #wheel-panel-hero {
@@ -602,63 +582,9 @@ body.weekly-mode .rolled-over         { color: #9D80FF; }
     padding: 20px 12px !important;
   }
 
-  #wheel-ring-1,
-  #wheel-ring-2,
-  #wheel-ring-3 {
-    display: none !important;
-  }
-
   #wheel-canvas-wrap {
     display: block !important;
     text-align: center !important;
-  }
-
-  /* 360 * 1.5 = 540, cap at 500px for safety */
-  #wheel-canvas {
-    display: block !important;
-    width: 92vw !important;
-    max-width: 500px !important;
-    height: auto !important;
-    margin: 0 auto !important;
-    border-radius: 50% !important;
-  }
-}
-
-/* ── WHEEL CANVAS WRAP — desktop ── */
-#wheel-canvas-wrap {
-  position: relative;
-  width: 360px;
-  height: 360px;
-  flex-shrink: 0;
-}
-@media (max-width: 768px) {
-  #wheel-canvas-wrap {
-    width: auto !important;
-    height: auto !important;
-    position: static !important;
-  }
-}
-
-/* ── CANVAS RESOLUTION — small internal, large visual ── */
-/* Canvas is 240x240 internally but displayed at 360x360 on desktop */
-#wheel-canvas-wrap {
-  width: 360px;
-  height: 360px;
-}
-#wheel-canvas {
-  width: 360px;
-  height: 360px;
-}
-/* On mobile: CSS stretches to fill screen, internal stays 240px */
-@media (max-width: 768px) {
-  #wheel-canvas-wrap {
-    width: auto !important;
-    height: auto !important;
-  }
-  #wheel-canvas {
-    width: 92vw !important;
-    max-width: 500px !important;
-    height: auto !important;
   }
 }
 
@@ -809,3 +735,32 @@ body.weekly-mode .rolled-over         { color: #9D80FF; }
   .wl-addr { font-size: 10px; }
   .wl-pct-num { font-size: 11px; }
 }
+
+
+/* ── Колесо V2 ───────────────────────────────────────────────────────────
+   Рендерер сам рисует обод, свечение и частицы внутри канваса, поэтому
+   снаружи ему нужен только размер. Никаких filter и border-radius:
+   drop-shadow на каждый кадр — это композитный слой на весь канвас,
+   на среднем Android заметно роняет частоту кадров. */
+#wheel-canvas-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  aspect-ratio: 1 / 1;
+}
+
+body.oracle-predraw #wheel-canvas-wrap::after {
+  content: ''; position: absolute; inset: -8%; border-radius: 50%;
+  pointer-events: none; background: radial-gradient(circle,
+    rgba(0,200,255,0.10) 0%, transparent 65%);
+  animation: predraw-breathe 2.4s ease-in-out infinite;
+}
+@keyframes predraw-breathe { 0%,100% { opacity: .35 } 50% { opacity: 1 } }
+
+@media (prefers-reduced-motion: reduce) {
+  body.oracle-predraw #wheel-canvas-wrap::after { animation: none; }
+}
+
+/* размеры канваса — единственное правило, всё остальное внутри рендерера */
+#wheel-canvas { display:block; width:100%; height:auto; aspect-ratio:1/1; }
