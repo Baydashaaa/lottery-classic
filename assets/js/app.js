@@ -793,12 +793,14 @@ function switchLottery(type) {
     wheelPanel.className = 'wheel-panel' + (isDaily ? '' : ' weekly-panel');
   }
   const wheelPanelLabel = document.getElementById('wheel-panel-label');
-  if (wheelPanelLabel) wheelPanelLabel.textContent = isDaily ? 'FORTUNE WHEEL' : 'WEEKLY WHEEL';
+  if (wheelPanelLabel) wheelPanelLabel.textContent = isDaily ? 'ORACLE WHEEL' : 'COUNCIL OF ORACLES';
 
   startTimer();
   updatePoolDisplay();
+  // Прячем карточку прошлого пула — Draw V2 вернёт её с данными нового,
+  // либо оставит скрытой, если у пула ещё не было розыгрышей.
   const wwCard = document.getElementById('wheel-winner-card');
-  if (wwCard) wwCard.style.display = 'none';
+  if (wwCard) { wwCard.style.display = 'none'; wwCard.classList.remove('show'); }
   updateWheelTickets();
 
   // ── Toggle ALL Daily / Weekly elements via JS (reliable) ────
