@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Oracle Wheel Lab</title>
+<style>
+  :root { --bg:#05070d; --panel:#0b1020; --line:#1c2740; --text:#e8ecf5; --muted:#8b96ad; --gold:#f4d477; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text);
+         font:14px/1.5 ui-sans-serif,system-ui,sans-serif; display:flex; min-height:100vh; }
+  #stage { flex:1; display:grid; place-items:center; padding:20px; }
+  canvas { width:min(72vh,72vw); height:min(72vh,72vw); }
+  aside { width:290px; border-left:1px solid var(--line); background:var(--panel);
+          padding:18px; overflow:auto; }
+  h1 { font-size:13px; letter-spacing:.16em; text-transform:uppercase; color:var(--gold); margin:0 0 16px; }
+  .row { margin-bottom:14px; }
+  label { display:block; font-size:11px; letter-spacing:.08em; text-transform:uppercase;
+          color:var(--muted); margin-bottom:5px; }
+  input[type=range] { width:100%; }
+  select, button { width:100%; background:#111a2e; color:var(--text); border:1px solid var(--line);
+                   border-radius:8px; padding:9px 10px; font:inherit; cursor:pointer; }
+  button:hover { border-color:var(--gold); }
+  button.primary { background:var(--gold); color:#101010; border-color:var(--gold); font-weight:700; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .val { float:right; color:var(--gold); font-variant-numeric:tabular-nums; }
+  pre { background:#070c17; border:1px solid var(--line); border-radius:8px; padding:9px;
+        font-size:11px; color:var(--muted); white-space:pre-wrap; margin:0; }
+  hr { border:0; border-top:1px solid var(--line); margin:16px 0; }
+</style>
+</head>
+<body>
+<div id="stage"><canvas id="wheel"></canvas></div>
+<aside>
+  <h1>Oracle Wheel Lab</h1>
+
+  <div class="row"><label>Пул</label>
+    <select id="pool"><option value="daily">Daily — Ancient Machine</option>
+                      <option value="weekly">Weekly — Council of Oracles</option></select></div>
+
+  <div class="row"><label>Подпись сектора</label>
+    <select id="label"><option value="token">Номер NFT (#144)</option>
+                       <option value="ordinal">Номер кошелька (№7)</option></select></div>
+
+  <div class="row"><label>Качество</label>
+    <select id="quality"><option>high</option><option>medium</option><option>low</option><option>still</option></select></div>
+
+  <div class="row"><label>Кошельков <span class="val" id="wv">9</span></label>
+    <input type="range" id="wallets" min="2" max="120" value="9"></div>
+
+  <div class="row"><label>Разброс билетов <span class="val" id="sv">4×</span></label>
+    <input type="range" id="spread" min="1" max="20" value="4"></div>
+
+  <hr>
+
+  <div class="row grid2">
+    <button id="idle">Idle</button>
+    <button id="predraw">PreDraw</button>
+  </div>
+  <div class="row"><button class="primary" id="spin">Розыгрыш</button></div>
+  <div class="row grid2">
+    <button id="again">Ещё раз</button>
+    <button id="reset">Сброс</button>
+  </div>
+
+  <hr>
+  <div class="row"><label>Состояние</label><pre id="stat">—</pre></div>
+</aside>
+
+<script type="module">
+import TicketModel   from "../assets/js/wheel/TicketModel.js";
+import WheelRenderer from "../assets/js/wheel/WheelRenderer.js";
+import WheelAnimation, { MOTION } from "../assets/js/wheel/WheelAnimation.js";
+import { LABEL_MODE } from "../assets/js/wheel/WheelSector.js";
+
+const $ = id => document.getElementById(id);
+const canvas = $("wheel");
+const renderer = new WheelRenderer(canvas, { pool: "daily", quality: "high" });
+const anim = new WheelAnimation();
+let model = null, winnerIndex = 0;
+
+const TIERS = ["common", "common", "rare", "common", "legendary", "rare"];
+
+function buildModel() {
+  const n = +$("wallets").value;
+  const spread = +$("spread").value;
+  const rows = Array.from({ length: n }, (_, i) => [
+    "terra1" + Math.random().toString(36).slice(2, 12) + i,
+    1 + Math.floor(Math.random() * spread),
+    100 + i,
+    TIERS[i % TIERS.length]
+  ]);
+  model = new TicketModel({ tickets: rows }, { maxSectors: 48 });
+  renderer.setModel(model);
+  renderer.setWinner(null);
+  renderer.revealProgress = 0;
+}
+
+function resize() {
+  const s = Math.round(Math.min(innerHeight * 0.72, (innerWidth - 300) * 0.72));
+  canvas.style.width = canvas.style.height = s + "px";
+  renderer.resize();
+}
+addEventListener("resize", resize);
+
+function spin() {
+  if (!model || !model.total) return;
+  winnerIndex = Math.floor(Math.random() * model.total);
+  renderer.setWinner(null);
+  renderer.revealProgress = 0;
+  anim.spinTo(performance.now(), model.angleForIndex(winnerIndex),
+              renderer.pointerAngle, () => {
+    renderer.setWinner(model.sectorForIndex(winnerIndex));
+  });
+}
+
+$("pool").onchange   = e => { renderer.setPool(e.target.value); };
+$("label").onchange  = e => { LABEL_MODE.value = e.target.value; };
+$("quality").onchange= e => { renderer.setQuality(e.target.value); };
+$("wallets").oninput = e => { $("wv").textContent = e.target.value; buildModel(); };
+$("spread").oninput  = e => { $("sv").textContent = e.target.value + "×"; buildModel(); };
+$("idle").onclick    = () => anim.idle(performance.now());
+$("predraw").onclick = () => anim.predraw(performance.now());
+$("spin").onclick    = spin;
+$("again").onclick   = spin;
+$("reset").onclick   = () => { anim.rest(); buildModel(); };
+
+function loop(t) {
+  const s = anim.step(t);
+  renderer.setAngle(s.angle);
+  if (renderer.winner) renderer.revealProgress = Math.min(1, renderer.revealProgress + 0.04);
+  renderer.render(t, { intensity: anim.intensity, isSpinning: anim.isSpinning });
+
+  const w = renderer.winner;
+  $("stat").textContent =
+    `фаза      ${s.mode}\n` +
+    `скорость  ${(Math.abs(s.velocity)*60/(2*Math.PI)).toFixed(1)} об/мин\n` +
+    `яркость   ${anim.intensity.toFixed(2)}\n` +
+    `секторов  ${model ? model.sectorCount : 0} / билетов ${model ? model.total : 0}\n` +
+    (w ? `победа    ${w.address ? w.address.slice(0,10)+"…" : "группа"}\n          билет #${winnerIndex}, ${w.entries} шт` : "");
+  requestAnimationFrame(loop);
+}
+
+buildModel(); resize(); anim.idle(performance.now()); requestAnimationFrame(loop);
+</script>
+</body>
+</html>
