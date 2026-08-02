@@ -14,6 +14,7 @@ import { EVENTS } from "./DrawEvents.js";
 import { PHASE, PHASE_TEXT } from "./DrawPhase.js";
 import { CONFIG } from "./Config.js";
 import WheelRenderer from "../wheel/WheelRenderer.js";
+import TicketModel from "../wheel/TicketModel.js";
 
 export default class DrawBridge {
 
@@ -53,6 +54,32 @@ export default class DrawBridge {
     }
 
     /* ── колесо ── */
+
+
+    /**
+     * Модель по ЖИВЫМ участникам текущего раунда — чтобы колесо было видно
+     * до розыгрыша, а не только после появления снимка.
+     *
+     * Снимок остаётся авторитетным: он замораживает порядок билетов в момент
+     * розыгрыша, и только по нему считается winner_index. Этот список —
+     * предварительный показ, verified у него не бывает.
+     */
+    refreshLive() {
+        const ui = this.ui;
+        if (!ui || !ui.participants) return;
+        if (this.engine.state.revealing) return;      // во время анимации не трогаем
+        if (this.engine.state.model) return;          // снимок главнее
+
+        const pairs = ui.participants();
+        if (!pairs || !pairs.length) return;
+
+        const model = new TicketModel({ tickets: pairs }, { maxSectors: 48 });
+        if (!model.total) return;
+
+        this.liveModel = model;
+        this.mount(model, ui.pool ? ui.pool() : this.engine.pool);
+        if (window.oracleDrawV2) window.oracleDrawV2.ownsWheel = true;
+    }
 
     ensure(pool) {
         if (this.wheel) return this.wheel;
