@@ -67,6 +67,8 @@ const LCD_NODES = [
   'https://terra-classic-lcd.hexxagon.io',
 ];
 
+const { writeRoundSnapshot } = require('./round-snapshot');
+
 const WINNERS_PATH       = path.resolve('winners.json');
 const FREE_ENTRIES_PATH  = path.resolve('free-entries.json');
 
@@ -414,6 +416,15 @@ async function runDailyDraw(client, operatorAddr) {
     tx_treasury: txTreasury,
   });
   saveWinners(winners);
+
+  // Снимок билетов раунда для колеса на сайте. Пишется ПОСЛЕ winners.json,
+  // чтобы не остаться без пары при падении на последнем шаге.
+  writeRoundSnapshot({
+    roundId, pool: 'daily',
+    tickets, blockHash, blockHeight,
+    winnerIndex: index,
+  });
+
   console.log('Daily draw complete!');
 }
 
@@ -514,7 +525,8 @@ async function runWeeklyDraw(client, operatorAddr) {
       client, operatorAddr, p.address, amount,
       'Oracle Draw — Weekly Prize ' + split.label
     );
-    txs.push({ place: p.place, address: p.address, amount_lunc: Math.floor(amount / 1e6), tx });
+    txs.push({ place: p.place, address: p.address, amount_lunc: Math.floor(amount / 1e6), tx,
+               winner_index: p.index });
   }
 
   const txTreasury = await sendLunc(client, operatorAddr, TREASURY_WALLET, toTreasury, 'Oracle Draw — Weekly Treasury');
@@ -543,6 +555,13 @@ async function runWeeklyDraw(client, operatorAddr) {
     seeds_lunc:  Math.floor(prizePot * WEEKLY_SEEDS / 1e6),
   });
   saveWinners(winners);
+
+  writeRoundSnapshot({
+    roundId, pool: 'weekly',
+    tickets, blockHash, blockHeight,
+    winnerIndex: places.map(function (p) { return p.index; }),
+  });
+
   resetFreeEntries(); // entries consumed — reset for next round
   console.log('Weekly draw complete!');
 }
