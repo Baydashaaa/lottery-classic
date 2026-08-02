@@ -31,6 +31,15 @@ export default class DrawBridge {
     attach() {
         const on = (e, fn) => this.unsubs.push(this.engine.on(e, fn));
 
+        // Поднимаем колесо сразу: пустое, но живое. Ждать данных нельзя —
+        // в раунде без минтов их не будет вовсе.
+        const boot = () => { this.refreshLive(); this.startIdle(); };
+        if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", boot, { once: true });
+        } else {
+            setTimeout(boot, 0);
+        }
+
         on(EVENTS.PHASE_CHANGED, ({ to }) => this.onPhase(to));
         on(EVENTS.TICK, t => this.onTick(t));
         on(EVENTS.DRAW_FINISHED, ({ round, model }) => this.reveal(round, model));
@@ -64,17 +73,27 @@ export default class DrawBridge {
      * розыгрыша, и только по нему считается winner_index. Этот список —
      * предварительный показ, verified у него не бывает.
      */
+    /** Показать колесо в холостом вращении, даже если данных ещё нет */
+    startIdle() {
+        const r = this.ensure(this.engine.pool);
+        if (!r) { setTimeout(() => this.startIdle(), 400); return; }   // канвас ещё не в DOM
+        if (!r.model) r.setModel(this.liveModel || null);
+        r.idle();
+        r.start();
+        if (window.oracleDrawV2) window.oracleDrawV2.ownsWheel = true;
+    }
+
     refreshLive() {
         const ui = this.ui;
         if (!ui || !ui.participants) return;
         if (this.engine.state.revealing) return;      // во время анимации не трогаем
         if (this.engine.state.model) return;          // снимок главнее
 
-        const pairs = ui.participants();
-        if (!pairs || !pairs.length) return;
-
+        // Пустой раунд — тоже состояние: колесо крутится вхолостую и пишет
+        // «No entries yet». Раньше здесь стоял return, и канвас оставался
+        // чёрным до первого минта.
+        const pairs = (ui.participants() || []).filter(p => p && p[1] > 0);
         const model = new TicketModel({ tickets: pairs }, { maxSectors: 48 });
-        if (!model.total) return;
 
         this.liveModel = model;
         this.mount(model, ui.pool ? ui.pool() : this.engine.pool);
