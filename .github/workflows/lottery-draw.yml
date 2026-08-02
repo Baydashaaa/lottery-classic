@@ -59,10 +59,15 @@ jobs:
           echo "Draw type: $DRAW_TYPE"
           node lottery-draw.js
 
-      - name: Commit winners.json
+      - name: Commit winners.json and round snapshot
         run: |
           git config user.name  "Lottery Bot"
           git config user.email "lottery-bot@oracle-draw.io"
-          git add winners.json
+          # rounds/ — снимок билетов раунда, из него колесо на сайте строит
+          # сектора и находит победителя по winner_index. Без этой строки
+          # снимок остаётся в раннере и пропадает вместе с ним.
+          # НЕ заменять на `git add -A`: шаг выше делает npm install прямо
+          # в корне репо, и node_modules уедет в коммит.
+          git add winners.json rounds/
           git diff --staged --quiet || git commit -m "🎰 ${{ steps.draw_type.outputs.type }} draw — $(date -u +'%Y-%m-%d')"
           git push
