@@ -1,7 +1,7 @@
 /* Oracle Draw V2 — собранный бандл. НЕ РЕДАКТИРОВАТЬ.
    Источники: assets/js/wheel/ и assets/js/draw-v2/
    Пересобрать: node dev/_build_bundle.js
-   Версия сборки: 202608021454 */
+   Версия сборки: 202608021457 */
 
 /* ── WheelTheme.js ─────────────────────────────────── */
 /**
@@ -27,7 +27,7 @@ const DAILY = {
 
     bg:        { top: "#070b14", bottom: "#0d1424", vignette: "rgba(0,0,0,0.65)" },
     ring:      { inner: "#7a5a1e", mid: "#f4d477", outer: "#a87c28", edge: "#5a4014",
-                 width: 0.085, glow: "rgba(244,212,119,0.55)", pulseMs: 5000 },
+                 width: 0.06, glow: "rgba(244,212,119,0.55)", pulseMs: 5000 },
     engraving: "rgba(255,236,180,0.35)",
     plate:     { from: "#0a1020", to: "#050810" },
     spoke:     "rgba(244,212,119,0.16)",
@@ -49,7 +49,7 @@ const WEEKLY = {
 
     bg:        { top: "#080614", bottom: "#150e2a", vignette: "rgba(0,0,0,0.65)" },
     ring:      { inner: "#4a2b8f", mid: "#b98cff", outer: "#6f3fd0", edge: "#2c1a55",
-                 width: 0.085, glow: "rgba(185,140,255,0.55)", pulseMs: 5000 },
+                 width: 0.06, glow: "rgba(185,140,255,0.55)", pulseMs: 5000 },
     engraving: "rgba(232,214,255,0.35)",
     plate:     { from: "#0d0820", to: "#06040f" },
     spoke:     "rgba(185,140,255,0.16)",
