@@ -57,7 +57,13 @@ export function derivePhase(ctx) {
 
     const covers = resultCovers(result, lastDeadline);
 
-    if (covers) return result.skipped ? PHASE.ROLLOVER : PHASE.REVEALED;
+    // REVEALED держим ограниченное время после дедлайна. Иначе результат
+    // вчерашнего раунда висит на колесе до следующих 20:00, вместо того
+    // чтобы показывать отсчёт до нового розыгрыша.
+    const withinReveal = lastDeadline === null ||
+        (now - lastDeadline) <= (cfg.REVEAL_WINDOW_MS || 60 * 60 * 1000);
+
+    if (covers && withinReveal) return result.skipped ? PHASE.ROLLOVER : PHASE.REVEALED;
 
     if (lastDeadline !== null) {
         const since = now - lastDeadline;
