@@ -109,13 +109,23 @@ export default class WheelSector {
         ctx.lineTo(cx + Math.cos(a0) * R, cy + Math.sin(a0) * R);
         ctx.stroke();
 
-        // дуга редкости у обода
-        ctx.strokeStyle = rar.edge;
+        // Дуга у обода показывает СОСТАВ кошелька: если человек сминтил
+        // и legendary, и rare, и common — дуга делится на части
+        // пропорционально entries каждого тира. Заливка сектора при этом
+        // остаётся по лучшему NFT, иначе смешанные кошельки было бы
+        // не отличить от однотонных.
         ctx.lineWidth = Math.max(1.5, r * 0.012);
         ctx.globalAlpha = (state.dim ?? 1) * (0.55 + state.active * 0.45);
-        ctx.beginPath();
-        ctx.arc(cx, cy, R * 0.985, a0, a1);
-        ctx.stroke();
+        const parts = tierParts(meta, s.entries);
+        let seg = a0;
+        for (const [tierKey, share] of parts) {
+            const to = seg + (a1 - a0) * share;
+            ctx.strokeStyle = rarityOf(tierKey).edge;
+            ctx.beginPath();
+            ctx.arc(cx, cy, R * 0.985, seg, to);
+            ctx.stroke();
+            seg = to;
+        }
         ctx.globalAlpha = state.dim ?? 1;
 
         const detail = detailFor(s, R);
@@ -190,7 +200,7 @@ export default class WheelSector {
                 ctx.fillStyle = rar.base;
                 ctx.font = `600 ${unit * 0.72}px ui-sans-serif, system-ui, sans-serif`;
                 ctx.globalAlpha = (state.dim ?? 1) * 0.85;
-                ctx.fillText(rar.label, 0, cursor);
+                ctx.fillText(tierLabel(meta, rar), 0, cursor);
                 ctx.globalAlpha = state.dim ?? 1;
                 cursor += unit * 0.95;
             }
@@ -239,6 +249,26 @@ export default class WheelSector {
  * На сайте единица участия называется entry, а не ticket: пользователь
  * минтит NFT, и тир определяет, сколько entries он даёт (1 / 5 / 10).
  */
+/**
+ * Доли тиров в секторе: [["legendary", 0.62], ["common", 0.38]].
+ * Порядок от старшего к младшему, чтобы дуга читалась одинаково у всех.
+ */
+function tierParts(meta, entries) {
+    const t = meta && meta.tiers;
+    if (!t || !entries) return [[meta && meta.tier || "common", 1]];
+    const out = [];
+    for (const key of ["legendary", "rare", "common"]) {
+        if (t[key] > 0) out.push([key, t[key] / entries]);
+    }
+    return out.length ? out : [[meta.tier || "common", 1]];
+}
+
+/** «LEGENDARY» либо «LEGENDARY +2» — если в кошельке несколько NFT */
+function tierLabel(meta, rar) {
+    const mints = (meta && meta.mints) || 1;
+    return mints > 1 ? `${rar.label} +${mints - 1}` : rar.label;
+}
+
 function plural(n) {
     return n + (n === 1 ? " entry" : " entries");
 }
