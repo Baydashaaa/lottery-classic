@@ -206,8 +206,17 @@ export default class WheelRenderer {
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.clearRect(0, 0, W, H);
 
+        // Фон и звёзды обрезаны по кругу колеса. Раньше cosmicBackdrop
+        // заливал весь прямоугольник, и на странице колесо выглядело
+        // вырезанным из чёрного квадрата.
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(cx, cy, rOuter, 0, TAU);
+        ctx.clip();
         Glow.cosmicBackdrop(ctx, W, H, this.theme);
         this.particles.drawStars(ctx, W, H, t, this.quality);
+        ctx.restore();
+
         Glow.facePlate(ctx, cx, cy, rFace, this.theme);
 
         const active = this.#activeSector();
@@ -257,21 +266,51 @@ export default class WheelRenderer {
     /** Раунд без участников — колесо крутится, но сектора пустые */
     #emptyFace(ctx, cx, cy, r) {
         const th = this.theme;
-        ctx.save();
-        ctx.strokeStyle = th.spoke;
-        ctx.lineWidth = 1;
-        for (let i = 0; i < 12; i++) {
-            const a = this.angle + (i / 12) * TAU;
+        const n = 12;
+        const span = TAU / n;
+
+        for (let i = 0; i < n; i++) {
+            const a0 = this.angle + i * span;
+            const a1 = a0 + span;
+
+            // Пустые сектора всё равно рисуем: колесо должно читаться как
+            // колесо, а не как пустой круг. Чередование через один даёт
+            // объём, не привлекая внимания.
+            const g = ctx.createRadialGradient(cx, cy, r * 0.22, cx, cy, r);
+            g.addColorStop(0, "rgba(255,255,255,0.015)");
+            g.addColorStop(1, i % 2 ? "rgba(255,255,255,0.045)" : "rgba(255,255,255,0.018)");
+            ctx.fillStyle = g;
             ctx.beginPath();
-            ctx.moveTo(cx + Math.cos(a) * r * 0.34, cy + Math.sin(a) * r * 0.34);
-            ctx.lineTo(cx + Math.cos(a) * r * 0.96, cy + Math.sin(a) * r * 0.96);
+            ctx.moveTo(cx, cy);
+            ctx.arc(cx, cy, r, a0, a1);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.strokeStyle = th.spoke;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(cx + Math.cos(a0) * r * 0.30, cy + Math.sin(a0) * r * 0.30);
+            ctx.lineTo(cx + Math.cos(a0) * r * 0.99, cy + Math.sin(a0) * r * 0.99);
             ctx.stroke();
         }
+
+        // тонкая дуга по краю — граница поля секторов
+        ctx.strokeStyle = th.spoke;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r * 0.985, 0, TAU);
+        ctx.stroke();
+
+        ctx.save();
         ctx.fillStyle = th.text.secondary;
-        ctx.font = `${Math.round(r * 0.075)}px ui-sans-serif, system-ui, sans-serif`;
+        ctx.globalAlpha = 0.75;
+        ctx.font = `${Math.round(r * 0.068)}px ui-sans-serif, system-ui, sans-serif`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText("No entries yet", cx, cy + r * 0.62);
+        ctx.fillText("Awaiting entries", cx, cy + r * 0.60);
+        ctx.font = `${Math.round(r * 0.05)}px ui-sans-serif, system-ui, sans-serif`;
+        ctx.globalAlpha = 0.45;
+        ctx.fillText("Mint an NFT to take a sector", cx, cy + r * 0.72);
         ctx.restore();
     }
 
