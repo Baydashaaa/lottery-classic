@@ -213,6 +213,10 @@ export default class WheelRenderer {
         const active = this.#activeSector();
         this.#detectTick(active, t);
 
+        if (!this.model || !this.model.sectors.length) {
+            this.#emptyFace(ctx, cx, cy, rFace);
+        }
+
         if (this.model) {
             for (const s of this.model.sectors) {
                 const isWinner = this.winner && s.id === this.winner.id;
@@ -248,6 +252,27 @@ export default class WheelRenderer {
         this.pointer.draw(ctx, cx, cy, rOuter, t,
             anim.intensity ?? 0, this.quality, this._tick);
         this._tick *= 0.86;
+    }
+
+    /** Раунд без участников — колесо крутится, но сектора пустые */
+    #emptyFace(ctx, cx, cy, r) {
+        const th = this.theme;
+        ctx.save();
+        ctx.strokeStyle = th.spoke;
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 12; i++) {
+            const a = this.angle + (i / 12) * TAU;
+            ctx.beginPath();
+            ctx.moveTo(cx + Math.cos(a) * r * 0.34, cy + Math.sin(a) * r * 0.34);
+            ctx.lineTo(cx + Math.cos(a) * r * 0.96, cy + Math.sin(a) * r * 0.96);
+            ctx.stroke();
+        }
+        ctx.fillStyle = th.text.secondary;
+        ctx.font = `${Math.round(r * 0.075)}px ui-sans-serif, system-ui, sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("No entries yet", cx, cy + r * 0.62);
+        ctx.restore();
     }
 
     /** Гравировки по ободу — статичны относительно колеса, едут вместе с ним */
