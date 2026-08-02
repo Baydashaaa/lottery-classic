@@ -1,3 +1,4 @@
+[README.md](https://github.com/user-attachments/files/30633428/README.md)
 # dev/ — инструменты разработки
 
 В прод не попадает. Это папка для итерации по виду колеса.
@@ -18,6 +19,16 @@
 
     node _build_preview.js
 
+## Сборка бандла
+
+После любой правки в assets/js/wheel/ или assets/js/draw-v2/:
+
+    node dev/_build_bundle.js
+
+Он печатает номер версии — подставь его в ?v= в index.html.
+Без пересборки правки в модулях на сайт не попадут: index.html
+подключает только бандл.
+
 ## Тесты (без зависимостей)
     node _test_model.js    # TicketModel: веса, индексы, группировка
     node _test_phase.js    # фазовая машина и верификация снимка
@@ -26,4 +37,5 @@
 
 ## Тесты и превью с рендером (нужен npm install)
     node _test_render.js   # рендерер headless
+    node _test_bundle.js   # собранный бандл целиком: инициализация и посадка
     node _preview_v2.js    # PNG-превью колеса
