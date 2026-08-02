@@ -60,9 +60,6 @@ function showTab(tab, skipHistory) {
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         // Re-init wheel if canvas wasn't ready on first load
-        if (!wheelCtx) {
-          initWheel();
-        }
         switchLottery(window.currentLottery || 'daily');
       });
     });
@@ -889,11 +886,6 @@ function switchLottery(type) {
     : 'conic-gradient(from 0deg,transparent 0%,rgba(0,200,255,0.3) 15%,transparent 30%,rgba(100,0,255,0.3) 50%,transparent 65%,rgba(0,200,255,0.2) 80%,transparent 100%)';
 
   // Restore canvas glow (inline style takes priority over CSS)
-  if (wheelCanvas) {
-    wheelCanvas.style.filter = isDaily
-      ? 'drop-shadow(0 0 30px rgba(212,160,23,0.35)) drop-shadow(0 0 60px rgba(200,100,0,0.2))'
-      : 'drop-shadow(0 0 25px rgba(124,92,255,0.5)) drop-shadow(0 0 50px rgba(0,212,255,0.15))';
-  }
 
   // Switch pointer color
   const ptrStop0 = document.querySelector('#ptr-grad stop:first-child');
@@ -2052,14 +2044,8 @@ function updatePodiumPrizes() {
 const ADMIN_WALLET    = 'terra15jt5a9ycsey4hd6nlqgqxccl9aprkmg2mxmfc6';
 const MAX_SECTORS     = 20;
 
-let wheelCanvas   = null;
-let wheelCtx      = null;
 let ticksCanvas   = null;
 let ticksCtx      = null;
-let wheelTickets  = [];
-let wheelAngle    = 0;
-let wheelSpinning = false;
-let wheelAnimId   = null;
 let wheelDrawnOnce = false;
 let adminUnlocked = false;
 
@@ -2107,573 +2093,64 @@ function getNeonColors() {
   return currentLottery === 'weekly' ? PARTICIPANT_COLORS_WEEKLY : PARTICIPANT_COLORS_DAILY;
 }
 
-function initWheel() {
-  wheelCanvas = document.getElementById('wheel-canvas');
-  if (!wheelCanvas) return;
-
-  // On mobile: use CSS size for display, but render at 1x for memory efficiency
-  if (window.innerWidth <= 768) {
-    const cssSize = Math.min(Math.round(window.innerWidth * 0.92), 500);
-    wheelCanvas.width  = cssSize;
-    wheelCanvas.height = cssSize;
-    wheelCanvas.style.width  = cssSize + 'px';
-    wheelCanvas.style.height = cssSize + 'px';
-  }
-
-  wheelCtx = wheelCanvas.getContext('2d');
-
-  // Hide decorative CSS rings — canvas draws the wheel itself
-  ['wheel-ring-1','wheel-ring-2','wheel-ring-3'].forEach(function(id) {
-    const el = document.getElementById(id);
-    if (el) el.style.display = 'none';
-  });
-
-  // If canvas has zero size (draw tab hidden), retry when draw tab opens
-  if (!wheelCanvas.width || !wheelCanvas.height) {
-    wheelCtx = null;
-    wheelCanvas = null;
-    return;
-  }
-
-  updateWheelTickets();
-
-  // iOS zoom survival: if context is lost, reinitialize
-  wheelCanvas.addEventListener('contextlost', function(e) {
-    e.preventDefault();
-    setTimeout(function() {
-      wheelCtx = wheelCanvas.getContext('2d');
-      if (wheelCtx) updateWheelTickets();
-    }, 200);
-  });
-}
 
 // ── Draw the wheel ────────────────────────────────────────────────────────────
-function drawWheel(tickets, angle) {
-  // Draw V2 рисует колесо взвешенными секторами (сектор = кошелёк).
-  // Пока оно владеет канвасом, старый равнодольный рендер молчит.
-  if (window.oracleDrawV2 && window.oracleDrawV2.ownsWheel) return;
-  if (!wheelCtx) return;
-  const W = wheelCanvas.width, H = wheelCanvas.height;
-  const cx = W/2, cy = H/2, r = cx - 6;
-  const ctx = wheelCtx;
-  ctx.clearRect(0,0,W,H);
-
-  // Normalize angle to prevent float precision issues after many spins
-  angle = ((angle % (2*Math.PI)) + 2*Math.PI) % (2*Math.PI);
-
-  const sectors = tickets.length > 0 ? tickets : Array.from({length:20},()=>({placeholder:true, _empty:true}));
-  const n       = sectors.length;
-  const slice   = (2*Math.PI)/n;
-
-  // Background circle
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(cx,cy,r,0,2*Math.PI);
-  const bgGrad = ctx.createRadialGradient(cx,cy,0,cx,cy,r);
-  if (currentLottery === 'daily') {
-    bgGrad.addColorStop(0,  'rgba(28,12,0,0.97)');
-    bgGrad.addColorStop(0.6,'rgba(14,6,0,0.99)');
-    bgGrad.addColorStop(1,  'rgba(5,2,0,1)');
-  } else {
-    bgGrad.addColorStop(0,  'rgba(5,0,20,0.95)');
-    bgGrad.addColorStop(0.6,'rgba(2,0,12,0.98)');
-    bgGrad.addColorStop(1,  'rgba(0,0,8,1)');
-  }
-  ctx.fillStyle = bgGrad;
-  ctx.fill();
-  ctx.restore();
-
-  // Draw sectors
-  for (let i=0; i<n; i++) {
-    const sa = angle + i*slice;
-    const ea = sa + slice;
-    // Participant = unique color, placeholder = single base color
-    const _addr = sectors[i]?.address;
-    const _isPlaceholder = !_addr || sectors[i]?.placeholder;
-    let col;
-    if (!_isPlaceholder) {
-      col = getParticipantColor(_addr);
-    } else {
-      col = currentLottery === 'weekly'
-        ? { fill:'rgba(30,60,120,0.22)', stroke:'rgba(74,144,217,0.45)', text:'rgba(74,144,217,0.35)' }
-        : { fill:'rgba(70,45,8,0.22)',   stroke:'rgba(180,130,20,0.45)',  text:'rgba(212,160,23,0.35)' };
-    }
-
-    // Sector fill
-    ctx.save();
-    ctx.beginPath();
-    ctx.moveTo(cx,cy);
-    ctx.arc(cx,cy,r,sa,ea);
-    ctx.closePath();
-    ctx.fillStyle = col.fill;
-    ctx.fill();
-
-    // Sector border (neon line)
-    ctx.beginPath();
-    ctx.moveTo(cx,cy);
-    ctx.lineTo(cx + r*Math.cos(sa), cy + r*Math.sin(sa));
-    ctx.strokeStyle = col.stroke + '55';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    ctx.restore();
-
-    // Outer arc accent
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(cx,cy,r-1,sa,ea);
-    ctx.strokeStyle = col.stroke + '88';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    ctx.restore();
-
-    // Address label + ticket count
-    const s = sectors[i];
-    if (!s.placeholder && s.address) {
-      ctx.save();
-      const mid  = sa + slice/2;
-      // Place text along the radius - from center outward
-      ctx.translate(cx, cy);
-      ctx.rotate(mid);
-
-      const addr  = s.address;
-      const tier  = s.tier || 'common';
-      const icon  = s.isFree ? '✦' : (TIER_ICONS[tier] || '');
-      const total = s.totalEntries || s.tickets || 1;
-      const entryNum = s.entryIdx !== undefined ? (s.entryIdx+1) + '/' + total : '';
-      const addrLabel = addr.slice(0,6) + '..' + addr.slice(-4);
-      const entryLabel = icon + ' ' + entryNum;
-      const fs = n > 14 ? 9 : (n > 8 ? 10 : 12);
-
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'middle';
-      ctx.shadowBlur  = 0;
-      ctx.font = `700 ${fs}px 'Courier New', monospace`;
-      ctx.fillStyle = col.text;
-      ctx.fillText(addrLabel, r * 0.28, -fs*0.6);
-      ctx.font = `600 ${fs-1}px Inter, sans-serif`;
-      ctx.fillStyle = col.stroke;
-      ctx.fillText(entryLabel, r * 0.28, fs*0.6);
-      ctx.restore();
-    } else if (s.placeholder) {
-      ctx.save();
-      const mid = sa + slice/2;
-      const dist = r*0.62;
-      ctx.translate(cx + dist*Math.cos(mid), cy + dist*Math.sin(mid));
-      ctx.rotate(mid + Math.PI/2);
-      ctx.font = '600 10px Inter';
-      ctx.fillStyle = currentLottery === 'weekly' ? 'rgba(74,144,217,0.25)' : 'rgba(244,208,63,0.25)';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('?', 0, 0);
-      ctx.restore();
-    }
-
-    // Sector index dot near rim
-    if (!s.placeholder) {
-      ctx.save();
-      const mid = sa + slice/2;
-      const dotR = r - 12;
-      ctx.beginPath();
-      ctx.arc(cx + dotR*Math.cos(mid), cy + dotR*Math.sin(mid), 2.5, 0, 2*Math.PI);
-      ctx.fillStyle = col.stroke;
-      ctx.shadowColor = col.stroke;
-      ctx.shadowBlur = 8;
-      ctx.fill();
-      ctx.restore();
-    }
-  }
-
-  // Outer rim glow ring - color depends on lottery type
-  const rimCol = currentLottery === 'weekly' ? '#4a90d9' : '#d4a017';
-  const rimAlpha = currentLottery === 'weekly' ? 'rgba(74,144,217,0.4)' : 'rgba(212,160,23,0.5)';
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(cx,cy,r,0,2*Math.PI);
-  ctx.strokeStyle = rimAlpha;
-  ctx.lineWidth = 2;
-  ctx.shadowColor = rimCol;
-  ctx.shadowBlur = 12;
-  ctx.stroke();
-  ctx.restore();
-
-  // Grid lines (subtle)
-  for (let ring=0.3; ring<=0.85; ring+=0.27) {
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(cx,cy,r*ring,0,2*Math.PI);
-    ctx.strokeStyle = currentLottery === 'weekly' ? 'rgba(74,144,217,0.04)' : 'rgba(244,208,63,0.04)';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  // Inner dark core
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(cx,cy,r*0.18,0,2*Math.PI);
-  const coreGrad = ctx.createRadialGradient(cx,cy,0,cx,cy,r*0.18);
-  coreGrad.addColorStop(0, currentLottery === 'weekly' ? 'rgba(0,200,255,0.1)' : 'rgba(244,208,63,0.15)');
-  coreGrad.addColorStop(1,'rgba(0,0,10,0.95)');
-  ctx.fillStyle = coreGrad;
-  ctx.fill();
-  ctx.strokeStyle = currentLottery === 'weekly' ? 'rgba(0,200,255,0.4)' : 'rgba(244,208,63,0.6)';
-  ctx.lineWidth = 1.5;
-  ctx.shadowColor = currentLottery === 'weekly' ? '#00c8ff' : '#f4d03f';
-  ctx.shadowBlur = 8;
-  ctx.stroke();
-  ctx.restore();
-
-  // Hub drawn on canvas
-  const hubR = r * 0.115;
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(cx, cy, hubR, 0, 2*Math.PI);
-  const hubBg = ctx.createRadialGradient(cx - hubR*0.3, cy - hubR*0.3, 0, cx, cy, hubR);
-  hubBg.addColorStop(0, '#1a0050');
-  hubBg.addColorStop(1, '#000010');
-  ctx.fillStyle = hubBg;
-  ctx.shadowColor = currentLottery === 'weekly' ? 'rgba(0,200,255,0.6)' : 'rgba(244,208,63,0.5)';
-  ctx.shadowBlur = 15;
-  ctx.fill();
-  ctx.strokeStyle = currentLottery === 'weekly' ? 'rgba(0,200,255,0.7)' : 'rgba(244,208,63,0.7)';
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
-  ctx.restore();
-
-  // Hub inner glowing dot
-  const dotR = hubR * 0.45;
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(cx, cy, dotR, 0, 2*Math.PI);
-  const dotGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, dotR);
-  dotGrad.addColorStop(0, '#00c8ff');
-  dotGrad.addColorStop(1, '#6400ff');
-  ctx.fillStyle = dotGrad;
-  ctx.shadowColor = '#00c8ff';
-  ctx.shadowBlur = 12;
-  ctx.fill();
-  ctx.restore();
-
-  // Pointer triangle at top
-  const pW = r * 0.08, pH = r * 0.13;
-  ctx.save();
-  ctx.beginPath();
-  ctx.moveTo(cx, cy - r + pH + 2);
-  ctx.lineTo(cx - pW, cy - r - 4);
-  ctx.lineTo(cx + pW, cy - r - 4);
-  ctx.closePath();
-  const pGrad = ctx.createLinearGradient(cx - pW, cy - r, cx + pW, cy - r + pH);
-  pGrad.addColorStop(0, '#ffe066');
-  pGrad.addColorStop(1, '#e67e22');
-  ctx.fillStyle = pGrad;
-  ctx.shadowColor = '#f4d03f';
-  ctx.shadowBlur = 8;
-  ctx.fill();
-  ctx.restore();
-}
-
-// ── Highlight winner sector ───────────────────────────────────────────────────
-function highlightSector(idx, tickets) {
-  if (!wheelCtx) return;
-  const n  = tickets.length;
-  const W  = wheelCanvas.width;
-  const cx = W/2, cy = W/2, r = cx-6;
-  const slice = (2*Math.PI)/n;
-  const sa = wheelAngle + idx*slice;
-  const ea = sa + slice;
-
-  wheelCtx.save();
-  wheelCtx.beginPath();
-  wheelCtx.moveTo(cx,cy);
-  wheelCtx.arc(cx,cy,r,sa,ea);
-  wheelCtx.closePath();
-  wheelCtx.fillStyle = 'rgba(102,255,170,0.2)';
-  wheelCtx.fill();
-  wheelCtx.strokeStyle = '#66ffaa';
-  wheelCtx.lineWidth = 3;
-  wheelCtx.shadowColor = '#66ffaa';
-  wheelCtx.shadowBlur = 20;
-  wheelCtx.stroke();
-  wheelCtx.restore();
-}
 
 // ── Spin animation ────────────────────────────────────────────────────────────
-function spinWheel(targetIdx, onComplete) {
-  if (wheelSpinning) return;
-  if (!wheelTickets.length || wheelTickets[0].placeholder) return;
-  wheelSpinning = true;
-
-  const n      = wheelTickets.length;
-  const slice  = (2*Math.PI)/n;
-  const spins  = 6 + Math.random()*3;
-
-  // Pointer at top (−π/2). Sector targetIdx center at: angle + targetIdx*slice + slice/2
-  // We want that to equal −π/2 (mod 2π)
-  const targetCenter = -(Math.PI/2) - (targetIdx*slice + slice/2);
-  const finalAngle   = targetCenter - spins*2*Math.PI;
-
-  const startAngle = wheelAngle;
-  const duration   = 5000 + Math.random()*2000;
-  const startTime  = performance.now();
-
-  function easeOutQuart(t) { return 1 - Math.pow(1-t, 4); }
-
-  function animate(now) {
-    const t     = Math.min((now-startTime)/duration, 1);
-    const eased = easeOutQuart(t);
-    wheelAngle  = startAngle + (finalAngle-startAngle)*eased;
-
-    drawWheel(wheelTickets, wheelAngle);
-
-    if (t < 1) {
-      wheelAnimId = requestAnimationFrame(animate);
-    } else {
-      wheelAngle  = ((finalAngle % (2*Math.PI)) + 2*Math.PI) % (2*Math.PI);
-      wheelSpinning = false;
-      drawWheel(wheelTickets, wheelAngle);
-      // Find actual sector under pointer at final position
-      const _n = wheelTickets.length;
-      const _slice = (2*Math.PI)/_n;
-      const _pointer = ((-Math.PI/2) % (2*Math.PI) + 2*Math.PI) % (2*Math.PI);
-      let _actualIdx = targetIdx;
-      for (let _si = 0; _si < _n; _si++) {
-        const _sc = ((wheelAngle + _si*_slice + _slice/2) % (2*Math.PI) + 2*Math.PI) % (2*Math.PI);
-        const _diff = Math.abs(_sc - _pointer);
-        if (_diff < _slice/2 || _diff > 2*Math.PI - _slice/2) {
-          _actualIdx = _si;
-          break;
-        }
-      }
-      highlightSector(_actualIdx, wheelTickets);
-      if (onComplete) onComplete(_actualIdx);
-    }
-  }
-  requestAnimationFrame(animate);
-}
 
 // ── Build ticket list for wheel ───────────────────────────────────────────────
 
 // ── Wheel legend — shows participants with color, tier, entries ──────────────
-function renderWheelLegend() {
-  let el = document.getElementById('wheel-legend');
-  if (!el) {
-    const panel = document.getElementById('wheel-panel-hero');
-    if (!panel) return;
-    el = document.createElement('div');
-    el.id = 'wheel-legend';
-    panel.appendChild(el);
+
+// ── ДАННЫЕ РАУНДА ДЛЯ КОЛЕСА ────────────────────────────────────────────────
+// Раньше эта функция строила wheelTickets и рисовала канвас вручную.
+// Рисование целиком уехало в assets/js/wheel/. Здесь остались только
+// данные и бейджи — колесо V2 забирает их через OracleDrawUI.participants().
+let roundParticipants = [];   // [[адрес, билетов, tokenId|null, тир], ...]
+
+function buildRoundParticipants() {
+  const tickets = currentLottery === 'daily' ? dailyTickets : weeklyTickets;
+  const isDaily = currentLottery === 'daily';
+  const pairs = [];
+
+  // Группируем подряд идущие билеты одного минта: порядок минтов
+  // сохраняется, поэтому колесо у всех выглядит одинаково.
+  let lastKey = null;
+  for (const t of tickets) {
+    const mintKey = (t.txhash || '').replace(/:[0-9]+$/, '');
+    const last = pairs[pairs.length - 1];
+    if (last && mintKey && mintKey === lastKey && last[0] === t.address) last[1]++;
+    else { pairs.push([t.address, 1, null, 'common']); lastKey = mintKey; }
   }
 
-  // Build per-wallet totals from wheelTickets (mints order already applied)
-  const walletData = new Map(); // addr -> { color, tier, totalEntries, sectors, isFree }
-  const totalSectors = wheelTickets.filter(t => !t.placeholder).length;
-
-  for (const t of wheelTickets) {
-    if (t.placeholder) continue;
-    if (!walletData.has(t.address)) {
-      const col = getParticipantColor(t.address);
-      walletData.set(t.address, {
-        color:        col.stroke,
-        colorFill:    col.fill,
-        tier:         t.tier || 'common',
-        totalEntries: 0,
-        sectors:      0,
-        isFree:       t.isFree || false,
-      });
-    }
-    const d = walletData.get(t.address);
-    d.sectors++;
-    // accumulate real total entries from all tickets of this address
+  // Тир по размеру минта — 1 / 5 / 10 билетов
+  for (const p of pairs) {
+    p[3] = p[1] >= 10 ? 'legendary' : p[1] >= 5 ? 'rare' : 'common';
   }
 
-  // Get real entry totals from dailyTickets/weeklyTickets
-  const rawTickets = currentLottery === 'daily' ? dailyTickets : weeklyTickets;
-  const entryTotals = new Map();
-  for (const t of rawTickets) {
-    entryTotals.set(t.address, (entryTotals.get(t.address) || 0) + 1);
-  }
-  // Free entries
-  if (currentLottery !== 'daily') {
-    for (const [addr, info] of Object.entries(freeEntriesData)) {
-      if (info.total > 0) entryTotals.set(addr, (entryTotals.get(addr) || 0) + info.total);
+  // Free entries (только weekly и только если есть платные участники) —
+  // так же, как их добавляет addFreeEntries в lottery-draw.js
+  if (!isDaily && pairs.length) {
+    for (const [addr, e] of Object.entries(freeEntriesData)) {
+      const n = (e && e.total) || 0;
+      if (n > 0) pairs.push([addr, n, null, 'common']);
     }
   }
-  const grandTotal = Array.from(entryTotals.values()).reduce((a,b) => a+b, 0) || 1;
-
-  for (const [addr, d] of walletData.entries()) {
-    d.totalEntries = entryTotals.get(addr) || 0;
-  }
-
-  if (!walletData.size) { el.innerHTML = ''; return; }
-
-  const tierLabel = { legendary: 'LEGENDARY', rare: 'RARE', common: 'COMMON', free: 'FREE' };
-  const isWeekly  = currentLottery === 'weekly';
-  const accentAlpha = isWeekly ? '74,144,217' : '212,160,23';
-
-  let html = `<div class="wl-wrap">`;
-  html += `<div class="wl-header">
-    <span class="wl-title">Participants</span>
-    <span class="wl-total">${walletData.size} wallet${walletData.size!==1?'s':''} · ${grandTotal} entries</span>
-  </div>`;
-
-  for (const [addr, d] of walletData.entries()) {
-    const pct  = Math.round((d.totalEntries / grandTotal) * 100);
-    const tLabel = d.isFree ? 'FREE' : (tierLabel[d.tier] || 'COMMON');
-    const addrShort = addr.slice(0,8) + '...' + addr.slice(-5);
-    html += `
-    <div class="wl-row">
-      <div class="wl-dot" style="background:${d.color};box-shadow:0 0 8px ${d.color}88;"></div>
-      <div class="wl-info">
-        <div class="wl-addr" style="color:${d.color};">${addrShort}</div>
-        <div class="wl-meta">
-          <span class="wl-tier" style="border-color:${d.color}44;color:${d.color};">${tLabel}</span>
-          <span class="wl-entries">${d.totalEntries} entr${d.totalEntries===1?'y':'ies'}</span>
-          <span class="wl-sectors">${d.sectors} sector${d.sectors!==1?'s':''}</span>
-        </div>
-      </div>
-      <div class="wl-pct-wrap">
-        <div class="wl-pct-num" style="color:${d.color};">${pct}%</div>
-        <div class="wl-bar-bg">
-          <div class="wl-bar-fill" style="width:${pct}%;background:${d.color};box-shadow:0 0 6px ${d.color}66;"></div>
-        </div>
-      </div>
-    </div>`;
-  }
-  html += `</div>`;
-  el.innerHTML = html;
+  return pairs;
 }
 
 function updateWheelTickets() {
-  // Don't update while spinning
-  if (wheelSpinning) return;
-  const tickets     = currentLottery === 'daily' ? dailyTickets : weeklyTickets;
-  const isDaily     = currentLottery === 'daily';
-  const currency    = 'LUNC'; // both draws pay out in LUNC
-  const pricePerTix = LUNC_PER_TICKET;
+  const tickets  = currentLottery === 'daily' ? dailyTickets : weeklyTickets;
+  const isDaily  = currentLottery === 'daily';
+  const currency = 'LUNC';
 
-  // Reset color map — assign colors in chronological mint order
-  _addrColorMap.clear();
-  _addrColorCounter = 0;
-  wheelTickets = []; // always reset before rebuild
+  roundParticipants = buildRoundParticipants();
 
-  const WHEEL_SECTORS = MAX_SECTORS; // 20
-
-  // Free entries (weekly)
-  const freeTotal = isDaily ? 0 :
-    Object.values(freeEntriesData).reduce((s,e) => s + (e.total||0), 0);
-
-  // Free entries only shown on wheel if there are paid participants
-  const hasPaidParticipants = tickets.length > 0;
-  const effectiveFreeTotal  = hasPaidParticipants ? freeTotal : 0;
-  const totalEntries = tickets.length + effectiveFreeTotal;
-
-  if (totalEntries === 0) {
-    wheelTickets = Array.from({length:WHEEL_SECTORS}, () => ({placeholder:true}));
-    drawWheel(wheelTickets, wheelAngle);
-    renderWheelLegend();
-    // Reset badges — otherwise they keep the previous pool's numbers
-    const _p = document.getElementById('wheel-participant-count');
-    const _t = document.getElementById('wheel-ticket-count');
-    const _pl = document.getElementById('wheel-pool-display');
-    if (_p)  _p.textContent  = '0';
-    if (_t)  _t.textContent  = '0';
-    if (_pl) _pl.textContent = '0 ' + currency;
-    return;
-  }
-
-  // 1 entry = 1 sector — chronological order of MINTS (not grouped by wallet)
-  // Each mint event adds its sectors in sequence, preserving purchase order
-
-  // First assign colors in wallet first-appearance order
-  const seenWallet = new Set();
-  for (const t of tickets) {
-    if (!seenWallet.has(t.address)) {
-      seenWallet.add(t.address);
-      getParticipantColor(t.address);
-    }
-  }
-
-  // Build wheelTickets from mints[] if available (chronological)
-  // tickets are already in mint order from fetchRoundStatsAsTickets
-  // Each ticket = 1 entry, grouped by mint (same txhash prefix = same mint)
-  wheelTickets = [];
-  const mintGroups = []; // [{wallet, tier, count}]
-  const seenMint   = new Set();
-
-  for (const t of tickets) {
-    const mintKey = (t.txhash || '').replace(/:[0-9]+$/, '');
-    if (!seenMint.has(mintKey)) {
-      seenMint.add(mintKey);
-      // Count entries for this mint
-      const mintCount = tickets.filter(x =>
-        (x.txhash || '').replace(/:[0-9]+$/, '') === mintKey
-      ).length;
-      mintGroups.push({
-        wallet: t.address,
-        tier:   t.tier || 'common',
-        count:  mintCount,
-      });
-    }
-  }
-
-  // Add free entries (weekly) as separate mint groups at end
-  if (!isDaily && hasPaidParticipants) {
-    for (const [addr, info] of Object.entries(freeEntriesData)) {
-      const fc = info.total || 0;
-      if (fc <= 0) continue;
-      if (!seenWallet.has(addr)) {
-        seenWallet.add(addr);
-        getParticipantColor(addr);
-      }
-      mintGroups.push({ wallet: addr, tier: 'free', count: fc });
-    }
-  }
-
-  // Build sectors in mint order — each mint block consecutive
-  console.log('[wheel] mintGroups:', mintGroups.map(g => g.wallet.slice(-5)+':'+g.count));
-  for (const mg of mintGroups) {
-    const walletTotal = tickets.filter(t => t.address === mg.wallet).length;
-    for (let i = 0; i < mg.count; i++) {
-      wheelTickets.push({
-        address:      mg.wallet,
-        tier:         mg.tier,
-        entryIdx:     i,
-        totalEntries: walletTotal,
-        sectorCount:  mg.count,
-        isFree:       mg.tier === 'free',
-      });
-    }
-  }
-  console.log('[wheel] wheelTickets:', wheelTickets.filter(t=>!t.placeholder).map(t=>t.address.slice(-5)));
-
-  // Minimum 12 sectors for visual quality
-  while (wheelTickets.length < 12) wheelTickets.push({placeholder:true});
-
-  // Update wheel visuals - rim color changes for weekly
-  const canvas = document.getElementById('wheel-canvas');
-  if (canvas) {
-    const rimColor = isDaily ? 'rgba(0,200,255,0.25)' : 'rgba(212,160,23,0.3)';
-    canvas.style.filter = isDaily
-      ? 'drop-shadow(0 0 30px rgba(212,160,23,0.35)) drop-shadow(0 0 60px rgba(200,100,0,0.2))'
-      : 'drop-shadow(0 0 30px rgba(74,144,217,0.3)) drop-shadow(0 0 60px rgba(30,80,180,0.2))';
-  }
-
-
-
-  // Pointer color
-  const ptr = document.querySelector('#wheel-panel-hero svg stop:first-child');
-  // (SVG gradient updated via CSS filter above)
-
-  drawWheel(wheelTickets, wheelAngle);
-  renderWheelLegend();
-
-  // Update badges
+  // Бейджи под колесом
   const partEl = document.getElementById('wheel-participant-count');
   const tickEl = document.getElementById('wheel-ticket-count');
   const poolEl = document.getElementById('wheel-pool-display');
-  // Count unique NFTs (transactions)
-  const uniqueNFTs = new Set(tickets.map(t => t.txhash)).size;
-  // Real prize pool
+
   const tiersRef = window.NFT_TIERS || (typeof NFT_TIERS !== 'undefined' ? NFT_TIERS : null);
   let realPool = 0;
   const seenTx = new Set();
@@ -2684,28 +2161,29 @@ function updateWheelTickets() {
       if (t.entries === tiersRef.legendary.entries) realPool += tiersRef.legendary.lunc;
       else if (t.entries === tiersRef.rare.entries) realPool += tiersRef.rare.lunc;
       else realPool += tiersRef.common.lunc;
-    } else {
-      realPool += LUNC_PER_TICKET;
-    }
+    } else realPool += LUNC_PER_TICKET;
   }
-  // Show counts — free entries only counted if paid participants exist
-  const _paidAddrs = new Set(tickets.map(t => t.address));
-  const _hasPaid   = _paidAddrs.size > 0;
-  const _totalFree = (!isDaily && _hasPaid)
+
+  const paidAddrs = new Set(tickets.map(t => t.address));
+  const hasPaid   = paidAddrs.size > 0;
+  const totalFree = (!isDaily && hasPaid)
     ? Object.values(freeEntriesData).reduce((s, e) => s + (e.total || 0), 0) : 0;
-  const _freeOnlyAddrs = (!isDaily && _hasPaid)
-    ? Object.keys(freeEntriesData).filter(w => !_paidAddrs.has(w)).length : 0;
-  const _uniqueParts = _paidAddrs.size + _freeOnlyAddrs;
-  if (partEl) partEl.textContent = _uniqueParts || 0;
-  if (tickEl) tickEl.textContent = (tickets.length + _totalFree) || 0;
+  const freeOnly  = (!isDaily && hasPaid)
+    ? Object.keys(freeEntriesData).filter(w => !paidAddrs.has(w)).length : 0;
+
+  if (partEl) partEl.textContent = (paidAddrs.size + freeOnly) || 0;
+  if (tickEl) tickEl.textContent = (tickets.length + totalFree) || 0;
   if (poolEl) poolEl.textContent = fmt(realPool * 0.80) + ' ' + currency;
 
-  // Badge colors - daily=cyan, weekly=gold
   const badgeColor = isDaily ? '#f4d03f' : '#7eb8ff';
-  const badgeShadow = isDaily ? 'rgba(244,208,63,0.5)' : 'rgba(74,144,217,0.5)';
-  if (partEl) { partEl.style.color = badgeColor; partEl.style.textShadow = '0 0 10px '+badgeShadow; }
+  if (partEl) { partEl.style.color = badgeColor; }
   if (tickEl) { tickEl.style.color = isDaily ? '#a060ff' : '#cc66ff'; }
   if (poolEl) { poolEl.style.color = '#66ffaa'; }
+
+  // Колесо перестраивает сектора по живым участникам раунда
+  if (window.oracleDrawV2 && window.oracleDrawV2.refreshLive) {
+    window.oracleDrawV2.refreshLive();
+  }
 }
 
 // ── Trigger spin (called at draw time OR by admin) ────────────────────────────
@@ -2713,35 +2191,6 @@ function updateWheelTickets() {
 // Настоящий розыгрыш ведёт Draw V2 (DrawBridge): сектор ищется по адресу
 // победителя из winners.json. Здесь остался только демо-прогон для админа,
 // и он честно помечен как демо.
-function triggerWheelSpin(isAdmin) {
-  if (!isAdmin) return;                    // не-админский путь больше не рисует победителя
-
-  const tickets = currentLottery === 'daily' ? dailyTickets : weeklyTickets;
-  if (tickets.length <= MIN_TICKETS) {
-    setWheelMsg('<svg class="oi oi--amber"><use href="#i-warning"/></svg> Not enough tickets',
-      'Minimum ' + MIN_TICKETS + ' required for draw · Rolling over', '#ff9944');
-    return;
-  }
-
-  updateWheelTickets();
-  document.getElementById('wheel-winner-card').style.display = 'none';
-  if (!wheelTickets.length || wheelTickets[0].placeholder) return;
-
-  const targetIdx = Math.floor(Math.random() * wheelTickets.length);
-  setWheelMsg('<svg class="oi oi--violet"><use href="#i-wheel"/></svg> DEMO spin',
-    'Admin preview — not a real draw', '#a78bfa');
-
-  spinWheel(targetIdx, function(idx) {
-    const winner = wheelTickets[idx];
-    setWheelMsg('DEMO result', 'Preview only — no payout', '#a78bfa');
-    showWinnerCard({
-      address: winner ? winner.address : '-',
-      prize:   0,
-      tx:      null,
-      label:   'DEMO'
-    });
-  });
-}
 
 // ── Winner card — единственный писатель карточки результата ──────────────────
 function showWinnerCard(data) {
@@ -2775,49 +2224,8 @@ function setWheelMsg(msg, sub, color) {
 }
 
 // ── Auto check draw time (every second) ──────────────────────────────────────
-let wheelSpunThisSession = false;
 const ENTRY_DEADLINE_MS = 15 * 60 * 1000; // 15 minutes before draw
 
-function checkDrawTime() {
-  const drawTime = getNextDrawTime(currentLottery);
-  const diff     = drawTime - Date.now();
-  const msgEl    = document.getElementById('wheel-msg');
-  if (!msgEl) return;
-
-  // Авто-спин удалён. Раньше здесь колесо запускалось в момент 20:00 по
-  // локальным часам — то есть ДО того, как GitHub Action записал результат
-  // в winners.json, и крутилось на вычисленный сектор, а не на победителя.
-  if (diff <= 0 && !wheelSpinning) {
-    setWheelMsg(
-      '<svg class="oi oi--cyan"><use href="#i-wheel"/></svg> Draw in progress',
-      'Waiting for the on-chain result',
-      '#00c8ff'
-    );
-    updateBurnButtonState(false);
-  } else if (diff > 0 && !wheelSpinning) {
-    if (diff <= ENTRY_DEADLINE_MS) {
-      // 🔴 Last 15 minutes - burns closing soon
-      const burnDiff = diff;
-      const bm = Math.floor(burnDiff / 60000);
-      const bs = Math.floor((burnDiff % 60000) / 1000);
-      const timeStr = bm > 0 ? bm + 'm ' + bs + 's' : bs + 's';
-      setWheelMsg(
-        '<svg class="oi oi--red"><use href="#i-dot"/></svg> Entries close in ' + timeStr,
-        'Last chance to enter this round!',
-        'rgba(255,80,80,0.9)'
-      );
-      updateBurnButtonState(false); // Disable burn button
-    } else {
-      // ✅ Round open - burns allowed
-      setWheelMsg(
-        '<svg class="oi oi--cyan"><use href="#i-hourglass"/></svg> Next draw in ' + formatDiffShort(diff),
-        'Wheel spins automatically at 20:00 UTC',
-        'rgba(0,200,255,0.7)'
-      );
-      updateBurnButtonState(true); // Enable burn button
-    }
-  }
-}
 
 function updateBurnButtonState(open) {
   // Update burn buttons in My Bag
@@ -2849,18 +2257,20 @@ function formatDiffShort(ms) {
 // ── BRIDGE FOR DRAW V2 ───────────────────────────────────────────────────────
 // Единственная точка, через которую новое ядро трогает старый UI.
 window.OracleDrawUI = {
-  spin:           function(idx, cb) { return spinWheel(idx, cb); },
-  sectors:        function() { return wheelTickets; },
-  isSpinning:     function() { return wheelSpinning; },
-  rebuildTickets: function() { return updateWheelTickets(); },
-  msg:            function(m, s, c) { return setWheelMsg(m, s, c); },
+  // Сообщения и карточка — единственное, что колесо просит у страницы
+  msg:            function(m, sub, c) { return setWheelMsg(m, sub, c); },
   card:           function(d) { return showWinnerCard(d); },
-  burnOpen:       function(open) { return updateBurnButtonState(open); },
+  entriesOpen:    function(open) { return updateBurnButtonState(open); },
   fmt:            function(v) { return fmt(v); },
   fmtShort:       function(ms) { return formatDiffShort(ms); },
-  resetWheel:     function() { return resetWheel(); },
-  colorFor:       function(addr) { return getParticipantColor(addr); },
-  entriesOpen:    function(open) { return updateBurnButtonState(open); },
+
+  // Живые участники текущего раунда: [[адрес, билетов, tokenId, тир], ...]
+  // Колесо строит из них сектора ДО розыгрыша. После розыгрыша модель
+  // берётся из снимка rounds/<round_id>.json — он авторитетен для
+  // winner_index, а этот список только предварительный показ.
+  participants:   function() { return roundParticipants; },
+  pool:           function() { return currentLottery; },
+
   wakeOracleEye:  function(on) {
     document.body.classList.toggle('oracle-predraw', !!on);
     if (window.oracleEye && typeof window.oracleEye.wake === 'function') {
@@ -2871,11 +2281,6 @@ window.OracleDrawUI = {
 window.loadWinners = loadWinners;
 
 // ── Admin panel wheel demo ────────────────────────────────────────────────────
-function adminSpinDemo() {
-  if (!adminUnlocked) return;
-  wheelSpunThisSession = false;
-  triggerWheelSpin(true);
-}
 
 // ─── VERIFY TICKETS ──────────────────────────────────────────────────────────
 function verifyKeplrAddress() {
@@ -3228,15 +2633,6 @@ function updateAdminStats() {
   if (refEl)   refEl.textContent   = new Date().toLocaleTimeString('en-GB');
 }
 
-function resetWheel() {
-  if (!adminUnlocked) return;
-  wheelSpunThisSession = false;
-  wheelAngle = 0;
-  document.getElementById('wheel-winner-card').style.display = 'none';
-  document.getElementById('wheel-winner-card').classList.remove('show');
-  updateWheelTickets();
-  setWheelMsg('<svg class="oi oi--cyan"><use href="#i-hourglass"/></svg> Wheel reset', 'Ready for next draw', 'rgba(0,200,255,0.7)');
-}
 
 // ─── WALLET CONNECT ──────────────────────────────────────────────────────────
 let connectedWalletAddress = null;
@@ -3575,7 +2971,6 @@ function disconnectWallet() {
   } catch(e) {}
 
   startTimer();
-  initWheel();
   initAdminTrigger();
   await loadWinners();
 
@@ -3617,9 +3012,8 @@ function disconnectWallet() {
 
   // Refresh every 60s
   setInterval(loadAllData, 60000);
-  // checkDrawTime отключён: колесо теперь запускает Draw V2 по факту
-  // появления результата в winners.json, а не по локальным часам.
-  if (!window.oracleDrawV2) setInterval(checkDrawTime, 1000);
+  // Отсчёт, фазы и запуск колеса целиком у Draw V2 — старого таймера
+  // с локальными часами больше нет.
 })();
 
 // ── MY BAG ────────────────────────────────────────────────────────────────────
