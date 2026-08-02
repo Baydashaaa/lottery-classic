@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Oracle Draw — предпоказ</title>
+<style>
+  :root{
+    --gold:#f4d477; --gold-dim:#c9a44c; --violet:#b98cff; --violet-dim:#8f5fe0;
+    --ink:#05070e; --panel:rgba(12,19,36,.72); --line:rgba(244,212,119,.18);
+    --line-v:rgba(185,140,255,.20); --text:#eef2fa; --muted:#8d99b3;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ink);color:var(--text);
+       font:15px/1.55 ui-sans-serif,system-ui,-apple-system,sans-serif;
+       -webkit-font-smoothing:antialiased}
+  .bar{background:linear-gradient(180deg,rgba(255,255,255,.04),transparent);
+       border-bottom:1px solid var(--line);padding:14px 26px;display:flex;
+       align-items:center;gap:26px;position:sticky;top:0;backdrop-filter:blur(8px);z-index:5}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.18em;
+         font-size:14px;color:var(--gold);text-transform:uppercase}
+  .dot{width:22px;height:22px;border-radius:50%;
+       background:radial-gradient(circle at 35% 35%,#fff3cf,#c9a44c 55%,#6b4d12);
+       box-shadow:0 0 14px rgba(244,212,119,.6)}
+  nav{display:flex;gap:20px;font-size:13px;color:var(--muted);flex:1}
+  nav b{color:var(--gold);font-weight:600}
+  .wallet{border:1px solid var(--line);border-radius:10px;padding:8px 15px;font-size:13px;color:var(--gold)}
+
+  section{padding:34px 26px 46px;border-bottom:1px solid rgba(255,255,255,.05)}
+  section.weekly{background:radial-gradient(120% 90% at 50% 0%,rgba(88,44,160,.22),transparent 70%)}
+  h2{margin:0;font-size:34px;letter-spacing:-.5px;font-weight:800}
+  h2 span{color:var(--gold)} .weekly h2 span{color:var(--violet)}
+  .sub{color:var(--muted);margin:6px 0 22px;font-size:14px}
+
+  .layout{display:grid;grid-template-columns:280px minmax(0,1fr) 300px;gap:26px;align-items:start}
+  @media(max-width:1080px){.layout{grid-template-columns:1fr}}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
+  .weekly .card{border-color:var(--line-v)}
+  .cap{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+  .pool{font-size:29px;font-weight:800;color:var(--gold);letter-spacing:-.5px}
+  .weekly .pool{color:var(--violet)}
+  .note{font-size:12px;color:var(--muted);margin-top:5px}
+  .warn{font-size:12px;color:#ffb160;margin-top:8px}
+
+  .clock{display:flex;gap:7px;margin-top:4px}
+  .u{flex:1;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:9px;
+     padding:8px 0;text-align:center}
+  .weekly .u{border-color:var(--line-v)}
+  .u b{display:block;font-size:19px;font-variant-numeric:tabular-nums}
+  .u i{font-style:normal;font-size:9px;letter-spacing:.1em;color:var(--muted)}
+
+  .cta{display:block;width:100%;margin-top:14px;padding:13px;border:0;border-radius:11px;
+       background:linear-gradient(180deg,#d93b3b,#a41f1f);color:#fff;font:700 14px/1.2 inherit;
+       letter-spacing:.06em;cursor:pointer}
+  .cta small{display:block;font-weight:500;font-size:10px;opacity:.75;letter-spacing:.12em;margin-top:4px}
+  .cta.v{background:linear-gradient(180deg,#7c4bd6,#4c2a90)}
+
+  .stage{display:grid;place-items:center}
+  canvas{width:100%;max-width:560px;aspect-ratio:1;display:block}
+
+  .winner{text-align:left}
+  .wname{font-size:22px;font-weight:800;color:var(--gold);margin:2px 0 8px}
+  .weekly .wname{color:var(--violet)}
+  .addr{font:13px ui-monospace,monospace;color:var(--text);word-break:break-all}
+  .prize{font-size:20px;font-weight:800;color:var(--gold);margin-top:8px}
+  .weekly .prize{color:var(--violet)}
+  .pill{display:inline-block;border:1px solid var(--line);border-radius:20px;padding:3px 10px;
+        font-size:10px;letter-spacing:.1em;color:var(--muted)}
+  .ghost{display:block;width:100%;margin-top:12px;padding:10px;border:1px solid var(--line);
+         border-radius:10px;background:transparent;color:var(--text);font:600 12px inherit;
+         letter-spacing:.08em;cursor:pointer}
+  .weekly .ghost{border-color:var(--line-v)}
+  .ghost:hover{border-color:var(--gold)}
+  .places{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:10px}
+  .pl{border:1px solid var(--line-v);border-radius:10px;padding:9px 6px;text-align:center}
+  .pl.win{border-color:var(--violet);background:rgba(185,140,255,.10)}
+  .pl b{display:block;font-size:15px;color:var(--violet)}
+  .pl i{font-style:normal;font-size:9px;letter-spacing:.08em;color:var(--muted)}
+  .hint{margin:14px 0 0;font-size:12px;color:var(--muted);text-align:center}
+  .hint b{color:var(--gold)}
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <div class="brand"><div class="dot"></div>Oracle Draw</div>
+  <nav><span>Home</span><b>Draw</b><span>My Bag</span><span>Mint</span><span>Questions</span><span>Leaderboard</span></nav>
+  <div class="wallet">Connect Wallet</div>
+</div>
+
+<section class="daily">
+  <h2>DAILY <span>DRAW</span></h2>
+  <p class="sub">Mint an NFT. Activate it. Win the daily pool.</p>
+  <div class="layout">
+    <div>
+      <div class="card">
+        <div class="cap">Current prize pool</div>
+        <div class="pool">216.2K LUNC</div>
+        <div class="note">9 NFTs activated this round</div>
+        <div class="warn">Sector size = share of tickets = chance to win</div>
+      </div>
+      <div class="card" style="margin-top:12px">
+        <div class="cap">Next draw in</div>
+        <div class="clock">
+          <div class="u"><b id="d-d">00</b><i>DAYS</i></div>
+          <div class="u"><b id="d-h">03</b><i>HRS</i></div>
+          <div class="u"><b id="d-m">11</b><i>MIN</i></div>
+          <div class="u"><b id="d-s">04</b><i>SEC</i></div>
+        </div>
+        <button class="cta">MINT ORACLE MASK<small>COMMON · RARE · LEGENDARY</small></button>
+      </div>
+    </div>
+
+    <div class="stage"><canvas id="cv-daily"></canvas></div>
+
+    <div class="card winner">
+      <div class="cap">🏆 Last winner</div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="wname" id="dw-id">#144</div><span class="pill" id="dw-tier">LEGENDARY</span>
+      </div>
+      <div class="addr" id="dw-addr">—</div>
+      <div class="cap" style="margin-top:12px">Prize won</div>
+      <div class="prize" id="dw-prize">216,200 LUNC</div>
+      <div class="cap" style="margin-top:12px">Ticket</div>
+      <div class="addr" id="dw-idx">—</div>
+      <button class="ghost" id="run-daily">▶ ЗАПУСТИТЬ РОЗЫГРЫШ</button>
+      <button class="ghost" id="pre-daily">PreDraw — Oracle просыпается</button>
+    </div>
+  </div>
+  <p class="hint">Нажми <b>ЗАПУСТИТЬ РОЗЫГРЫШ</b> — колесо разгонится из текущей скорости и сядет ровно на билет победителя.</p>
+</section>
+
+<section class="weekly">
+  <h2>WEEKLY <span>DRAW</span></h2>
+  <p class="sub">3 winners · Draw every Monday at 20:00 UTC</p>
+  <div class="layout">
+    <div>
+      <div class="card">
+        <div class="cap">Current prize pool</div>
+        <div class="pool">1.85M LUNC</div>
+        <div class="places">
+          <div class="pl win"><b>48%</b><i>1ST</i></div>
+          <div class="pl"><b>20%</b><i>2ND</i></div>
+          <div class="pl"><b>12%</b><i>3RD</i></div>
+        </div>
+        <div class="note">Три последовательных прокрута, по одному на место</div>
+      </div>
+      <div class="card" style="margin-top:12px">
+        <div class="cap">Next draw in</div>
+        <div class="clock">
+          <div class="u"><b>03</b><i>DAYS</i></div><div class="u"><b>11</b><i>HRS</i></div>
+          <div class="u"><b>04</b><i>MIN</i></div><div class="u"><b>22</b><i>SEC</i></div>
+        </div>
+        <button class="cta v">MINT ORACLE MASK<small>COMMON · RARE · LEGENDARY</small></button>
+      </div>
+    </div>
+
+    <div class="stage"><canvas id="cv-weekly"></canvas></div>
+
+    <div class="card winner">
+      <div class="cap">🏆 Last weekly winners</div>
+      <div id="wk-list"></div>
+      <button class="ghost" id="run-weekly">▶ РОЗЫГРЫШ НА 3 МЕСТА</button>
+      <button class="ghost" id="pre-weekly">PreDraw</button>
+    </div>
+  </div>
+</section>
+
+<script type="module">
+/*__MODULES__*/
+/*__BOOT__*/
+</script>
+</body>
+</html>
