@@ -153,7 +153,7 @@ export default class WheelSector {
             ctx.fillText(`+${s.members.length} wallets`, 0, cursor);
             ctx.fillStyle = th.text.secondary;
             ctx.font = `${unit * 0.9}px ui-monospace, monospace`;
-            ctx.fillText(`${s.entries} tickets`, 0, cursor + unit * 1.25);
+            ctx.fillText(plural(s.entries), 0, cursor + unit * 1.25);
             ctx.restore();
             return;
         }
@@ -184,11 +184,21 @@ export default class WheelSector {
             ctx.font = `${unit * 0.92}px ui-monospace, monospace`;
             ctx.fillText(shortAddr(s.address), 0, cursor);
             cursor += unit * 1.1;
+
+            // Тир NFT — то, что человек на самом деле сминтил
+            if (meta.tier) {
+                ctx.fillStyle = rar.base;
+                ctx.font = `600 ${unit * 0.72}px ui-sans-serif, system-ui, sans-serif`;
+                ctx.globalAlpha = (state.dim ?? 1) * 0.85;
+                ctx.fillText(rar.label, 0, cursor);
+                ctx.globalAlpha = state.dim ?? 1;
+                cursor += unit * 0.95;
+            }
         }
 
         ctx.fillStyle = th.text.secondary;
         ctx.font = `${unit * 0.85}px ui-monospace, monospace`;
-        ctx.fillText(`${s.entries} ticket${s.entries === 1 ? "" : "s"}`, 0, cursor);
+        ctx.fillText(plural(s.entries), 0, cursor);
 
         ctx.restore();
     }
@@ -223,6 +233,14 @@ export default class WheelSector {
         ctx.stroke();
         ctx.restore();
     }
+}
+
+/**
+ * На сайте единица участия называется entry, а не ticket: пользователь
+ * минтит NFT, и тир определяет, сколько entries он даёт (1 / 5 / 10).
+ */
+function plural(n) {
+    return n + (n === 1 ? " entry" : " entries");
 }
 
 function shortAddr(a) {
