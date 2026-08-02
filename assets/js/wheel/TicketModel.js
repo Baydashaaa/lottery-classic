@@ -59,11 +59,21 @@ export default class TicketModel {
         const RANK = { common: 0, rare: 1, legendary: 2 };
         this.pairs.forEach(([address, count, tokenId, tier]) => {
             if (!byWallet.has(address)) {
-                byWallet.set(address, { address, entries: 0, indices: [], meta: {} });
+                byWallet.set(address, {
+                    address, entries: 0, indices: [],
+                    // meta.tier — лучший тир кошелька (им красится сектор),
+                    // meta.tiers — сколько entries дал каждый тир,
+                    // meta.mints — сколько NFT кошелёк сминтил в этом раунде
+                    meta: { tiers: { common: 0, rare: 0, legendary: 0 }, mints: 0 }
+                });
                 order.push(address);
             }
             const w = byWallet.get(address);
             w.entries += count;
+            w.meta.mints += 1;
+            const tk = String(tier || "common").toLowerCase();
+            if (w.meta.tiers[tk] === undefined) w.meta.tiers[tk] = 0;
+            w.meta.tiers[tk] += count;
             // показываем лучший тир кошелька и номер того же NFT
             if (tier && (RANK[tier] ?? -1) > (RANK[w.meta.tier] ?? -1)) {
                 w.meta.tier = tier;
