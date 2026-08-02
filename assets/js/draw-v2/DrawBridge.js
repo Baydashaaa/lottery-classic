@@ -23,6 +23,7 @@ export default class DrawBridge {
         this.wheel = null;
         this.queue = [];
         this.round = null;
+        this.lastCard = null;
         this.unsubs = [];
     }
 
@@ -49,6 +50,9 @@ export default class DrawBridge {
             else if (firstLoad && !round.skipped) this.showStatic(round, null);
         });
         on(EVENTS.DRAW_SKIPPED, ({ round }) => this.showRollover(round));
+        // Переключение пула или страницы прячет карточку средствами app.js —
+        // возвращаем её из текущего состояния, а не только на первой загрузке.
+        on(EVENTS.DATA_UPDATED, () => this.syncCard());
         on(EVENTS.ROUND_CHANGED, () => {
             if (typeof window.loadWinners === "function") window.loadWinners();
         });
@@ -73,6 +77,35 @@ export default class DrawBridge {
      * розыгрыша, и только по нему считается winner_index. Этот список —
      * предварительный показ, verified у него не бывает.
      */
+    /**
+     * Привести карточку победителя в соответствие с текущим раундом.
+     * switchLottery в app.js ставит ей display:none, и без этого она
+     * не возвращалась до перезагрузки страницы.
+     */
+    syncCard() {
+        const ui = this.ui;
+        if (!ui || !ui.card) return;
+        if (this.engine.state.revealing) return;
+
+        const round = this.engine.state.round;
+        if (!round || round.skipped || !round.winners.length) { this.lastCard = null; return; }
+
+        const w = round.winners[0];
+        this.lastCard = {
+            address: w.address, prize: w.prize, tx: w.tx,
+            label: round.winners.length > 1 ? "1st Place" : null
+        };
+        ui.card(this.lastCard);
+    }
+
+    /** Вернуть карточку, если её спрятали снаружи */
+    restoreCard() {
+        if (!this.lastCard || this.engine.state.revealing) return;
+        const el = document.getElementById("wheel-winner-card");
+        if (!el || el.style.display !== "none") return;
+        if (this.ui && this.ui.card) this.ui.card(this.lastCard);
+    }
+
     /** Показать колесо в холостом вращении, даже если данных ещё нет */
     startIdle() {
         const r = this.ensure(this.engine.pool);
@@ -141,6 +174,7 @@ export default class DrawBridge {
     }
 
     onTick({ phase, remaining }) {
+        this.restoreCard();
         const ui = this.ui;
         if (!ui || phase === PHASE.REVEALING || phase === PHASE.REVEALED) return;
         const text = PHASE_TEXT[phase];
@@ -179,10 +213,11 @@ export default class DrawBridge {
         this.wheel.onLanded = () => {
             this.wheel.onLanded = null;
             if (this.ui) {
-                this.ui.card({
+                this.lastCard = {
                     address: w.address, prize: w.prize, tx: w.tx,
                     label: this.round.winners.length > 1 ? placeLabel(w.place) : null
-                });
+                };
+                this.ui.card(this.lastCard);
             }
             setTimeout(() => this.next(), CONFIG.REVEAL_HOLD);
         };
