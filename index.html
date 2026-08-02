@@ -1529,11 +1529,14 @@ body.modal-open{overflow:hidden}
   <script src="assets/js/app.js?v=202607340510"></script>
   <script src="assets/js/oracle-mint-v2.js?v=2"></script>
 
-  <!-- Oracle Draw V2 — ядро розыгрыша. Модуль, поэтому грузится после
-       классических скриптов независимо от позиции. Версионируется
-       ПАПКОЙ (draw-v2.1, draw-v2.2 ...), потому что ?v= не сбрасывает
-       кэш внутренних import-ов. -->
-  <script type="module" src="assets/js/draw-v2/index.js"></script>
+  <!-- Oracle Draw V2 — один собранный файл.
+       Раздельные модули кэшируются намертво: у вложенных import нет
+       query-строки, поэтому ?v= на входном скрипте их не сбрасывает.
+       Здесь импортов нет, и ?v= работает как надо.
+       Пересобрать после правок в assets/js/wheel/ или draw-v2/:
+           node dev/_build_bundle.js
+       и поменять номер ниже на тот, что напечатает сборщик. -->
+  <script type="module" src="assets/js/oracle-draw.bundle.js?v=202608021233"></script>
 
 <script>
 // ── WEEKLY PODIUM FIX ──────────────────────────────────────────
