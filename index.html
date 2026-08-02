@@ -1535,6 +1535,12 @@ body.modal-open{overflow:hidden}
   <script src="assets/js/app.js?v=202607340510"></script>
   <script src="assets/js/oracle-mint-v2.js?v=2"></script>
 
+  <!-- Oracle Draw V2 — ядро розыгрыша. Модуль, поэтому грузится после
+       классических скриптов независимо от позиции. Версионируется
+       ПАПКОЙ (draw-v2.1, draw-v2.2 ...), потому что ?v= не сбрасывает
+       кэш внутренних import-ов. -->
+  <script type="module" src="assets/js/draw-v2/index.js"></script>
+
 <script>
 // ── WEEKLY PODIUM FIX ──────────────────────────────────────────
 // Patch switchLottery AFTER app.js loads
