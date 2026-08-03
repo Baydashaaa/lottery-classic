@@ -652,27 +652,21 @@ function updatePoolDisplay() {
   if (typeof updateBuyBtn === 'function') updateBuyBtn();
 }
 
+// ─── DRAW SCHEDULE ──────────────────────────────────────────────────────────
+// Расписание и формат отсчёта живут в assets/js/draw-schedule.js — это общий
+// файл, побайтово одинаковый в репо terra-oracle и oracle-draw. Он грузится
+// обычным <script> ДО app.js. Здесь только потребление, своей арифметики нет:
+// именно три независимые копии этой логики и разъехались 3 авг 2026.
+if (!window.DRAW_SCHEDULE) {
+  console.error('[schedule] assets/js/draw-schedule.js не загружен — счётчики ' +
+    'розыгрыша считать нечем. Проверь порядок <script> в index.html: ' +
+    'draw-schedule.js должен идти ДО app.js.');
+}
+
 // ─── TIMER ──────────────────────────────────────────────────────────────────
+// Имя оставлено прежним — его зовёт startTimer и, возможно, внешний код
 function getNextDrawTime(type) {
-  const now = new Date();
-
-  if (type === 'daily') {
-    const next = new Date();
-    next.setUTCHours(20, 0, 0, 0);
-    if (next <= now) next.setUTCDate(next.getUTCDate() + 1);
-    return next;
-  }
-
-  // Weekly: next Monday 20:00 UTC
-  // Build today's 20:00 UTC, then step forward until we hit a Monday
-  const next = new Date();
-  next.setUTCHours(20, 0, 0, 0);
-  if (next <= now) next.setUTCDate(next.getUTCDate() + 1);
-  // Keep advancing until we land on Monday (getUTCDay() === 1)
-  while (next.getUTCDay() !== 1) {
-    next.setUTCDate(next.getUTCDate() + 1);
-  }
-  return next;
+  return window.DRAW_SCHEDULE.next(type === 'weekly' ? 'weekly' : 'daily');
 }
 
 function startTimer() {
@@ -686,22 +680,12 @@ function startTimer() {
   });
 
   function tick() {
-    const drawTime = getNextDrawTime(currentLottery);
-    const diff = drawTime - Date.now();
-    if (diff <= 0) {
-      ['t-days','t-hours','t-mins','t-secs'].forEach(id => {
-        document.getElementById(id).textContent = '00';
-      });
-      return;
-    }
-    const d = Math.floor(diff / 86400000);
-    const h = Math.floor((diff % 86400000) / 3600000);
-    const m = Math.floor((diff % 3600000) / 60000);
-    const s = Math.floor((diff % 60000) / 1000);
-    document.getElementById('t-days').textContent  = String(d).padStart(2,'0');
-    document.getElementById('t-hours').textContent = String(h).padStart(2,'0');
-    document.getElementById('t-mins').textContent  = String(m).padStart(2,'0');
-    document.getElementById('t-secs').textContent  = String(s).padStart(2,'0');
+    const ms = window.DRAW_SCHEDULE.msToNext(currentLottery);
+    const p  = window.DRAW_SCHEDULE.parts(ms);
+    document.getElementById('t-days').textContent  = String(p.d).padStart(2,'0');
+    document.getElementById('t-hours').textContent = String(p.h).padStart(2,'0');
+    document.getElementById('t-mins').textContent  = String(p.m).padStart(2,'0');
+    document.getElementById('t-secs').textContent  = String(p.s).padStart(2,'0');
   }
   tick();
   timerInterval = setInterval(tick, 1000);
@@ -766,7 +750,7 @@ function switchLottery(type) {
     ? 'Choose your tier - Common, Rare or Legendary. Activate to enter draw.'
     : 'Choose your tier - Common, Rare or Legendary. Activate to enter draw.';
   if (step2El) step2El.textContent = isDaily
-    ? 'Mint an NFT to enter - your purchase is automatically registered. Draw happens every day at 20:00 UTC.'
+    ? 'Mint an NFT to enter - your purchase is automatically registered. Draw happens at 20:00 UTC every day except Monday (Monday is the Weekly Draw).'
     : 'Mint an NFT to enter - your purchase is automatically registered. Pool accumulates all week until Monday 20:00 UTC.';
 
   // Pool display
@@ -2282,11 +2266,11 @@ function updateBurnButtonState(open) {
   }
 }
 
+// Подпись под колесом («Next draw in {t}»). Раньше здесь был свой формат
+// «26h 56m», из-за чего одно и то же время выглядело в Treasury как «1d 02:57»,
+// а под колесом как «26h 56m» — читалось как расхождение. Теперь общий формат.
 function formatDiffShort(ms) {
-  const h=Math.floor(ms/3600000), m=Math.floor((ms%3600000)/60000), s=Math.floor((ms%60000)/1000);
-  if (h>0) return h+'h '+m+'m';
-  if (m>0) return m+'m '+s+'s';
-  return s+'s';
+  return window.DRAW_SCHEDULE.format(ms);
 }
 
 
@@ -3510,7 +3494,7 @@ function showEnterDrawModal(nftId, nftType, entries) {
           onmouseout="this.style.background='rgba(212,160,23,0.1)'">
           <div style="font-size:20px;margin-bottom:4px;"><svg class="oi oi--gold"><use href="#i-reels"/></svg></div>
           <div style="font-size:12px;font-weight:700;">Daily Draw</div>
-          <div style="font-size:10px;color:var(--muted);margin-top:2px;">Every day 20:00 UTC</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px;">Daily 20:00 UTC · except Mon</div>
         </button>
         <button onclick="enterDraw('${nftId}','weekly',${entries})" style="padding:16px;border-radius:12px;
           border:2px solid rgba(74,144,217,0.4);background:rgba(74,144,217,0.06);cursor:pointer;
