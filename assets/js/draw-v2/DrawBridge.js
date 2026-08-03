@@ -14,6 +14,7 @@ import { EVENTS } from "./DrawEvents.js";
 import { PHASE, PHASE_TEXT } from "./DrawPhase.js";
 import { CONFIG } from "./Config.js";
 import WheelRenderer from "../wheel/WheelRenderer.js";
+import SectorDetails from "./SectorDetails.js";
 import TicketModel from "../wheel/TicketModel.js";
 
 export default class DrawBridge {
@@ -24,6 +25,7 @@ export default class DrawBridge {
         this.queue = [];
         this.round = null;
         this.lastCard = null;
+        this.details = new SectorDetails();
         this.unsubs = [];
     }
 
@@ -126,11 +128,38 @@ export default class DrawBridge {
         this.syncCard();
     }
 
+    /**
+     * Клик по сектору открывает окно с NFT кошелька.
+     * Во время вращения клики игнорируем — иначе окно перекроет розыгрыш.
+     */
+    bindPointer(renderer) {
+        const canvas = renderer.canvas;
+        if (!canvas || canvas._oracleBound) return;
+        if (typeof canvas.addEventListener !== "function") return;
+        canvas._oracleBound = true;
+
+        canvas.addEventListener("click", (e) => {
+            if (this.engine.state.revealing) return;
+            const sector = renderer.sectorAt(e.clientX, e.clientY);
+            if (!sector) return;
+            const total = renderer.model ? renderer.model.total : 0;
+            this.details.open(sector, renderer.theme, this.ui, total);
+        });
+
+        canvas.addEventListener("mousemove", (e) => {
+            if (this.engine.state.revealing) { canvas.style.cursor = ""; return; }
+            canvas.style.cursor = renderer.sectorAt(e.clientX, e.clientY) ? "pointer" : "";
+        });
+
+        canvas.addEventListener("mouseleave", () => { canvas.style.cursor = ""; });
+    }
+
     /** Показать колесо в холостом вращении, даже если данных ещё нет */
     startIdle() {
         const r = this.ensure(this.engine.pool);
         if (!r) { setTimeout(() => this.startIdle(), 400); return; }   // канвас ещё не в DOM
         if (!r.model) r.setModel(this.liveModel || null);
+        this.bindPointer(r);
         r.idle();
         r.start();
         if (window.oracleDrawV2) window.oracleDrawV2.ownsWheel = true;
