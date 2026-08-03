@@ -29,17 +29,37 @@ let fails = 0;
 const ok   = (m) => console.log('  ok   ' + m);
 const bad  = (m) => { fails++; console.log('  FAIL ' + m); };
 
-const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
+const PKG_PATH = path.join(ROOT, 'package.json');
+if (!fs.existsSync(PKG_PATH)) {
+  console.error('Не нашёл package.json (искал в ' + PKG_PATH + ').');
+  console.error('Запускать нужно из корня репозитория: node dev/_preflight.js');
+  process.exit(1);
+}
+const pkg = JSON.parse(fs.readFileSync(PKG_PATH, 'utf8'));
 const isESM = pkg.type === 'module';
 console.log('package.json: "type": ' + JSON.stringify(pkg.type || 'commonjs') +
             '  → репо ' + (isESM ? 'ESM' : 'CommonJS'));
 
-// Скрипты, которые запускает GitHub Actions. Добавляй сюда новые.
-const SCRIPTS = [
-  'lottery-draw.js',
-  'round-snapshot.js',
-  '.github/scripts/update-free-entries.js'
-].filter(f => fs.existsSync(path.join(ROOT, f)));
+// Файлы Node в репозитории — ищем сами, а не списком.
+// Список был захардкожен, и ровно поэтому проверка прошла мимо dev/_test_*.js
+// с require() внутри: CI упал на них уже ПОСЛЕ зелёного предполёта.
+// Смотрим корень, .github/scripts и dev — три места, где живёт серверный код.
+// Фронт (assets/) сюда не входит: это браузерные скрипты, у них свои правила.
+const SCAN_DIRS = ['.', '.github/scripts', 'dev'];
+
+function listScripts(dir) {
+  const full = path.join(ROOT, dir);
+  if (!fs.existsSync(full)) return [];
+  return fs.readdirSync(full)
+    .filter(f => /\.(js|cjs|mjs)$/.test(f))
+    .map(f => (dir === '.' ? f : dir + '/' + f))
+    // Сам себя не проверяем: в этом файле слова require( и module.exports
+    // лежат как ДАННЫЕ (шаблоны поиска), и проверка споткнулась бы о них.
+    .filter(f => !f.endsWith('_preflight.js'));
+}
+
+const SCRIPTS = SCAN_DIRS.flatMap(listScripts);
+console.log('Найдено скриптов: ' + SCRIPTS.length + '  (' + SCAN_DIRS.join(', ') + ')');
 
 /** Грубо срезать комментарии, чтобы не ловить слова из пояснений */
 function stripComments(src) {
@@ -50,7 +70,12 @@ console.log('\n[1] Система модулей');
 for (const rel of SCRIPTS) {
   const src = stripComments(fs.readFileSync(path.join(ROOT, rel), 'utf8'));
   const problems = [];
-  if (isESM) {
+  // Расширение перебивает package.json: .cjs всегда CommonJS, .mjs всегда ESM.
+  // Именно так чинились dev/_test_*.js — переименованием, а не переписыванием.
+  const fileIsESM = rel.endsWith('.mjs') ? true
+                  : rel.endsWith('.cjs') ? false
+                  : isESM;
+  if (fileIsESM) {
     if (/\brequire\s*\(/.test(src))     problems.push('require(');
     if (/\bmodule\.exports\b/.test(src)) problems.push('module.exports');
     if (/\b__dirname\b/.test(src))       problems.push('__dirname (в ESM не определён)');
@@ -70,7 +95,7 @@ for (const rel of SCRIPTS) {
   if (!specs.length) { ok(rel + ' — относительных импортов нет'); continue; }
   for (const spec of specs) {
     const target = path.resolve(dir, spec);
-    if (!path.extname(spec)) {
+    if (!path.extname(spec) && !rel.endsWith('.cjs')) {
       bad(rel + ' → ' + spec + ' — в ESM расширение обязательно (.js)');
     } else if (!fs.existsSync(target)) {
       bad(rel + ' → ' + spec + ' — файла нет: ' + target);
