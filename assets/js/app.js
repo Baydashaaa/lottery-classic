@@ -2147,6 +2147,34 @@ function buildRoundParticipants() {
   return pairs;
 }
 
+/**
+ * NFT конкретного кошелька в текущем раунде.
+ * Билеты развёрнуты по одному на entry, поэтому группируем по tokenId
+ * из txhash вида mint:<tokenId>:<i> и считаем, сколько entries дал каждый.
+ */
+function roundNftsFor(address) {
+  const tickets = currentLottery === 'daily' ? dailyTickets : weeklyTickets;
+  const byToken = new Map();
+
+  for (const t of tickets) {
+    if (t.address !== address) continue;
+    const m  = /^mint:([^:]+):/.exec(t.txhash || '');
+    const id = m ? m[1] : (t.txhash || 'unknown');
+    if (!byToken.has(id)) {
+      byToken.set(id, {
+        tokenId: m ? m[1] : null,
+        tier:    (t.tier || 'common').toLowerCase(),
+        entries: 0,
+        time:    t.time || 0
+      });
+    }
+    byToken.get(id).entries++;
+  }
+
+  return Array.from(byToken.values())
+    .sort((a, b) => b.entries - a.entries || (a.time - b.time));
+}
+
 function updateWheelTickets() {
   const tickets  = currentLottery === 'daily' ? dailyTickets : weeklyTickets;
   const isDaily  = currentLottery === 'daily';
@@ -2277,6 +2305,7 @@ window.OracleDrawUI = {
   // берётся из снимка rounds/<round_id>.json — он авторитетен для
   // winner_index, а этот список только предварительный показ.
   participants:   function() { return roundParticipants; },
+  walletNfts:     function(addr) { return roundNftsFor(addr); },
   pool:           function() { return currentLottery; },
 
   wakeOracleEye:  function(on) {
