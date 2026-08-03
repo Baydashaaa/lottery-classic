@@ -95,6 +95,9 @@ export default class DrawBridge {
         const w = round.winners[0];
         this.lastCard = {
             address: w.address, prize: w.prize, tx: w.tx,
+            // дата и пул нужны карточке, чтобы подписать раунд и опознать
+            // результат недельной давности как несвежий
+            date: round.date, pool: round.pool,
             label: round.winners.length > 1 ? "1st Place" : null
         };
         ui.card(this.lastCard);
@@ -274,6 +277,7 @@ export default class DrawBridge {
             if (this.ui) {
                 this.lastCard = {
                     address: w.address, prize: w.prize, tx: w.tx,
+                    date: this.round.date, pool: this.round.pool,
                     label: this.round.winners.length > 1 ? placeLabel(w.place) : null
                 };
                 this.ui.card(this.lastCard);
@@ -302,7 +306,8 @@ export default class DrawBridge {
             model ? (round.date ? "Draw of " + round.date : "Payout sent automatically")
                   : "Result verified on-chain — replay unavailable for this round",
             "#66ffaa");
-        ui.card({ address: w.address, prize: w.prize, tx: w.tx, label: null });
+        ui.card({ address: w.address, prize: w.prize, tx: w.tx,
+                  date: round.date, pool: round.pool, label: null });
     }
 
     showRollover(round) {
