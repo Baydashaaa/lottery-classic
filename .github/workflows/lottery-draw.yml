@@ -48,6 +48,12 @@ jobs:
             fi
           fi
 
+      # Ловит поломки загрузки модулей ДО того, как скрипт тронет деньги.
+      # 2-3 августа 2026 розыгрыши не состоялись из-за require() в ESM-репо:
+      # `node --check` такое не видит, падает только реальный импорт.
+      - name: Preflight — модули загружаются
+        run: node dev/_preflight.js
+
       - name: Run draw
         env:
           DRAW_TYPE: ${{ steps.draw_type.outputs.type }}
