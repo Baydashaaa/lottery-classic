@@ -2256,17 +2256,25 @@ function showWinnerCard(data) {
     if (head && head.nextSibling) card.insertBefore(r, head.nextSibling);
     else card.appendChild(r);
   }
+  // Пул подписывается ВСЕГДА. 3 августа на вкладке Weekly висела карточка
+  // daily-раунда, и понять это можно было только разбором winners.json.
+  // С подписью подмена видна сразу.
+  const pool = (data.pool === 'weekly' || data.pool === 'daily')
+    ? data.pool
+    : (window.currentLottery === 'weekly' ? 'weekly' : 'daily');
+  const poolName  = pool === 'weekly' ? 'Weekly Draw' : 'Daily Draw';
+  const poolColor = pool === 'weekly' ? 'rgba(167,139,250,0.95)' : 'rgba(212,160,23,0.95)';
+
   const label = drawDateLabel(data.date);
-  const stale = isStaleRound(data.date, data.pool);
-  if (!label) {
-    r.style.display = 'none';
-  } else {
-    r.style.display = 'block';
-    r.style.color = stale ? 'rgba(255,180,80,0.95)' : 'var(--muted)';
-    r.textContent = stale
-      ? 'Round of ' + label + ' · latest draw not recorded yet'
-      : 'Round of ' + label;
-  }
+  const stale = isStaleRound(data.date, pool);
+
+  const sep  = '<span style="color:var(--muted);opacity:0.45;"> · </span>';
+  let html = '<span style="color:' + poolColor + ';font-weight:600;">' + poolName + '</span>';
+  if (label) html += sep + '<span style="color:var(--muted);">Round of ' + label + '</span>';
+  if (stale) html += '<div style="margin-top:4px;color:rgba(255,180,80,0.95);">' +
+                     'Latest draw not recorded yet</div>';
+  r.innerHTML = html;
+  r.style.display = 'block';
 
   if (a) a.textContent = data.address || '-';
   if (p) p.textContent = (data.prize ? fmt(data.prize) + ' LUNC' : '-') +
