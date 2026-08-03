@@ -1,7 +1,7 @@
 /* Oracle Draw V2 — собранный бандл. НЕ РЕДАКТИРОВАТЬ.
    Источники: assets/js/wheel/ и assets/js/draw-v2/
    Пересобрать: node dev/_build_bundle.js
-   Версия сборки: 202608031625 */
+   Версия сборки: 202608032223 */
 
 /* ── WheelTheme.js ─────────────────────────────────── */
 /**
@@ -1981,14 +1981,27 @@ function msToNextDeadline(pool, now = Date.now()) {
     return next === null ? null : next - now;
 }
 
-/** "05:12:44" из миллисекунд — для UI, чтобы не считать в трёх местах */
+/**
+ * Отсчёт для UI. Формат ОБЩИЙ с assets/js/draw-schedule.js — тем файлом,
+ * по которому считают treasury.js и app.js:
+ *   больше суток → "1d 02:57"
+ *   меньше суток → "02:57:23"
+ * Раньше здесь часы не сворачивались в дни и при остатке больше суток
+ * выходило "26:57:00" — четвёртый формат одного и того же числа.
+ * Арифметика дедлайнов в этом файле своя намеренно: бандл — ES-модуль и
+ * не должен зависеть от порядка загрузки обычных <script>. Совпадение с
+ * draw-schedule.js стережёт dev/_test_schedule.js — он сверяет обе
+ * реализации почасово на две недели вперёд и падает при расхождении.
+ */
 function formatCountdown(ms) {
-    if (ms === null || ms < 0) ms = 0;
+    if (ms === null || !(ms > 0)) return "00:00:00";
     const total = Math.floor(ms / 1000);
-    const h = String(Math.floor(total / 3600)).padStart(2, "0");
-    const m = String(Math.floor((total % 3600) / 60)).padStart(2, "0");
-    const s = String(total % 60).padStart(2, "0");
-    return `${h}:${m}:${s}`;
+    const d = Math.floor(total / 86400);
+    const h = Math.floor((total % 86400) / 3600);
+    const m = Math.floor((total % 3600) / 60);
+    const s = total % 60;
+    const p = (n) => String(n).padStart(2, "0");
+    return d > 0 ? `${d}d ${p(h)}:${p(m)}` : `${p(h)}:${p(m)}:${p(s)}`;
 }
 
 
@@ -2961,6 +2974,9 @@ class DrawBridge {
         const w = round.winners[0];
         this.lastCard = {
             address: w.address, prize: w.prize, tx: w.tx,
+            // дата и пул нужны карточке, чтобы подписать раунд и опознать
+            // результат недельной давности как несвежий
+            date: round.date, pool: round.pool,
             label: round.winners.length > 1 ? "1st Place" : null
         };
         ui.card(this.lastCard);
@@ -3140,6 +3156,7 @@ class DrawBridge {
             if (this.ui) {
                 this.lastCard = {
                     address: w.address, prize: w.prize, tx: w.tx,
+                    date: this.round.date, pool: this.round.pool,
                     label: this.round.winners.length > 1 ? placeLabel(w.place) : null
                 };
                 this.ui.card(this.lastCard);
@@ -3168,7 +3185,8 @@ class DrawBridge {
             model ? (round.date ? "Draw of " + round.date : "Payout sent automatically")
                   : "Result verified on-chain — replay unavailable for this round",
             "#66ffaa");
-        ui.card({ address: w.address, prize: w.prize, tx: w.tx, label: null });
+        ui.card({ address: w.address, prize: w.prize, tx: w.tx,
+                  date: round.date, pool: round.pool, label: null });
     }
 
     showRollover(round) {
