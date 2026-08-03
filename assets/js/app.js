@@ -2213,12 +2213,60 @@ function updateWheelTickets() {
 // и он честно помечен как демо.
 
 // ── Winner card — единственный писатель карточки результата ──────────────────
+// Человекочитаемая дата раунда: '2026-07-27' → '27 Jul 2026'
+function drawDateLabel(iso) {
+  if (!iso) return null;
+  const ts = Date.parse(iso + 'T20:00:00Z');
+  if (Number.isNaN(ts)) return iso;
+  const d = new Date(ts);
+  const M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return d.getUTCDate() + ' ' + M[d.getUTCMonth()] + ' ' + d.getUTCFullYear();
+}
+
+// Показанный результат — от последнего ожидавшегося розыгрыша, или он старше?
+// Если старше, значит свежий розыгрыш ещё не записан в winners.json (упал,
+// не отработал крон, не доехал коммит). Именно так 3 августа победитель
+// недельной давности читался как свежий.
+function isStaleRound(iso, pool) {
+  if (!iso || !window.DRAW_SCHEDULE) return false;
+  const prev = window.DRAW_SCHEDULE.prev(pool === 'weekly' ? 'weekly' : 'daily');
+  if (!prev) return false;
+  const ts = Date.parse(iso + 'T20:00:00Z');
+  if (Number.isNaN(ts)) return false;
+  return ts < prev.getTime() - 60000;   // минута допуска
+}
+
 function showWinnerCard(data) {
   const card = document.getElementById('wheel-winner-card');
   if (!card) return;
   const a = document.getElementById('ww-address');
   const p = document.getElementById('ww-prize');
   const t = document.getElementById('ww-tx');
+
+  // ── Строка раунда ────────────────────────────────────────────────────────
+  // Создаётся здесь, а не в index.html: карточка уже выложена, и лишняя
+  // правка разметки означала бы ещё один деплой фронта.
+  let r = document.getElementById('ww-round');
+  if (!r) {
+    r = document.createElement('div');
+    r.id = 'ww-round';
+    r.style.cssText = 'font-size:11px;letter-spacing:0.08em;margin-bottom:14px;';
+    // сразу под шапкой «✦ Winner Selected ✦»
+    const head = card.firstElementChild;
+    if (head && head.nextSibling) card.insertBefore(r, head.nextSibling);
+    else card.appendChild(r);
+  }
+  const label = drawDateLabel(data.date);
+  const stale = isStaleRound(data.date, data.pool);
+  if (!label) {
+    r.style.display = 'none';
+  } else {
+    r.style.display = 'block';
+    r.style.color = stale ? 'rgba(255,180,80,0.95)' : 'var(--muted)';
+    r.textContent = stale
+      ? 'Round of ' + label + ' · latest draw not recorded yet'
+      : 'Round of ' + label;
+  }
 
   if (a) a.textContent = data.address || '-';
   if (p) p.textContent = (data.prize ? fmt(data.prize) + ' LUNC' : '-') +
