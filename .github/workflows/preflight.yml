@@ -1,0 +1,46 @@
+name: Preflight — скрипты розыгрыша
+
+# Смысл шага: 2 и 3 августа 2026 два розыгрыша подряд не состоялись из-за
+# require() в репо с "type": "module". Поломка приехала коммитом, а выяснилась
+# только через двое суток по пустому winners.json. Эта проверка гоняется
+# на каждый push, затрагивающий скрипты, — тогда красный крест виден сразу.
+
+on:
+  push:
+    paths:
+      - 'lottery-draw.js'
+      - 'round-snapshot.js'
+      - '.github/scripts/**.js'
+      - '.github/workflows/lottery-draw.yml'
+      - 'package.json'
+      - 'dev/_preflight.js'
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  preflight:
+    name: Модули загружаются
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # Те же пакеты, что ставит боевой workflow: без них import упадёт
+      # на @cosmjs и проверка загрузки будет бессмысленной
+      - name: Install dependencies
+        run: npm install @cosmjs/proto-signing @cosmjs/stargate @cosmjs/crypto
+
+      - name: Preflight
+        run: node dev/_preflight.js
+
+      # Расписание: единый источник времени + сверка с DrawClock бандла
+      - name: Schedule tests
+        run: |
+          if [ -f dev/_test_schedule.js ]; then
+            node dev/_test_schedule.js
+          else
+            echo "dev/_test_schedule.js отсутствует — пропускаю"
+          fi
