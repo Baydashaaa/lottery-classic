@@ -1,7 +1,7 @@
 /* Oracle Draw V2 — собранный бандл. НЕ РЕДАКТИРОВАТЬ.
    Источники: assets/js/wheel/ и assets/js/draw-v2/
    Пересобрать: node dev/_build_bundle.js
-   Версия сборки: 202608031329 */
+   Версия сборки: 202608031625 */
 
 /* ── WheelTheme.js ─────────────────────────────────── */
 /**
@@ -3040,6 +3040,16 @@ class DrawBridge {
         // Пустой раунд — тоже состояние: колесо крутится вхолостую и пишет
         // «No entries yet». Раньше здесь стоял return, и канвас оставался
         // чёрным до первого минта.
+        // Страница и движок должны быть на одном пуле. Раньше цвет колеса
+        // брался из ui.pool(), а фаза и отсчёт оставались на том пуле, с
+        // которым движок стартовал: на вкладке Weekly колесо было
+        // фиолетовым, а «Next draw in» показывал дедлайн daily.
+        const pagePool = ui.pool ? ui.pool() : this.engine.pool;
+        if (pagePool && pagePool !== this.engine.pool) {
+            this.engine.setPool(pagePool);
+            this.lastCard = null;
+        }
+
         const pairs = (ui.participants() || []).filter(p => p && p[1] > 0);
         const model = new TicketModel({ tickets: pairs }, { maxSectors: 48 });
 
