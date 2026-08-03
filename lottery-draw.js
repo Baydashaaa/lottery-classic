@@ -23,6 +23,11 @@ import { SigningStargateClient }    from '@cosmjs/stargate';
 import crypto from 'crypto';
 import fs     from 'fs';
 import path   from 'path';
+// Снимок билетов раунда. ВАЖНО: package.json содержит "type": "module",
+// весь репо — ESM. Здесь обязан быть import с ЯВНЫМ расширением .js;
+// require() падает с ReferenceError и роняет розыгрыш целиком
+// (так пропали daily 2026-08-02 и weekly 2026-08-03).
+import { writeRoundSnapshot } from './round-snapshot.js';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 const DRAW_TYPE       = process.env.DRAW_TYPE || 'daily';
@@ -67,7 +72,6 @@ const LCD_NODES = [
   'https://terra-classic-lcd.hexxagon.io',
 ];
 
-const { writeRoundSnapshot } = require('./round-snapshot');
 
 const WINNERS_PATH       = path.resolve('winners.json');
 const FREE_ENTRIES_PATH  = path.resolve('free-entries.json');
