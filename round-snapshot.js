@@ -1,7 +1,9 @@
 /**
  * Oracle Draw — снимок билетов раунда (сторона производителя)
  *
- * Кладётся в .github/scripts/ рядом с lottery-draw.js.
+ * ES-модуль: package.json репозитория содержит "type": "module".
+ * Импорт только через import, экспорт только через export — CommonJS здесь
+ * роняет весь розыгрыш на старте (так пропали 2 и 3 августа 2026).
  *
  * Зачем: колесо на сайте должно быть ТЕМ ЖЕ массивом билетов, по которому
  * считался winner_index. Восстановить его после розыгрыша нельзя —
@@ -19,8 +21,8 @@
  * При skipped-раунде снимок не пишется.
  */
 
-const fs = require("fs");
-const path = require("path");
+import fs from "fs";
+import path from "path";
 
 const OUT_DIR = path.join(process.cwd(), "rounds");
 
@@ -91,4 +93,4 @@ function writeRoundSnapshot({ roundId, pool, tickets, blockHash, blockHeight, wi
     return file;
 }
 
-module.exports = { writeRoundSnapshot, packTickets };
+export { writeRoundSnapshot, packTickets };
