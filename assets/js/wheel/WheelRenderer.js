@@ -343,6 +343,36 @@ export default class WheelRenderer {
         ctx.restore();
     }
 
+    /**
+     * Сектор под точкой экрана. Координаты клиентские (из события мыши),
+     * переводим их в систему канваса с учётом текущего угла вращения.
+     * Возвращает null, если точка вне поля секторов или модели нет.
+     */
+    sectorAt(clientX, clientY) {
+        if (!this.model || !this.model.sectors.length || !this.canvas) return null;
+        const rect = this.canvas.getBoundingClientRect();
+        if (!rect.width) return null;
+
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const dx = clientX - cx;
+        const dy = clientY - cy;
+        const dist = Math.hypot(dx, dy);
+
+        const rOuter = rect.width / 2 - 4 * (rect.width / this.canvas.width);
+        const ringW = rect.width * this.theme.ring.width;
+        const rFace = rOuter - ringW;
+        if (dist > rFace || dist < rFace * 0.30) return null;   // обод и ядро не кликаются
+
+        const a = (((Math.atan2(dy, dx) - this.angle) % TAU) + TAU) % TAU;
+        for (const s of this.model.sectors) {
+            const start = ((s.startAngle % TAU) + TAU) % TAU;
+            const end = start + s.span;
+            if ((a >= start && a < end) || (end > TAU && a < end - TAU)) return s;
+        }
+        return null;
+    }
+
     /** Какой сектор сейчас под кристаллом */
     #activeSector() {
         if (!this.model || !this.model.sectors.length) return null;
