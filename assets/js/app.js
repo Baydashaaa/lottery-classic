@@ -2115,22 +2115,28 @@ function buildRoundParticipants() {
   const isDaily = currentLottery === 'daily';
   const pairs = [];
 
-  // Группируем подряд идущие билеты одного минта: порядок минтов
-  // сохраняется, поэтому колесо у всех выглядит одинаково.
+  // txhash имеет вид mint:<tokenId>:<i> — по нему группируем билеты
+  // одного NFT и достаём его номер.
+  //
+  // Тир берём из самого билета (t.tier), а НЕ из размера группы:
+  // если человек сминтил пять common одной транзакцией, группа из пяти
+  // билетов выглядела бы как rare, хотя это пять обычных масок.
   let lastKey = null;
   for (const t of tickets) {
-    const mintKey = (t.txhash || '').replace(/:[0-9]+$/, '');
-    const last = pairs[pairs.length - 1];
-    if (last && mintKey && mintKey === lastKey && last[0] === t.address) last[1]++;
-    else { pairs.push([t.address, 1, null, 'common']); lastKey = mintKey; }
+    const m       = /^mint:([^:]+):/.exec(t.txhash || '');
+    const key     = m ? 'mint:' + m[1] : (t.txhash || '');
+    const tokenId = m ? m[1] : null;
+    const last    = pairs[pairs.length - 1];
+
+    if (last && key && key === lastKey && last[0] === t.address) {
+      last[1]++;
+    } else {
+      pairs.push([t.address, 1, tokenId, (t.tier || 'common').toLowerCase()]);
+      lastKey = key;
+    }
   }
 
-  // Тир по размеру минта — 1 / 5 / 10 билетов
-  for (const p of pairs) {
-    p[3] = p[1] >= 10 ? 'legendary' : p[1] >= 5 ? 'rare' : 'common';
-  }
-
-  // Free entries (только weekly и только если есть платные участники) —
+  // Free entries (только weekly и только при наличии платных участников) —
   // так же, как их добавляет addFreeEntries в lottery-draw.js
   if (!isDaily && pairs.length) {
     for (const [addr, e] of Object.entries(freeEntriesData)) {
