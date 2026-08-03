@@ -174,6 +174,16 @@ export default class DrawBridge {
         // Пустой раунд — тоже состояние: колесо крутится вхолостую и пишет
         // «No entries yet». Раньше здесь стоял return, и канвас оставался
         // чёрным до первого минта.
+        // Страница и движок должны быть на одном пуле. Раньше цвет колеса
+        // брался из ui.pool(), а фаза и отсчёт оставались на том пуле, с
+        // которым движок стартовал: на вкладке Weekly колесо было
+        // фиолетовым, а «Next draw in» показывал дедлайн daily.
+        const pagePool = ui.pool ? ui.pool() : this.engine.pool;
+        if (pagePool && pagePool !== this.engine.pool) {
+            this.engine.setPool(pagePool);
+            this.lastCard = null;
+        }
+
         const pairs = (ui.participants() || []).filter(p => p && p[1] > 0);
         const model = new TicketModel({ tickets: pairs }, { maxSectors: 48 });
 
