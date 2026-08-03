@@ -64,12 +64,25 @@ export function msToNextDeadline(pool, now = Date.now()) {
     return next === null ? null : next - now;
 }
 
-/** "05:12:44" из миллисекунд — для UI, чтобы не считать в трёх местах */
+/**
+ * Отсчёт для UI. Формат ОБЩИЙ с assets/js/draw-schedule.js — тем файлом,
+ * по которому считают treasury.js и app.js:
+ *   больше суток → "1d 02:57"
+ *   меньше суток → "02:57:23"
+ * Раньше здесь часы не сворачивались в дни и при остатке больше суток
+ * выходило "26:57:00" — четвёртый формат одного и того же числа.
+ * Арифметика дедлайнов в этом файле своя намеренно: бандл — ES-модуль и
+ * не должен зависеть от порядка загрузки обычных <script>. Совпадение с
+ * draw-schedule.js стережёт dev/_test_schedule.js — он сверяет обе
+ * реализации почасово на две недели вперёд и падает при расхождении.
+ */
 export function formatCountdown(ms) {
-    if (ms === null || ms < 0) ms = 0;
+    if (ms === null || !(ms > 0)) return "00:00:00";
     const total = Math.floor(ms / 1000);
-    const h = String(Math.floor(total / 3600)).padStart(2, "0");
-    const m = String(Math.floor((total % 3600) / 60)).padStart(2, "0");
-    const s = String(total % 60).padStart(2, "0");
-    return `${h}:${m}:${s}`;
+    const d = Math.floor(total / 86400);
+    const h = Math.floor((total % 86400) / 3600);
+    const m = Math.floor((total % 3600) / 60);
+    const s = total % 60;
+    const p = (n) => String(n).padStart(2, "0");
+    return d > 0 ? `${d}d ${p(h)}:${p(m)}` : `${p(h)}:${p(m)}:${p(s)}`;
 }
