@@ -27,7 +27,10 @@ const DAILY = {
     spoke:     "rgba(244,212,119,0.16)",
 
     core:      { r1: "#f4d477", r2: "#c89a3c", r3: "rgba(244,212,119,0.45)",
-                 hub: "#070b14", pulse: "rgba(244,212,119,0.5)", emblem: "oracle" },
+                 hub: "#070b14", pulse: "rgba(244,212,119,0.5)", emblem: "wheel",
+                 // Подставь сюда файл логотипа, и центр возьмёт его:
+                 // emblemSrc: "/assets/img/logo-wheel.svg",
+                 emblemSrc: null },
 
     pointer:   { frame: "#f4d477", frameEdge: "#8a6414", core: "#fff6dc",
                  energy: "#ffd166", glow: "rgba(255,209,102,0.85)" },
@@ -49,7 +52,7 @@ const WEEKLY = {
     spoke:     "rgba(185,140,255,0.16)",
 
     core:      { r1: "#e8d6ff", r2: "#a06cff", r3: "rgba(185,140,255,0.45)",
-                 hub: "#080614", pulse: "rgba(200,160,255,0.5)", emblem: "trophy" },
+                 hub: "#080614", pulse: "rgba(200,160,255,0.5)", emblem: "trophy", emblemSrc: null },
 
     pointer:   { frame: "#c8a2ff", frameEdge: "#4a2b8f", core: "#ffffff",
                  energy: "#e0c8ff", glow: "rgba(200,160,255,0.85)" },
