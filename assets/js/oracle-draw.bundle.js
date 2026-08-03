@@ -1,7 +1,7 @@
 /* Oracle Draw V2 — собранный бандл. НЕ РЕДАКТИРОВАТЬ.
    Источники: assets/js/wheel/ и assets/js/draw-v2/
    Пересобрать: node dev/_build_bundle.js
-   Версия сборки: 202608031112 */
+   Версия сборки: 202608031156 */
 
 /* ── WheelTheme.js ─────────────────────────────────── */
 /**
@@ -361,12 +361,26 @@ function detailFor(sector, r) {
  * У кошелька с несколькими NFT номер токена один из нескольких, поэтому
  * при спорах о том, «чей это сектор», ordinal однозначнее.
  */
-const LABEL_MODE = { value: "token" };
+const LABEL_MODE = { value: "ordinal" };
 
-function bigLabel(s, meta) {
-    if (LABEL_MODE.value === "ordinal") return "№" + s.number;
-    if (meta.tokenId !== undefined && meta.tokenId !== null) return "#" + meta.tokenId;
-    return "№" + s.number;
+/**
+ * Что стоит в кружке. Без «#» и «№» — символ рядом с цифрой в маленьком
+ * круге читается плохо, а смысл цифры понятен из контекста.
+ *
+ *   "ordinal" — порядковый номер кошелька в раунде: 1, 2, 3…
+ *               По умолчанию: он короткий при любом числе участников.
+ *   "token"   — номер NFT без тира: common-11 → 11
+ *   "raw"     — tokenId как есть (для отладки)
+ */
+function badgeText(s, meta) {
+    if (LABEL_MODE.value === "ordinal") return String(s.number);
+
+    const id = meta.tokenId;
+    if (id === undefined || id === null) return String(s.number);
+    if (LABEL_MODE.value === "raw") return String(id);
+
+    const num = String(id).match(/(\d+)\s*$/);
+    return num ? num[1] : String(s.number);
 }
 
 /** Оставлено пустым: картинки в секторах убраны, вызовы не ломаются. */
@@ -460,14 +474,19 @@ class WheelSector {
      */
     #content(ctx, cx, cy, R, s, meta, rar, mid, detail, state, quality) {
         const th = this.theme;
-        const rr = R * 0.68;
+        // Наклон подписи вдоль биссектрисы нужен узким секторам — там
+        // иначе не помещается. Широкому он только вредит: у одного
+        // участника на весь круг «биссектриса» произвольна, и подпись
+        // уезжает под случайным углом. От 100° пишем горизонтально.
+        const wide = s.span > (100 * Math.PI / 180);
+        const rr = wide ? R * 0.52 : R * 0.68;
         const x = cx + Math.cos(mid) * rr;
         const y = cy + Math.sin(mid) * rr;
         const flip = Math.cos(mid) < 0;
 
         ctx.save();
         ctx.translate(x, y);
-        ctx.rotate(mid + (flip ? Math.PI : 0));
+        if (!wide) ctx.rotate(mid + (flip ? Math.PI : 0));
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
 
@@ -485,33 +504,38 @@ class WheelSector {
             return;
         }
 
-        // Крупный номер — единственный обязательный элемент сектора.
-        ctx.fillStyle = state.winner ? th.text.accent : th.text.primary;
-        ctx.font = `800 ${unit * 1.6}px ui-sans-serif, system-ui, sans-serif`;
+        // Номер сектора в кружке — визуальный якорь. Найти себя человек
+        // всё равно может по адресу ниже, поэтому цифре достаточно быть
+        // маленькой и аккуратной. Обводка кружка несёт редкость.
+        const badge = badgeText(s, meta);
+        const rB = unit * (badge.length > 2 ? 1.28 : 1.15);
+        const cyB = cursor + rB * 0.05;
+
+        ctx.beginPath();
+        ctx.arc(0, cyB, rB, 0, TAU);
+        ctx.fillStyle = hexA(rar.base, state.winner ? 0.28 : 0.14);
+        ctx.fill();
+
         if (quality.bloom && state.active > 0.4) {
             ctx.shadowColor = rar.glow;
-            ctx.shadowBlur = 14 * quality.shadowBlur * state.active;
+            ctx.shadowBlur = 12 * quality.shadowBlur * state.active;
         }
-        ctx.fillText(bigLabel(s, meta), 0, cursor);
-        ctx.shadowBlur = 0;
-        cursor += unit * 1.6;
-
-        // тонкая черта цвета редкости — вместо картинки
-        ctx.strokeStyle = rar.base;
-        ctx.globalAlpha = (state.dim ?? 1) * 0.75;
-        ctx.lineWidth = 1.4;
-        ctx.beginPath();
-        ctx.moveTo(-unit * 1.1, cursor - unit * 0.62);
-        ctx.lineTo(unit * 1.1, cursor - unit * 0.62);
+        ctx.strokeStyle = state.winner ? th.text.accent : rar.base;
+        ctx.lineWidth = Math.max(1.2, unit * 0.14);
         ctx.stroke();
-        ctx.globalAlpha = state.dim ?? 1;
+        ctx.shadowBlur = 0;
+
+        ctx.fillStyle = state.winner ? th.text.accent : th.text.primary;
+        ctx.font = `800 ${unit * (badge.length > 2 ? 0.95 : 1.15)}px ui-sans-serif, system-ui, sans-serif`;
+        ctx.fillText(badge, 0, cyB);
+
+        cursor = cyB + rB + unit * 0.95;
 
         if (detail === DETAIL.FULL) {
             ctx.fillStyle = rar.base;
             ctx.font = `${unit * 0.92}px ui-monospace, monospace`;
             ctx.fillText(shortAddr(s.address), 0, cursor);
-            cursor += unit * 1.1;
-
+            cursor += unit * 1.05;
         }
 
         ctx.fillStyle = th.text.secondary;
