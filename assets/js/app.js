@@ -2281,7 +2281,7 @@ function showWinnerCard(data) {
                          (data.label ? ' · ' + data.label : '');
   if (t) {
     t.innerHTML = data.tx
-      ? '<a href="https://finder.terra-classic.hexxagon.io/mainnet/tx/' + data.tx +
+      ? '<a href="https://finder.terraport.finance/mainnet/tx/' + data.tx +
         '" target="_blank" rel="noopener" style="font-size:11px;color:rgba(0,200,255,0.8);">View transaction</a>'
       : (data.label ? '<span style="font-size:11px;color:rgba(167,139,250,0.6);">' + data.label + '</span>' : '');
   }
