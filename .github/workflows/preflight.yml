@@ -14,7 +14,7 @@ on:
       - '.github/scripts/**.js'
       - '.github/workflows/lottery-draw.yml'
       - 'package.json'
-      - 'dev/_preflight.js'
+      - 'dev/**'
   pull_request:
   workflow_dispatch:
 
@@ -40,17 +40,17 @@ jobs:
       # Перенос free entries при несостоявшемся розыгрыше + подпись раунда
       - name: Rollover tests
         run: |
-          if [ -f dev/_test_rollover.js ]; then
-            node dev/_test_rollover.js
+          if [ -f dev/_test_rollover.cjs ]; then
+            node dev/_test_rollover.cjs
           else
-            echo "dev/_test_rollover.js отсутствует — пропускаю"
+            echo "dev/_test_rollover.cjs отсутствует — пропускаю"
           fi
 
       # Расписание: единый источник времени + сверка с DrawClock бандла
       - name: Schedule tests
         run: |
-          if [ -f dev/_test_schedule.js ]; then
-            node dev/_test_schedule.js
+          if [ -f dev/_test_schedule.cjs ]; then
+            node dev/_test_schedule.cjs
           else
-            echo "dev/_test_schedule.js отсутствует — пропускаю"
+            echo "dev/_test_schedule.cjs отсутствует — пропускаю"
           fi
