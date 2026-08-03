@@ -9,6 +9,7 @@ on:
   push:
     paths:
       - 'lottery-draw.js'
+      - 'free-entries.json'
       - 'round-snapshot.js'
       - '.github/scripts/**.js'
       - '.github/workflows/lottery-draw.yml'
@@ -35,6 +36,15 @@ jobs:
 
       - name: Preflight
         run: node dev/_preflight.js
+
+      # Перенос free entries при несостоявшемся розыгрыше + подпись раунда
+      - name: Rollover tests
+        run: |
+          if [ -f dev/_test_rollover.js ]; then
+            node dev/_test_rollover.js
+          else
+            echo "dev/_test_rollover.js отсутствует — пропускаю"
+          fi
 
       # Расписание: единый источник времени + сверка с DrawClock бандла
       - name: Schedule tests
