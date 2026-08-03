@@ -41,6 +41,7 @@ const FCD_NODES = [
 ];
 
 const JSON_PATH = path.resolve('free-entries.json');
+const WINNERS_PATH = path.resolve('winners.json');
 
 // ── Weekly round boundary ─────────────────────────────────────────────────────
 // Start of the current weekly draw round (Mon 20:00 UTC). Identical to the
@@ -53,6 +54,36 @@ function weeklyRoundStartSec() {
   d.setUTCDate(d.getUTCDate() - diffToMon);
   if (now.getTime() < d.getTime()) d.setUTCDate(d.getUTCDate() - 7);
   return Math.floor(d.getTime() / 1000);
+}
+
+// ── Граница по ФАКТУ розыгрыша ───────────────────────────────────────────────
+// Дедлайн последнего weekly-розыгрыша, который РЕАЛЬНО состоялся.
+//
+// Зачем отдельно от часов: 3 августа 2026 недельный розыгрыш упал (require в
+// ESM-репо), в winners.json не появилось ничего — а генератор всё равно сдвинул
+// границу на понедельник 20:00 и обнулил все входы. Люди потеряли входы за
+// раунд, которого не было. Часы не знают, состоялся розыгрыш или нет; знает
+// только winners.json.
+//
+// skipped-раунды здесь НЕ считаются состоявшимися — при skip билеты переходят
+// дальше, и входы должны вести себя так же.
+function lastCompletedWeeklyDeadlineSec() {
+  if (!fs.existsSync(WINNERS_PATH)) return null;
+  let data;
+  try { data = JSON.parse(fs.readFileSync(WINNERS_PATH, 'utf8')); }
+  catch (e) { console.warn('Не смог прочитать winners.json:', e.message); return null; }
+
+  const list = Array.isArray(data.weekly) ? data.weekly : [];
+  for (let i = list.length - 1; i >= 0; i--) {
+    const r = list[i];
+    if (!r || r.skipped === true) continue;
+    if (!Array.isArray(r.winners) || r.winners.length === 0) continue;
+    if (!r.date) continue;
+    // Розыгрыш всегда в 20:00 UTC того дня, что записан в date
+    const ts = Date.parse(r.date + 'T20:00:00Z');
+    if (!Number.isNaN(ts)) return Math.floor(ts / 1000);
+  }
+  return null;
 }
 
 // ── FCD fetch with fallback ──────────────────────────────────────────────────
@@ -123,6 +154,47 @@ async function fetchTxsTo(wallet, cutoffSec) {
   return result;
 }
 
+// ── Выбор границы окна ───────────────────────────────────────────────────────
+// Чистая функция: никакого диска и сети, поэтому проверяется тестом на всех
+// сценариях (розыгрыш в срок / пропущен / skipped / истории нет / очень старый).
+function chooseCutoff({ clockCutoff, drawnCutoff, histRaw, nowSec, windowSec }) {
+  let cutoff, source, missedWeeks = 0;
+
+  if (drawnCutoff === null || drawnCutoff === undefined) {
+    // Истории нет вообще — ведём себя как раньше, по часам
+    cutoff = clockCutoff;
+    source = 'clock (в winners.json нет состоявшихся weekly-розыгрышей)';
+  } else {
+    // Граница = момент последнего СОСТОЯВШЕГОСЯ розыгрыша. Прошёл в срок —
+    // это ровно та же метка, что даёт weeklyRoundStartSec(). Пропущен или
+    // упал — граница остаётся старой, и входы переносятся дальше вместо того,
+    // чтобы сгореть за раунд, которого не было.
+    cutoff = drawnCutoff;
+    source = 'last completed weekly draw';
+    missedWeeks = Math.max(0, Math.round((clockCutoff - drawnCutoff) / (7 * 86400)));
+  }
+
+  // Предохранитель: сканирование ограничено WINDOW_DAYS, бесконечно растить
+  // окно нельзя. Если розыгрышей не было дольше — упираемся в потолок.
+  const floorSec = nowSec - windowSec;
+  let clamped = false;
+  if (cutoff < floorSec) { cutoff = floorSec; clamped = true; }
+
+  // Ручной mid-week reset: history_from ПОЗЖЕ расчётной границы уважается,
+  // устаревший игнорируется. Поведение прежнее.
+  let manual = false;
+  if (histRaw) {
+    const histSec = Math.floor(new Date(histRaw).getTime() / 1000);
+    if (!Number.isNaN(histSec) && histSec > cutoff) {
+      cutoff = histSec;
+      source = 'manual history_from';
+      manual = true;
+    }
+  }
+
+  return { cutoff, source, missedWeeks, clamped, manual };
+}
+
 // ── Main ─────────────────────────────────────────────────────────────────────
 async function main() {
   // Load existing JSON
@@ -140,17 +212,37 @@ async function main() {
   // questions kept counting). A history_from LATER than the weekly boundary is
   // still honored (lets an admin force a mid-week reset); an older/stale one is
   // ignored.
-  let cutoff = weeklyRoundStartSec();
-  const histRaw = existing && existing._meta && existing._meta.history_from;
-  if (histRaw) {
-    const histSec = Math.floor(new Date(histRaw).getTime() / 1000);
-    if (!Number.isNaN(histSec) && histSec > cutoff) {
-      cutoff = histSec;
-      console.log('Honoring manual history_from (later than weekly boundary):', histRaw);
-    }
+  const clockCutoff = weeklyRoundStartSec();
+  const drawnCutoff = lastCompletedWeeklyDeadlineSec();
+  const nowSec = Math.floor(Date.now() / 1000);
+
+  const decision = chooseCutoff({
+    clockCutoff, drawnCutoff,
+    histRaw: existing && existing._meta && existing._meta.history_from,
+    nowSec, windowSec: WINDOW_SEC
+  });
+
+  const cutoff       = decision.cutoff;
+  const cutoffSource = decision.source + (decision.clamped ? ' (обрезано по ' + WINDOW_DAYS + ' дням)' : '');
+  const missedWeeks  = decision.missedWeeks;
+
+  if (missedWeeks > 0) {
+    console.warn('ВНИМАНИЕ: пропущено недельных розыгрышей: ' + missedWeeks +
+      '. Последний состоявшийся — ' + new Date(drawnCutoff * 1000).toISOString() +
+      '. Входы НЕ обнуляются, окно расширено. Разберись, почему не прошёл розыгрыш.');
   }
+  if (decision.clamped) {
+    console.warn('Граница старше ' + WINDOW_DAYS + ' дней — обрезана до глубины сканирования');
+  }
+  if (decision.manual) {
+    console.log('Honoring manual history_from (later than computed boundary)');
+  }
+
   const cutoffIso = new Date(cutoff * 1000).toISOString();
-  console.log('Weekly cutoff (round start):', cutoffIso);
+  console.log('Cutoff: ' + cutoffIso + '  (источник: ' + cutoffSource + ')');
+  if (drawnCutoff !== null) {
+    console.log('  по часам было бы: ' + new Date(clockCutoff * 1000).toISOString());
+  }
 
   // ── Fetch txs to TREASURY_WALLET (chat) ───────────────────────────────────
   console.log('Fetching txs to TREASURY_WALLET (chat fees)...');
@@ -315,8 +407,12 @@ async function main() {
         trusted:   '1 entry per round for Trusted Users (30-day streak), backed from Reserve',
       },
       updated:     new Date().toISOString(),
-      history_from: cutoffIso,  // start of current weekly round — entries counted since here
-      resets:       'weekly (Mon 20:00 UTC)',
+      history_from: cutoffIso,  // входы считаются с этого момента
+      cutoff_source: cutoffSource,
+      resets:       'после состоявшегося weekly-розыгрыша (обычно Пн 20:00 UTC)',
+      // Ненулевое значение = недельный розыгрыш не состоялся, входы перенесены.
+      // Это сигнал разбираться, а не нормальное состояние.
+      missed_weekly_draws: missedWeeks,
     },
     entries: entries,
   };
