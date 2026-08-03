@@ -195,15 +195,6 @@ export default class WheelSector {
             ctx.fillText(shortAddr(s.address), 0, cursor);
             cursor += unit * 1.1;
 
-            // Тир NFT — то, что человек на самом деле сминтил
-            if (meta.tier) {
-                ctx.fillStyle = rar.base;
-                ctx.font = `600 ${unit * 0.72}px ui-sans-serif, system-ui, sans-serif`;
-                ctx.globalAlpha = (state.dim ?? 1) * 0.85;
-                ctx.fillText(tierLabel(meta, rar), 0, cursor);
-                ctx.globalAlpha = state.dim ?? 1;
-                cursor += unit * 0.95;
-            }
         }
 
         ctx.fillStyle = th.text.secondary;
@@ -261,12 +252,6 @@ function tierParts(meta, entries) {
         if (t[key] > 0) out.push([key, t[key] / entries]);
     }
     return out.length ? out : [[meta.tier || "common", 1]];
-}
-
-/** «LEGENDARY» либо «LEGENDARY +2» — если в кошельке несколько NFT */
-function tierLabel(meta, rar) {
-    const mints = (meta && meta.mints) || 1;
-    return mints > 1 ? `${rar.label} +${mints - 1}` : rar.label;
 }
 
 function plural(n) {
