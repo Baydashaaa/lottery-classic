@@ -54,6 +54,25 @@ function extract(src, name) {
   return null;
 }
 
+/** Вырезать МЕТОД класса (объявляется без слова function) */
+function extractMethod(src, name) {
+  const re = new RegExp('^\\s*' + name + '\\s*\\(', 'm');
+  const m = re.exec(src);
+  if (!m) return null;
+  const i = m.index;
+  let pd = 0, k = src.indexOf('(', i);
+  for (; k < src.length; k++) {
+    if (src[k] === '(') pd++;
+    else if (src[k] === ')') { pd--; if (pd === 0) break; }
+  }
+  let depth = 0, started = false;
+  for (let j = k; j < src.length; j++) {
+    if (src[j] === '{') { depth++; started = true; }
+    else if (src[j] === '}') { depth--; if (started && depth === 0) return src.slice(i, j + 1); }
+  }
+  return null;
+}
+
 const DAY = 86400, WEEK = 7 * DAY;
 const sec = (iso) => Math.floor(Date.parse(iso) / 1000);
 
@@ -194,6 +213,39 @@ else {
     const cardCalls = (bridgeSrc.match(/address:\s*w\.address/g) || []).length;
     const withDate  = (bridgeSrc.match(/date:\s*(round|this\.round)\.date/g) || []).length;
     check('во всех карточках DrawBridge есть date', withDate + '/' + cardCalls, cardCalls + '/' + cardCalls);
+  }
+}
+
+// ── [C] Смена пула на колесе ────────────────────────────────────────────────
+// Баг: при переключении вкладки daily ↔ weekly колесо оставалось в теме
+// прежнего пула. Сверка пула в refreshLive() стояла НИЖЕ раннего выхода
+// `if (state.model) return`, и как только появился первый раунд со снимком,
+// движок перестал узнавать о переключении.
+console.log('\n[C] Смена пула на колесе');
+const bridgeSrc2 = read('DrawBridge.js', ['assets/js/draw-v2/DrawBridge.js']);
+if (!bridgeSrc2) console.log('  ПРОПУЩЕНО: DrawBridge.js не найден');
+else {
+  const refresh = extractMethod(bridgeSrc2, 'refreshLive');
+  if (!refresh) { fails++; console.log('  FAIL refreshLive не найдена'); }
+  else {
+    // Комментарии срезаем: в самом коде пояснение цитирует
+    // `if (state.model) return`, и indexOf нашёл бы цитату вместо кода
+    const code = refresh.replace(/\/\*[\s\S]*?\*\//g, '')
+                        .replace(/^\s*\/\/.*$/gm, '');
+    const iPool  = code.indexOf('pagePool !== this.engine.pool');
+    const iModel = code.indexOf('state.model) return');
+    check('сверка пула вообще есть', iPool >= 0, 'true');
+    check('ранний выход по state.model есть', iModel >= 0, 'true');
+    // Вот он, инвариант: пул сверяется РАНЬШЕ выхода
+    check('сверка пула ВЫШЕ раннего выхода', iPool >= 0 && iModel >= 0 && iPool < iModel, 'true');
+    check('тема приводится сразу, не ждём раунд', /this\.ensure\(pagePool\)/.test(code), 'true');
+  }
+
+  const ens = extractMethod(bridgeSrc2, 'ensure');
+  if (!ens) { fails++; console.log('  FAIL ensure не найдена'); }
+  else {
+    check('ensure сравнивает пул с нарисованным', /pool !== this\.wheelPool/.test(ens), 'true');
+    check('ensure меняет тему существующему колесу', /this\.wheel\.setPool\(pool\)/.test(ens), 'true');
   }
 }
 
