@@ -1,7 +1,7 @@
 /* Oracle Draw V2 — собранный бандл. НЕ РЕДАКТИРОВАТЬ.
    Источники: assets/js/wheel/ и assets/js/draw-v2/
    Пересобрать: node dev/_build_bundle.js
-   Версия сборки: 202608031156 */
+   Версия сборки: 202608031329 */
 
 /* ── WheelTheme.js ─────────────────────────────────── */
 /**
@@ -474,12 +474,67 @@ class WheelSector {
      */
     #content(ctx, cx, cy, R, s, meta, rar, mid, detail, state, quality) {
         const th = this.theme;
-        // Наклон подписи вдоль биссектрисы нужен узким секторам — там
-        // иначе не помещается. Широкому он только вредит: у одного
-        // участника на весь круг «биссектриса» произвольна, и подпись
-        // уезжает под случайным углом. От 100° пишем горизонтально.
+        const unit = R * 0.055;
+
+        // Наклон текста вдоль биссектрисы нужен узким секторам — там иначе
+        // не помещается. Широкому он вредит: у одного участника на весь
+        // круг биссектриса произвольна, и текст уезжает под случайным углом.
         const wide = s.span > (100 * Math.PI / 180);
-        const rr = wide ? R * 0.52 : R * 0.68;
+
+        // Кружок с цифрой — у обода, по центру ширины сектора.
+        // Текст — в середине сектора.
+        const R_BADGE = 0.86;
+        const R_TEXT = wide ? 0.46 : 0.56;
+
+        this.#badge(ctx, cx, cy, R, s, meta, rar, mid, unit, state, quality, R_BADGE);
+        this.#text(ctx, cx, cy, R, s, rar, mid, unit, state, detail, wide, R_TEXT);
+    }
+
+    /** Цифра в кружке у обода. Цифра всегда прямая — так читается лучше. */
+    #badge(ctx, cx, cy, R, s, meta, rar, mid, unit, state, quality, place) {
+        const th = this.theme;
+        const label = s.isGroup ? "+" : badgeText(s, meta);
+
+        // Сколько дуги доступно на этом радиусе — чтобы кружки соседних
+        // секторов не налезали друг на друга при большом числе участников.
+        const rr = R * place;
+        const room = s.span * rr;
+        let rB = unit * (label.length > 2 ? 1.22 : 1.08);
+        if (rB * 2 > room * 0.92) rB = (room * 0.92) / 2;
+        if (rB < unit * 0.62) return;                 // совсем тесно — пропускаем
+
+        const x = cx + Math.cos(mid) * rr;
+        const y = cy + Math.sin(mid) * rr;
+
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+
+        ctx.beginPath();
+        ctx.arc(0, 0, rB, 0, TAU);
+        ctx.fillStyle = hexA(rar.base, state.winner ? 0.30 : 0.16);
+        ctx.fill();
+
+        if (quality.bloom && state.active > 0.4) {
+            ctx.shadowColor = rar.glow;
+            ctx.shadowBlur = 12 * quality.shadowBlur * state.active;
+        }
+        ctx.strokeStyle = state.winner ? th.text.accent : rar.base;
+        ctx.lineWidth = Math.max(1.1, rB * 0.13);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        ctx.fillStyle = state.winner ? th.text.accent : th.text.primary;
+        ctx.font = `800 ${rB * (label.length > 2 ? 0.82 : 1.02)}px ui-sans-serif, system-ui, sans-serif`;
+        ctx.fillText(label, 0, 0);
+        ctx.restore();
+    }
+
+    /** Адрес кошелька и число entries — в середине сектора */
+    #text(ctx, cx, cy, R, s, rar, mid, unit, state, detail, wide, place) {
+        const th = this.theme;
+        const rr = R * place;
         const x = cx + Math.cos(mid) * rr;
         const y = cy + Math.sin(mid) * rr;
         const flip = Math.cos(mid) < 0;
@@ -490,58 +545,34 @@ class WheelSector {
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
 
-        const unit = R * 0.055;
-        let cursor = 0;
-
         if (s.isGroup) {
             ctx.fillStyle = th.text.primary;
-            ctx.font = `600 ${unit * 1.15}px ui-sans-serif, system-ui, sans-serif`;
-            ctx.fillText(`+${s.members.length} wallets`, 0, cursor);
+            ctx.font = `600 ${unit * 1.1}px ui-sans-serif, system-ui, sans-serif`;
+            ctx.fillText(`${s.members.length} wallets`, 0, -unit * 0.55);
             ctx.fillStyle = th.text.secondary;
-            ctx.font = `${unit * 0.9}px ui-monospace, monospace`;
-            ctx.fillText(plural(s.entries), 0, cursor + unit * 1.25);
+            ctx.font = `${unit * 0.85}px ui-monospace, monospace`;
+            ctx.fillText(plural(s.entries), 0, unit * 0.6);
             ctx.restore();
             return;
         }
 
-        // Номер сектора в кружке — визуальный якорь. Найти себя человек
-        // всё равно может по адресу ниже, поэтому цифре достаточно быть
-        // маленькой и аккуратной. Обводка кружка несёт редкость.
-        const badge = badgeText(s, meta);
-        const rB = unit * (badge.length > 2 ? 1.28 : 1.15);
-        const cyB = cursor + rB * 0.05;
+        const lines = [];
+        if (detail === DETAIL.FULL) lines.push(["addr", shortAddr(s.address)]);
+        lines.push(["entries", plural(s.entries)]);
 
-        ctx.beginPath();
-        ctx.arc(0, cyB, rB, 0, TAU);
-        ctx.fillStyle = hexA(rar.base, state.winner ? 0.28 : 0.14);
-        ctx.fill();
-
-        if (quality.bloom && state.active > 0.4) {
-            ctx.shadowColor = rar.glow;
-            ctx.shadowBlur = 12 * quality.shadowBlur * state.active;
+        const step = unit * 1.15;
+        let y0 = -((lines.length - 1) * step) / 2;
+        for (const [kind, textLine] of lines) {
+            if (kind === "addr") {
+                ctx.fillStyle = state.winner ? th.text.accent : rar.base;
+                ctx.font = `${unit * 0.95}px ui-monospace, monospace`;
+            } else {
+                ctx.fillStyle = th.text.secondary;
+                ctx.font = `${unit * 0.85}px ui-monospace, monospace`;
+            }
+            ctx.fillText(textLine, 0, y0);
+            y0 += step;
         }
-        ctx.strokeStyle = state.winner ? th.text.accent : rar.base;
-        ctx.lineWidth = Math.max(1.2, unit * 0.14);
-        ctx.stroke();
-        ctx.shadowBlur = 0;
-
-        ctx.fillStyle = state.winner ? th.text.accent : th.text.primary;
-        ctx.font = `800 ${unit * (badge.length > 2 ? 0.95 : 1.15)}px ui-sans-serif, system-ui, sans-serif`;
-        ctx.fillText(badge, 0, cyB);
-
-        cursor = cyB + rB + unit * 0.95;
-
-        if (detail === DETAIL.FULL) {
-            ctx.fillStyle = rar.base;
-            ctx.font = `${unit * 0.92}px ui-monospace, monospace`;
-            ctx.fillText(shortAddr(s.address), 0, cursor);
-            cursor += unit * 1.05;
-        }
-
-        ctx.fillStyle = th.text.secondary;
-        ctx.font = `${unit * 0.85}px ui-monospace, monospace`;
-        ctx.fillText(plural(s.entries), 0, cursor);
-
         ctx.restore();
     }
 
