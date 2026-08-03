@@ -14,7 +14,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;500;600;700&family=Rajdhani:wght@500;600;700&family=Stalinist+One&family=Boldonse&display=swap" rel="stylesheet">
 
   <!-- Стили -->
-  <link rel="stylesheet" href="assets/css/style.css?v=202608031625">
+  <link rel="stylesheet" href="assets/css/style.css?v=202608031720">
 <style>
 /* Weekly prize split animation */
 #weekly-prize-1, #weekly-prize-2, #weekly-prize-3 {
@@ -652,7 +652,7 @@ body.modal-open{overflow:hidden}
  <div class="lottery-tab active-daily" id="tab-daily" onclick="switchLottery('daily')" style="flex:1;">
  <div class="tab-icon" style="font-size:32px;"><svg class="oi oi--gold"><use href="#i-reels"/></svg></div>
  <div class="tab-title" style="font-size:20px;">Daily Draw</div>
- <div class="tab-sub" style="font-size:14px;">NFT Oracle Masks · Draw every day at 20:00 UTC</div>
+ <div class="tab-sub" style="font-size:14px;">NFT Oracle Masks · Draw at 20:00 UTC, every day except Monday</div>
  </div>
  <div class="lottery-tab" id="tab-weekly" onclick="switchLottery('weekly')" style="flex:1;">
  <div class="tab-icon" style="font-size:32px;"><svg class="oi oi--gold"><use href="#i-trophy"/></svg></div>
@@ -1104,7 +1104,7 @@ body.modal-open{overflow:hidden}
    position:relative;opacity:1;">
    <div style="font-size:20px;margin-bottom:6px;"><svg class="oi oi--gold"><use href="#i-reels"/></svg></div>
    <div style="font-family:'Cinzel',serif;font-size:11px;letter-spacing:0.1em;color:var(--gold-light);margin-bottom:4px;">DAILY DRAW</div>
-   <div style="font-size:10px;color:var(--muted);">Every day · 20:00 UTC</div>
+   <div style="font-size:10px;color:var(--muted);">Daily · 20:00 UTC · except Mon</div>
   </div>
   <div id="pool-weekly" onclick="selectPool('weekly')"
    style="border:2px solid rgba(74,144,217,0.25);border-radius:12px;padding:14px;text-align:center;
@@ -1525,8 +1525,11 @@ body.modal-open{overflow:hidden}
 </style>
 
   <!-- Логика -->
+  <!-- Расписание розыгрышей. ОБЩИЙ файл с репо terra-oracle, побайтово тот же.
+       Обязан идти ДО app.js: app.js считает счётчики только через него. -->
+  <script src="assets/js/draw-schedule.js?v=202608031720"></script>
   <script src="assets/js/oracle-nft-client.js?v=2"></script>
-  <script src="assets/js/app.js?v=202608031625"></script>
+  <script src="assets/js/app.js?v=202608031720"></script>
   <script src="assets/js/oracle-mint-v2.js?v=2"></script>
 
   <!-- Oracle Draw V2 — один собранный файл.
@@ -1536,7 +1539,7 @@ body.modal-open{overflow:hidden}
        Пересобрать после правок в assets/js/wheel/ или draw-v2/:
            node dev/_build_bundle.js
        и поменять номер ниже на тот, что напечатает сборщик. -->
-  <script type="module" src="assets/js/oracle-draw.bundle.js?v=202608031625"></script>
+  <script type="module" src="assets/js/oracle-draw.bundle.js?v=202608031720"></script>
 
 <script>
 // ── WEEKLY PODIUM FIX ──────────────────────────────────────────
