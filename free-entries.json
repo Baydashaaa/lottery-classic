@@ -7,24 +7,9 @@
       "streak": "2 one-time entries at 14-day streak milestone",
       "trusted": "1 entry per round for Trusted Users (30-day streak), backed from Reserve"
     },
-    "updated": "2026-08-03T18:49:06.866Z",
-    "history_from": "2026-07-27T20:00:00.000Z",
+    "updated": "2026-08-03T20:25:12.223Z",
+    "history_from": "2026-08-03T20:00:00.000Z",
     "resets": "weekly (Mon 20:00 UTC)"
   },
-  "entries": {
-    "terra180wgtfvhmxcarmddhwzpapt8pasmvgv5skegx7": {
-      "chat": 0,
-      "questions": 11,
-      "streak": 0,
-      "trusted": 0,
-      "total": 11
-    },
-    "terra1jhtmkmakjvvtwur05klc7fd72e5n39m4x75c2l": {
-      "chat": 0,
-      "questions": 1,
-      "streak": 0,
-      "trusted": 0,
-      "total": 1
-    }
-  }
+  "entries": {}
 }
