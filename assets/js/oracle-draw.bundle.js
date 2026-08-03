@@ -1,7 +1,7 @@
 /* Oracle Draw V2 — собранный бандл. НЕ РЕДАКТИРОВАТЬ.
    Источники: assets/js/wheel/ и assets/js/draw-v2/
    Пересобрать: node dev/_build_bundle.js
-   Версия сборки: 202608021503 */
+   Версия сборки: 202608031107 */
 
 /* ── WheelTheme.js ─────────────────────────────────── */
 /**
@@ -33,7 +33,10 @@ const DAILY = {
     spoke:     "rgba(244,212,119,0.16)",
 
     core:      { r1: "#f4d477", r2: "#c89a3c", r3: "rgba(244,212,119,0.45)",
-                 hub: "#070b14", pulse: "rgba(244,212,119,0.5)", emblem: "oracle" },
+                 hub: "#070b14", pulse: "rgba(244,212,119,0.5)", emblem: "wheel",
+                 // Подставь сюда файл логотипа, и центр возьмёт его:
+                 // emblemSrc: "/assets/img/logo-wheel.svg",
+                 emblemSrc: null },
 
     pointer:   { frame: "#f4d477", frameEdge: "#8a6414", core: "#fff6dc",
                  energy: "#ffd166", glow: "rgba(255,209,102,0.85)" },
@@ -55,7 +58,7 @@ const WEEKLY = {
     spoke:     "rgba(185,140,255,0.16)",
 
     core:      { r1: "#e8d6ff", r2: "#a06cff", r3: "rgba(185,140,255,0.45)",
-                 hub: "#080614", pulse: "rgba(200,160,255,0.5)", emblem: "trophy" },
+                 hub: "#080614", pulse: "rgba(200,160,255,0.5)", emblem: "trophy", emblemSrc: null },
 
     pointer:   { frame: "#c8a2ff", frameEdge: "#4a2b8f", core: "#ffffff",
                  energy: "#e0c8ff", glow: "rgba(200,160,255,0.85)" },
@@ -509,15 +512,6 @@ class WheelSector {
             ctx.fillText(shortAddr(s.address), 0, cursor);
             cursor += unit * 1.1;
 
-            // Тир NFT — то, что человек на самом деле сминтил
-            if (meta.tier) {
-                ctx.fillStyle = rar.base;
-                ctx.font = `600 ${unit * 0.72}px ui-sans-serif, system-ui, sans-serif`;
-                ctx.globalAlpha = (state.dim ?? 1) * 0.85;
-                ctx.fillText(tierLabel(meta, rar), 0, cursor);
-                ctx.globalAlpha = state.dim ?? 1;
-                cursor += unit * 0.95;
-            }
         }
 
         ctx.fillStyle = th.text.secondary;
@@ -575,12 +569,6 @@ function tierParts(meta, entries) {
         if (t[key] > 0) out.push([key, t[key] / entries]);
     }
     return out.length ? out : [[meta.tier || "common", 1]];
-}
-
-/** «LEGENDARY» либо «LEGENDARY +2» — если в кошельке несколько NFT */
-function tierLabel(meta, rar) {
-    const mints = (meta && meta.mints) || 1;
-    return mints > 1 ? `${rar.label} +${mints - 1}` : rar.label;
 }
 
 function plural(n) {
@@ -781,8 +769,83 @@ class WheelCenter {
         ctx.translate(cx, cy);
         const s = R * 0.34;
         ctx.globalAlpha = 0.92;
-        if (th.core.emblem === "trophy") this.#trophy(ctx, s, th);
-        else this.#oracle(ctx, s, th, t);
+        // Если в теме указан файл логотипа и он загрузился — рисуем его,
+        // иначе векторную эмблему. Так можно подставить настоящий логотип,
+        // не трогая код: theme.core.emblemSrc = "/assets/img/logo.svg"
+        const art = this.#emblemImage(th);
+        if (art) {
+            const side = s * 2.4;
+            ctx.drawImage(art, -side / 2, -side / 2, side, side);
+        } else if (th.core.emblem === "trophy") {
+            this.#trophy(ctx, s, th);
+        } else {
+            this.#wheelEmblem(ctx, s, th, t);
+        }
+        ctx.restore();
+    }
+
+    /** Ленивая загрузка логотипа из темы */
+    #emblemImage(th) {
+        const src = th.core.emblemSrc;
+        if (!src || typeof Image === "undefined") return null;
+        if (!this._art || this._artSrc !== src) {
+            this._artSrc = src;
+            this._art = new Image();
+            this._art.crossOrigin = "anonymous";
+            this._art.decoding = "async";
+            this._art.src = src;
+        }
+        const img = this._art;
+        return (img && img.complete && img.naturalWidth) ? img : null;
+    }
+
+    /**
+     * Золотое колесо — то же, что в логотипе Oracle Draw.
+     * Обод, восемь спиц, узлы на концах, ступица с искрой внутри.
+     */
+    #wheelEmblem(ctx, s, th, t) {
+        const R = s * 1.15;
+        const spokes = 8;
+
+        ctx.save();
+        ctx.strokeStyle = th.core.r1;
+        ctx.fillStyle = th.core.r1;
+        ctx.lineCap = "round";
+
+        // обод: две окружности
+        ctx.lineWidth = Math.max(1.6, R * 0.10);
+        ctx.beginPath(); ctx.arc(0, 0, R, 0, TAU); ctx.stroke();
+        ctx.lineWidth = Math.max(1, R * 0.05);
+        ctx.globalAlpha = 0.55;
+        ctx.beginPath(); ctx.arc(0, 0, R * 0.80, 0, TAU); ctx.stroke();
+        ctx.globalAlpha = 1;
+
+        // спицы от ступицы к ободу
+        ctx.lineWidth = Math.max(1.2, R * 0.065);
+        for (let i = 0; i < spokes; i++) {
+            const a = (i / spokes) * TAU - Math.PI / 2;
+            ctx.beginPath();
+            ctx.moveTo(Math.cos(a) * R * 0.26, Math.sin(a) * R * 0.26);
+            ctx.lineTo(Math.cos(a) * R * 0.96, Math.sin(a) * R * 0.96);
+            ctx.stroke();
+        }
+
+        // узлы на ободе
+        for (let i = 0; i < spokes; i++) {
+            const a = (i / spokes) * TAU - Math.PI / 2;
+            ctx.beginPath();
+            ctx.arc(Math.cos(a) * R, Math.sin(a) * R, R * 0.085, 0, TAU);
+            ctx.fill();
+        }
+
+        // ступица
+        const pulse = 0.5 + 0.5 * Math.sin(t / 900);
+        ctx.beginPath(); ctx.arc(0, 0, R * 0.26, 0, TAU); ctx.fill();
+        ctx.fillStyle = th.core.hub;
+        ctx.beginPath(); ctx.arc(0, 0, R * 0.15, 0, TAU); ctx.fill();
+        ctx.fillStyle = th.core.r1;
+        ctx.globalAlpha = 0.55 + pulse * 0.45;
+        ctx.beginPath(); ctx.arc(0, 0, R * (0.05 + pulse * 0.04), 0, TAU); ctx.fill();
         ctx.restore();
     }
 
@@ -815,31 +878,6 @@ class WheelCenter {
             ctx.stroke();
         }
         ctx.restore();
-    }
-
-    #oracle(ctx, s, th, t) {
-        // сеть узлов — тот же мотив, что у Oracle Eye на сайте
-        ctx.strokeStyle = th.core.r1;
-        ctx.fillStyle = th.core.r1;
-        ctx.lineWidth = 1.1;
-        const n = 6;
-        const pts = [];
-        for (let i = 0; i < n; i++) {
-            const a = (i / n) * TAU - Math.PI / 2;
-            pts.push([Math.cos(a) * s, Math.sin(a) * s]);
-        }
-        ctx.beginPath();
-        pts.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y));
-        ctx.closePath();
-        ctx.stroke();
-        pts.forEach(([x, y]) => {
-            ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(x, y); ctx.stroke();
-            ctx.beginPath(); ctx.arc(x, y, 2.2, 0, TAU); ctx.fill();
-        });
-        const p = 0.5 + 0.5 * Math.sin(t / 900);
-        ctx.beginPath();
-        ctx.arc(0, 0, 3 + p * 2, 0, TAU);
-        ctx.fill();
     }
 
     #trophy(ctx, s, th) {
