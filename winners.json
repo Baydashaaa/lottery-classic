@@ -807,6 +807,34 @@
       "randomness": "terra-classic-block-hash-at-round-deadline",
       "tx_treasury": "FC5050C12DDC8CE6C177C7AF3A1D39E1980EEA4CF57B39DC341A7464572B43AD",
       "seeds_lunc": 116963
+    },
+    {
+      "date": "2026-08-03",
+      "round_id": "weekly_2026-08-03",
+      "winners": [
+        {
+          "place": 1,
+          "address": "terra180wgtfvhmxcarmddhwzpapt8pasmvgv5skegx7",
+          "amount_lunc": 278003,
+          "tx": "03DE9732076D7D058CEB622BDD553FD13B3A7FED20A53B0367FDB0AB015FF12B",
+          "winner_index": 10
+        },
+        {
+          "place": 2,
+          "address": "terra1jhtmkmakjvvtwur05klc7fd72e5n39m4x75c2l",
+          "amount_lunc": 115834,
+          "tx": "6F5C9B14C06E320AEF6BBBBABD07C57119D9881F904C007AED8CBF1D4F692C3E",
+          "winner_index": 12
+        }
+      ],
+      "entries": 13,
+      "participants": 2,
+      "block_hash": "6487A5DD20EA35A9EDBF605DB08813A6F0867CFB124614B44B775171562EA770",
+      "block_height": "29788240",
+      "block_time": "2026-08-03T20:00:03.168Z",
+      "randomness": "terra-classic-block-hash-at-round-deadline",
+      "tx_treasury": "42FF324456B5BD1975FF6C148351BA486F3E4DDBEF59E08B3700CE3C69B4A56D",
+      "seeds_lunc": 57917
     }
   ]
 }
