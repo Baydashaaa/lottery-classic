@@ -14,7 +14,7 @@ const WHEEL = ["WheelTheme.js","WheelGlow.js","WheelParticles.js","WheelSector.j
                "WheelPointer.js","WheelCenter.js","WheelAnimation.js",
                "TicketModel.js","WheelRenderer.js"];
 const CORE  = ["Config.js","DrawClock.js","DrawPhase.js","DrawState.js","DrawEvents.js",
-               "DrawAPI.js","DrawEngine.js","DrawScheduler.js","DrawBridge.js","index.js"];
+               "DrawAPI.js","DrawEngine.js","DrawScheduler.js","SectorDetails.js","DrawBridge.js","index.js"];
 
 const files = [
   ...WHEEL.map(f => ["assets/js/wheel/" + f, f]),
