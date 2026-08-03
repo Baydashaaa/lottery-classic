@@ -1,7 +1,7 @@
 /* Oracle Draw V2 — собранный бандл. НЕ РЕДАКТИРОВАТЬ.
    Источники: assets/js/wheel/ и assets/js/draw-v2/
    Пересобрать: node dev/_build_bundle.js
-   Версия сборки: 202608032223 */
+   Версия сборки: 202608032253 */
 
 /* ── WheelTheme.js ─────────────────────────────────── */
 /**
@@ -2901,6 +2901,10 @@ class DrawBridge {
     constructor(engine) {
         this.engine = engine;
         this.wheel = null;
+        // В каком пуле колесо нарисовано СЕЙЧАС. WheelRenderer.setPool() меняет
+        // тему, но сам пул не хранит, а сравнивать надо — иначе на каждом тике
+        // пересобираются частицы.
+        this.wheelPool = null;
         this.queue = [];
         this.round = null;
         this.lastCard = null;
@@ -3050,21 +3054,32 @@ class DrawBridge {
     refreshLive() {
         const ui = this.ui;
         if (!ui || !ui.participants) return;
+
+        // Пул страницы — источник правды для движка, и сверять его надо ДО
+        // любых ранних выходов.
+        //
+        // Здесь был баг: эта сверка стояла НИЖЕ `if (state.model) return`.
+        // Пока ни один раунд не имел снимка, state.model всегда был null и
+        // сверка отрабатывала. Как только появился первый снимок
+        // (weekly_2026-08-03), метод стал выходить раньше — движок переставал
+        // узнавать о переключении вкладки, и колесо оставалось в теме
+        // прежнего пула: на Weekly крутилось daily-колесо.
+        const pagePool = ui.pool ? ui.pool() : this.engine.pool;
+        if (pagePool && pagePool !== this.engine.pool) {
+            this.engine.setPool(pagePool);   // асинхронный: подтянет раунд нового пула
+            this.lastCard = null;
+            // Тему меняем сразу, не дожидаясь загрузки: иначе колесо висит в
+            // чужих цветах до прихода ROUND_CHANGED, а если у нового пула
+            // раунда ещё нет — то и вовсе остаётся чужим.
+            this.ensure(pagePool);
+        }
+
         if (this.engine.state.revealing) return;      // во время анимации не трогаем
         if (this.engine.state.model) return;          // снимок главнее
 
         // Пустой раунд — тоже состояние: колесо крутится вхолостую и пишет
         // «No entries yet». Раньше здесь стоял return, и канвас оставался
         // чёрным до первого минта.
-        // Страница и движок должны быть на одном пуле. Раньше цвет колеса
-        // брался из ui.pool(), а фаза и отсчёт оставались на том пуле, с
-        // которым движок стартовал: на вкладке Weekly колесо было
-        // фиолетовым, а «Next draw in» показывал дедлайн daily.
-        const pagePool = ui.pool ? ui.pool() : this.engine.pool;
-        if (pagePool && pagePool !== this.engine.pool) {
-            this.engine.setPool(pagePool);
-            this.lastCard = null;
-        }
 
         const pairs = (ui.participants() || []).filter(p => p && p[1] > 0);
         const model = new TicketModel({ tickets: pairs }, { maxSectors: 48 });
@@ -3075,21 +3090,33 @@ class DrawBridge {
     }
 
     ensure(pool) {
-        if (this.wheel) return this.wheel;
+        if (this.wheel) {
+            // Раньше здесь был просто `return this.wheel` — колесо отдавалось
+            // как есть, в теме того пула, с которым его когда-то создали.
+            if (pool && pool !== this.wheelPool) {
+                this.wheel.setPool(pool);
+                this.wheelPool = pool;
+            }
+            return this.wheel;
+        }
         const canvas = document.getElementById("wheel-canvas");
         if (!canvas) return null;
         const reduced = typeof matchMedia === "function" &&
             matchMedia("(prefers-reduced-motion: reduce)").matches;
         this.wheel = new WheelRenderer(canvas, { pool, reducedMotion: reduced });
+        this.wheelPool = pool;
         this.wheel.start();
         addEventListener("resize", () => this.wheel && this.wheel.resize());
         return this.wheel;
     }
 
     mount(model, pool) {
+        // ensure() уже привёл тему к pool (или создал колесо сразу в ней —
+        // конструктор WheelRenderer берёт тему из opts.pool). Повторный
+        // setPool() здесь только зря пересобирал бы частицы.
         const w = this.ensure(pool);
         if (!w) return;
-        w.setPool(pool).setModel(model);
+        w.setModel(model);
     }
 
     /* ── фазы ── */
