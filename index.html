@@ -14,7 +14,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;500;600;700&family=Rajdhani:wght@500;600;700&family=Stalinist+One&family=Boldonse&display=swap" rel="stylesheet">
 
   <!-- Стили -->
-  <link rel="stylesheet" href="assets/css/style.css?v=202608032253">
+  <link rel="stylesheet" href="assets/css/style.css?v=202608040710">
 <style>
 /* Weekly prize split animation */
 #weekly-prize-1, #weekly-prize-2, #weekly-prize-3 {
@@ -394,7 +394,7 @@ body.modal-open{overflow:hidden}
  <button class="nav-link" id="nav-winners" onclick="showTab('winners')">Winners</button>
  <button class="nav-link" id="nav-verify" onclick="showTab('verify')">Verify & Proof</button>
  <button class="nav-link" id="nav-bag" onclick="showTab('bag')">My Bag</button>
- <a class="nav-oracle" href="https://baydashaaa.github.io/terra-oracle" target="_blank"
+ <a class="nav-oracle" href="https://terraoracle.io/" target="_blank"
    style="display:inline-flex;align-items:center;padding:7px 18px;
    border:1px solid rgba(59,130,246,0.7);border-radius:8px;
    background:linear-gradient(135deg,rgba(15,30,80,0.8),rgba(10,20,60,0.9));
@@ -1463,7 +1463,7 @@ body.modal-open{overflow:hidden}
         </svg>
         <div>
           <div style="font-family:'Rajdhani',sans-serif;font-size:17px;font-weight:800;color:#fff;letter-spacing:0.05em;">Oracle <span style="color:#f4d03f;">Draw</span></div>
-          <a href="https://baydashaaa.github.io/terra-oracle/" target="_blank"
+          <a href="https://terraoracle.io/" target="_blank"
             style="font-size:11px;color:#6b82a8;text-decoration:none;transition:color 0.2s;"
             onmouseover="this.style.color='#5493f7'" onmouseout="this.style.color='#6b82a8'">
             ← Terra Oracle Classic
@@ -1527,9 +1527,9 @@ body.modal-open{overflow:hidden}
   <!-- Логика -->
   <!-- Расписание розыгрышей. ОБЩИЙ файл с репо terra-oracle, побайтово тот же.
        Обязан идти ДО app.js: app.js считает счётчики только через него. -->
-  <script src="assets/js/draw-schedule.js?v=202608032253"></script>
+  <script src="assets/js/draw-schedule.js?v=202608040710"></script>
   <script src="assets/js/oracle-nft-client.js?v=2"></script>
-  <script src="assets/js/app.js?v=202608042253"></script>
+  <script src="assets/js/app.js?v=202608040710"></script>
   <script src="assets/js/oracle-mint-v2.js?v=2"></script>
 
   <!-- Oracle Draw V2 — один собранный файл.
@@ -1539,7 +1539,7 @@ body.modal-open{overflow:hidden}
        Пересобрать после правок в assets/js/wheel/ или draw-v2/:
            node dev/_build_bundle.js
        и поменять номер ниже на тот, что напечатает сборщик. -->
-  <script type="module" src="assets/js/oracle-draw.bundle.js?v=202608032253"></script>
+  <script type="module" src="assets/js/oracle-draw.bundle.js?v=202608040710"></script>
 
 <script>
 // ── WEEKLY PODIUM FIX ──────────────────────────────────────────
@@ -1853,8 +1853,8 @@ async function _startWC(walletType, cfg) {
       metadata: {
         name: 'Oracle Draw',
         description: 'LUNC On-Chain NFT Lottery',
-        url: 'https://baydashaaa.github.io/oracle-draw',
-        icons: ['https://baydashaaa.github.io/oracle-draw/favicon.ico']
+        url: 'https://draw.terraoracle.io/',
+        icons: ['https://draw.terraoracle.io/favicon.ico']
       }
     });
     if (!_wqrActive) return;
