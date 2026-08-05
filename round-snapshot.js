@@ -57,8 +57,8 @@ function writeRoundSnapshot({ roundId, pool, tickets, blockHash, blockHeight, wi
         // Файл публичный, на него ведёт ссылка со страницы Verify & Proof,
         // поэтому инструкция на английском — как и весь сайт.
         _verify: [
-            "Frozen ticket list for this round, in the exact order lottery-draw.js used it.",
-            "1. Expand `tickets`: a pair [addr, n] means n consecutive tickets for addr.",
+            "Frozen entry list for this round, in the exact order lottery-draw.js used it.",
+            "1. Expand `tickets`: a pair [addr, n] means n consecutive entries for addr.",
             "2. The expanded length must equal `total` and `entries` in winners.json.",
             "3. `winner_index` is a position in that expanded array.",
             "   Daily: a single number. Weekly: one index per place drawn.",
@@ -69,7 +69,7 @@ function writeRoundSnapshot({ roundId, pool, tickets, blockHash, blockHeight, wi
             "  weekly -> seed = block_hash; for each place p (0,1,2):",
             "              seed  = sha256(seed + String(p))          // hex",
             "              index = BigInt('0x' + seed) % total",
-            "              while tickets[index] already won: index = (index + 1) % total",
+            "              while the wallet at tickets[index] already won: index = (index + 1) % total",
             "",
             "The block is not the latest one at run time: it is the first block with a",
             "timestamp at or after the round deadline (20:00 UTC), found by binary search.",
