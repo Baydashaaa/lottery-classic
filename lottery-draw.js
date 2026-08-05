@@ -29,6 +29,7 @@ import path   from 'path';
 // (так пропали daily 2026-08-02 и weekly 2026-08-03).
 import { writeRoundSnapshot } from './round-snapshot.js';
 
+import { buildTicketsFromChain } from './chain-tickets.js';
 // ── Constants ────────────────────────────────────────────────────────────────
 const DRAW_TYPE       = process.env.DRAW_TYPE || 'daily';
 const IS_DAILY        = DRAW_TYPE === 'daily';
@@ -293,6 +294,7 @@ async function getBalance(address) {
 
 // ── Send LUNC ────────────────────────────────────────────────────────────────
 async function sendLunc(client, from, to, amountUluna, memo) {
+  if (process.env.DRY_RUN === '1') throw new Error('DRY_RUN is set — refusing to send funds');
   if (amountUluna < 1000000) {
     console.log('Amount too small to send (<1 LUNC), skipping: ' + to + ' ' + fmt(amountUluna / 1e6) + ' LUNC');
     return null;
@@ -353,16 +355,32 @@ async function runDailyDraw(client, operatorAddr) {
   const roundId = getCurrentRoundId('daily');
   console.log('Round: ' + roundId);
 
-  console.log('Fetching participants from Worker /round-stats...');
-  const participants = await fetchParticipants('daily');
-  const tickets = buildTickets(participants);
-  console.log('Participants: ' + Object.keys(participants).length + ', Tickets: ' + tickets.length);
+  // Билеты строятся из NFT-контракта, а не из воркера. Правило описано в
+  // chain-tickets.js: жёсткая отсечка minted_at < deadline, порядок по
+  // (minted_at, token_id), владелец на высоте блока дедлайна. Любой может
+  // собрать тот же список сам и проверить winner_index.
+  const deadlineMs = getDrawDeadlineTs();
+
+  // Блок нужен ДО билетов: на его высоте читаются владельцы, иначе перевод
+  // NFT между дедлайном и запуском розыгрыша уводил бы приз.
+  const blockInfo = await getRoundBlockInfo();
+
+  console.log('Building tickets from the NFT contract...');
+  const { tickets, tokens, boundaryTs } = await buildTicketsFromChain({
+    pool: 'daily',
+    deadlineMs,
+    blockHeight: blockInfo.height,
+  });
+  const participantCount = new Set(tokens.map(function (t) { return t.owner; })).size;
+  console.log('Deadline: ' + new Date(deadlineMs).toISOString() +
+              ', unconsumed since: ' + new Date(boundaryTs * 1000).toISOString());
+  console.log('Participants: ' + participantCount + ', Tickets: ' + tickets.length);
 
   if (tickets.length < MIN_ENTRIES) {
     console.log('Not enough entries (' + tickets.length + ' < ' + MIN_ENTRIES + '). Draw skipped — activations roll over to next round.');
     const winners = loadWinners();
     winners.daily.push({
-      date:     new Date().toISOString().slice(0, 10),
+      date:     new Date(deadlineMs).toISOString().slice(0, 10),
       round_id: roundId,
       skipped:  true,
       reason:   'Not enough entries: ' + tickets.length,
@@ -376,8 +394,7 @@ async function runDailyDraw(client, operatorAddr) {
   const balance = await getBalance(DAILY_WALLET);
   console.log('Pool balance: ' + fmt(balance / 1e6) + ' LUNC');
 
-  // Select winner
-  const blockInfo = await getRoundBlockInfo();
+  // Select winner (blockInfo fetched above, before the tickets)
   const blockHash = blockInfo.hash;
   const blockHeight = blockInfo.height;
   const { winner, index } = selectWinner(tickets, blockHash);
@@ -405,12 +422,16 @@ async function runDailyDraw(client, operatorAddr) {
   // Save result
   const winners = loadWinners();
   winners.daily.push({
-    date:        new Date().toISOString().slice(0, 10),
+    date:        new Date(deadlineMs).toISOString().slice(0, 10),
     round_id:    roundId,
     winner:      winner,
     prize_lunc:  Math.floor(toWinner / 1e6),
     entries:     tickets.length,
-    participants: Object.keys(participants).length,
+    participants: participantCount,
+    ticket_rule:  'chain-v1',
+    nft_contract: 'terra1hcsq79vmcqxr97sv720yw6scvyknssx62ufsa4rwlmv02gyft43s46uaqx',
+    deadline:     new Date(deadlineMs).toISOString(),
+    boundary_ts:  boundaryTs,
     block_hash:   blockHash,
     block_height: blockHeight,
     block_time:   new Date(blockInfo.timeMs).toISOString(),
@@ -587,7 +608,13 @@ async function main() {
   console.log('Operator address: ' + account.address);
 
   if (account.address !== DRAW_WALLET) {
-    throw new Error('Mnemonic address ' + account.address + ' does not match expected ' + DRAW_WALLET);
+    // DRY_RUN=1 — прогон логики билетов без боевого ключа. Отправка средств
+    // в этом режиме запрещена жёстко, см. sendLunc().
+    if (process.env.DRY_RUN === '1') {
+      console.warn('DRY_RUN: address mismatch ignored, no funds can be sent');
+    } else {
+      throw new Error('Mnemonic address ' + account.address + ' does not match expected ' + DRAW_WALLET);
+    }
   }
 
   // Connect to RPC

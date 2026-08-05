@@ -2,5 +2,10 @@
   "name": "oracle-draw-scripts",
   "version": "1.0.0",
   "type": "module",
-  "private": true
+  "private": true,
+  "dependencies": {
+    "@cosmjs/crypto": "^0.39.0",
+    "@cosmjs/proto-signing": "^0.39.0",
+    "@cosmjs/stargate": "^0.39.0"
+  }
 }
