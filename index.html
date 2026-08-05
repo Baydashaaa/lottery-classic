@@ -973,138 +973,209 @@ body.modal-open{overflow:hidden}
 <div id="page-verify" class="tab-page" style="display:none;">
 <div style="max-width:900px;margin:0 auto;padding:48px 20px 80px;">
 <!-- HOW IT WORKS BLOCK -->
-<div style="max-width:700px;margin:0 auto 60px;padding:0 20px;">
+<style id="verify-v2">
+/* ══ VERIFY v2 ═════════════════════════════════════════════════════════════ */
+.vf-wrap{max-width:820px;margin:0 auto;padding:44px 18px 80px}
+.vf-loading{color:var(--muted,#6b82a8);font-size:13px;text-align:center;padding:30px}
+
+/* ── вердикт ───────────────────────────────────────────────────────────── */
+.vf-verdict{display:flex;flex-direction:column;gap:5px;border-radius:14px;
+  padding:16px 18px;margin-bottom:14px;border:1px solid}
+.vf-verdict b{font-family:'Rajdhani',sans-serif;font-size:19px;letter-spacing:.03em}
+.vf-verdict span{font-size:12.5px;line-height:1.6;color:#9fb0c9}
+.vf-ok {border-color:rgba(0,220,160,.45);background:linear-gradient(150deg,rgba(0,60,44,.5),rgba(8,9,14,.5))}
+.vf-ok b{color:#00dca0}
+.vf-bad{border-color:rgba(255,90,90,.5);background:linear-gradient(150deg,rgba(60,10,10,.5),rgba(8,9,14,.5))}
+.vf-bad b{color:#ff6b6b}
+.vf-na {border-color:rgba(120,130,160,.35);background:rgba(255,255,255,.02)}
+.vf-na b{color:#9fb0c9}
+
+/* ── карточка блока ────────────────────────────────────────────────────── */
+.vf-card{background:linear-gradient(150deg,rgba(14,12,20,.8),rgba(8,9,14,.7));
+  border:1px solid rgba(60,52,30,.5);border-radius:14px;padding:16px 18px;margin-bottom:12px}
+.vf-h{font-family:'Rajdhani',sans-serif;font-size:12px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--gold,#f4d03f);margin-bottom:12px}
+.vf-intro{font-size:12.5px;line-height:1.65;color:#8fa3c0;margin:0 0 14px}
+.vf-intro em{color:#cdd8ea;font-style:normal}
+
+.vf-kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.vf-kv>div{background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.05);border-radius:9px;padding:9px 11px}
+.vf-kv span{display:block;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted,#6b82a8)}
+.vf-kv b{display:block;margin-top:4px;font-family:'Rajdhani',sans-serif;font-size:15px;color:#e9edf6;font-weight:700}
+.vf-kv a{color:#7eb8ff;text-decoration:none}
+.vf-kv a:hover{text-decoration:underline}
+.vf-hash{margin-top:10px;background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.05);
+  border-radius:9px;padding:9px 11px}
+.vf-hash span{display:block;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted,#6b82a8)}
+.vf-hash code{display:block;margin-top:4px;font-size:11px;color:var(--gold-light,#f6dd7a);word-break:break-all}
+.vf-src{display:inline-block;margin-top:11px;font-size:11px;color:#7eb8ff;text-decoration:none}
+.vf-src:hover{text-decoration:underline}
+
+/* ── шаги розыгрыша ────────────────────────────────────────────────────── */
+.vf-step{border-top:1px solid rgba(255,255,255,.06);padding-top:13px;margin-top:13px}
+.vf-step:first-of-type{border-top:0;padding-top:0;margin-top:0}
+.vf-step-h{display:flex;align-items:center;gap:9px;margin-bottom:9px;flex-wrap:wrap}
+.vf-place{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;
+  font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:700;color:#0b0b10;flex:0 0 auto}
+.vf-place.p1{background:linear-gradient(150deg,#f6dd7a,#c9a227)}
+.vf-place.p2{background:linear-gradient(150deg,#dfe6ef,#9aa6b8)}
+.vf-place.p3{background:linear-gradient(150deg,#e3a869,#a46c33)}
+.vf-step-t{font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;color:#e9edf6}
+.vf-ok-pill,.vf-bad-pill{font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+  border-radius:99px;padding:3px 9px;border:1px solid}
+.vf-ok-pill{color:#00dca0;border-color:rgba(0,220,160,.45)}
+.vf-bad-pill{color:#ff6b6b;border-color:rgba(255,90,90,.5)}
+
+.vf-calc{background:rgba(0,0,0,.32);border:1px solid rgba(255,255,255,.05);border-radius:9px;
+  padding:10px 12px;font-family:monospace;font-size:11.5px;line-height:1.85;color:#9fb0c9;overflow-x:auto}
+.vf-calc i{display:inline-block;min-width:42px;color:var(--gold-dim,#a8862c);font-style:normal}
+.vf-calc b{color:var(--gold-light,#f6dd7a)}
+.vf-calc code{color:#7eb8ff}
+.vf-shift{color:#e3a869;margin-top:3px}
+.vf-lands{margin-top:9px;font-size:12px;color:#9fb0c9}
+.vf-lands b{color:var(--gold-light,#f6dd7a)}
+.vf-lands code{font-size:11px;color:#cdd8ea;word-break:break-all}
+
+/* ── карта билетов ─────────────────────────────────────────────────────── */
+.vf-bar{display:flex;height:34px;border-radius:8px;overflow:hidden;border:1px solid rgba(255,255,255,.08);margin-bottom:12px}
+.vf-seg{position:relative;background:rgba(255,255,255,.05);border-right:1px solid rgba(0,0,0,.5);
+  display:grid;place-items:center;min-width:3px}
+.vf-seg:last-child{border-right:0}
+.vf-seg.hit{background:linear-gradient(180deg,rgba(244,208,63,.32),rgba(244,208,63,.14))}
+.vf-seg span{font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:700;color:var(--gold-light,#f6dd7a)}
+.vf-rows{display:flex;flex-direction:column;gap:6px}
+.vf-row{display:flex;align-items:center;gap:10px;font-size:11.5px;color:#8fa3c0;
+  background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);border-radius:8px;padding:7px 10px}
+.vf-row.hit{border-color:rgba(244,208,63,.35);background:rgba(244,208,63,.06)}
+.vf-row code{color:#cdd8ea;font-size:11px}
+.vf-range{color:var(--muted,#6b82a8)}
+.vf-cnt{margin-left:auto;font-family:'Rajdhani',sans-serif;font-weight:700;color:#e9edf6}
+.vf-hitmark{color:var(--gold-light,#f6dd7a);font-size:10.5px;white-space:nowrap}
+
+.vf-repro pre{background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.05);border-radius:9px;
+  padding:12px;font-size:11.5px;line-height:1.7;color:#9fb0c9;overflow-x:auto;margin:0}
+
+/* ── телефон ───────────────────────────────────────────────────────────── */
+@media (max-width:560px){
+  .vf-wrap{padding:28px 13px 60px}
+  .vf-card{padding:14px 13px}
+  .vf-kv{grid-template-columns:1fr 1fr}
+  .vf-calc{font-size:10.5px}
+  .vf-calc i{min-width:38px}
+  .vf-bar{height:28px}
+  /* На узком экране адрес и диапазон не помещаются в строку — переносим */
+  .vf-row{flex-wrap:wrap;gap:6px 9px}
+  .vf-cnt{margin-left:auto}
+  .vf-hitmark{width:100%}
+  .vf-verdict b{font-size:17px}
+}
+
+/* ── «How the Draw Works» ──────────────────────────────────────────────── */
+.hw-tiers{display:flex;gap:8px;flex-wrap:wrap}
+.hw-tier{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;border-radius:99px;
+  padding:5px 11px;border:1px solid currentColor;opacity:.9}
+.hw-tier.c{color:#9fb0c9}
+.hw-tier.r{color:#7eb8ff}
+.hw-tier.l{color:#f4d03f}
+.hw-split{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.hw-half{background:rgba(0,0,0,.26);border:1px solid rgba(255,255,255,.05);border-radius:10px;padding:13px}
+.hw-badge{font-family:'Rajdhani',sans-serif;font-size:12px;letter-spacing:.1em;text-transform:uppercase;
+  margin-bottom:9px;font-weight:700}
+.hw-badge.d{color:#f4d03f}
+.hw-badge.w{color:#a78bfa}
+.hw-code{background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.05);border-radius:8px;
+  padding:10px;font-size:11px;line-height:1.7;color:var(--gold-light,#f6dd7a);
+  overflow-x:auto;margin:0 0 10px;white-space:pre}
+@media (max-width:640px){
+  /* Две колонки с кодом на телефоне не читаются — ставим друг под друга */
+  .hw-split{grid-template-columns:1fr}
+  .hw-code{font-size:10.5px}
+}
+</style>
+<div class="vf-wrap" style="padding-bottom:0;">
  <div class="section-title">How the Draw Works</div>
  <div class="section-line"></div>
- <p style="text-align:center;color:var(--muted);font-size:13px;margin-bottom:28px;line-height:1.7;">
-  Every draw is provably fair. The winner is determined by an on-chain block hash -
-  a value no one can predict or manipulate.
+ <p class="vf-intro" style="text-align:center;max-width:560px;margin:0 auto 22px;">
+  Nobody picks the winner. The result comes out of a Terra Classic block that did not
+  exist yet when entries closed &mdash; and anyone can replay it afterwards.
  </p>
 
- <!-- Step cards -->
- <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:32px;">
-
-  <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:18px 20px;display:flex;gap:16px;align-items:flex-start;">
-   <div style="font-family:'Cinzel',serif;font-size:20px;color:rgba(212,160,23,0.6);flex-shrink:0;width:28px;">1</div>
-   <div>
-    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px;">Mint an NFT - get entries</div>
-    <div style="font-size:12px;color:var(--muted);line-height:1.6;">Each NFT gives you a number of entries proportional to its tier. More entries = larger slice of the wheel = higher chance to win.</div>
-    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
-     <span style="font-size:11px;font-family:monospace;background:rgba(156,163,175,0.1);border:1px solid rgba(156,163,175,0.2);border-radius:6px;padding:3px 8px;color:#9ca3af;">Common = 1 entry</span>
-     <span style="font-size:11px;font-family:monospace;background:rgba(96,165,250,0.1);border:1px solid rgba(96,165,250,0.2);border-radius:6px;padding:3px 8px;color:#60a5fa;">Rare = 5 entries</span>
-     <span style="font-size:11px;font-family:monospace;background:rgba(251,146,60,0.1);border:1px solid rgba(251,146,60,0.2);border-radius:6px;padding:3px 8px;color:#fb923c;">Legendary = 10 entries</span>
-    </div>
-   </div>
+ <div class="vf-card">
+  <div class="vf-h">Step 1 &middot; Entries</div>
+  <p class="vf-intro" style="margin-bottom:10px;">
+   Every Oracle Mask you mint adds tickets to the round. The tier decides how many.
+   More tickets means a wider slice, never a guarantee.
+  </p>
+  <div class="hw-tiers">
+   <span class="hw-tier c">Common &middot; 1 ticket</span>
+   <span class="hw-tier r">Rare &middot; 5 tickets</span>
+   <span class="hw-tier l">Legendary &middot; 10 tickets</span>
   </div>
-
-  <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:18px 20px;display:flex;gap:16px;align-items:flex-start;">
-   <div style="font-family:'Cinzel',serif;font-size:20px;color:rgba(212,160,23,0.6);flex-shrink:0;width:28px;">2</div>
-   <div>
-    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px;">At 20:00 UTC - block hash is captured</div>
-    <div style="font-size:12px;color:var(--muted);line-height:1.6;">At draw time the latest Terra Classic block hash is fetched. This value is produced by validators independently - nobody, including us, can influence it.</div>
-   </div>
-  </div>
-
-  <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:18px 20px;display:flex;gap:16px;align-items:flex-start;">
-   <div style="font-family:'Cinzel',serif;font-size:20px;color:rgba(212,160,23,0.6);flex-shrink:0;width:28px;">3</div>
-   <div>
-    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px;">Winner = block_hash % total_entries</div>
-    <div style="font-size:12px;color:var(--muted);line-height:1.6;">The block hash (as a large number) is divided by the total number of entries. The remainder is the winning ticket index. Each entry maps to a specific participant.</div>
-   </div>
-  </div>
-
+  <p class="vf-intro" style="margin:12px 0 0;">
+   Free entries earned on Terra Oracle count too. At draw time the whole list is frozen
+   into a public snapshot &mdash; that file is what makes the result checkable later.
+  </p>
  </div>
 
- <!-- Interactive example -->
- <div style="background:rgba(0,0,0,0.5);border:1px solid rgba(212,160,23,0.2);border-radius:16px;padding:24px;">
-  <div style="font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(212,160,23,0.5);margin-bottom:16px;">Example</div>
+ <div class="vf-card">
+  <div class="vf-h">Step 2 &middot; The block</div>
+  <p class="vf-intro" style="margin-bottom:0;">
+   The draw uses the <em>first block produced at or after 20:00&nbsp;UTC</em> of the round
+   deadline &mdash; not whichever block happens to be latest when the script runs.
+   That block is fixed by the schedule, so re-running the draw later cannot change the
+   winner, and nobody can wait for a hash they like.
+   Validators produce it independently; no one involved in the draw can influence it.
+  </p>
+ </div>
 
-  <!-- Participants table -->
-  <div style="margin-bottom:16px;">
-   <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">3 participants enter the draw:</div>
-   <div style="display:grid;grid-template-columns:auto auto auto auto;gap:1px;background:rgba(255,255,255,0.04);border-radius:8px;overflow:hidden;font-family:monospace;font-size:11px;">
-    <div style="background:rgba(255,255,255,0.03);padding:7px 12px;color:rgba(255,255,255,0.4);font-size:10px;letter-spacing:0.1em;">WALLET</div>
-    <div style="background:rgba(255,255,255,0.03);padding:7px 12px;color:rgba(255,255,255,0.4);font-size:10px;letter-spacing:0.1em;">NFT</div>
-    <div style="background:rgba(255,255,255,0.03);padding:7px 12px;color:rgba(255,255,255,0.4);font-size:10px;letter-spacing:0.1em;">ENTRIES</div>
-    <div style="background:rgba(255,255,255,0.03);padding:7px 12px;color:rgba(255,255,255,0.4);font-size:10px;letter-spacing:0.1em;">TICKET INDEX</div>
+ <div class="vf-card">
+  <div class="vf-h">Step 3 &middot; The winner</div>
+  <p class="vf-intro" style="margin-bottom:12px;">
+   The two draws use different rules, because Weekly has to pick several different people.
+  </p>
 
-    <div style="background:rgba(96,165,250,0.05);padding:7px 12px;color:#60a5fa;">terra1aaa...111</div>
-    <div style="background:rgba(96,165,250,0.05);padding:7px 12px;color:#9ca3af;">Common</div>
-    <div style="background:rgba(96,165,250,0.05);padding:7px 12px;color:#60a5fa;">1</div>
-    <div style="background:rgba(96,165,250,0.05);padding:7px 12px;color:rgba(96,165,250,0.6);">0</div>
-
-    <div style="background:rgba(251,146,60,0.05);padding:7px 12px;color:#fb923c;">terra1bbb...222</div>
-    <div style="background:rgba(251,146,60,0.05);padding:7px 12px;color:#60a5fa;">Rare</div>
-    <div style="background:rgba(251,146,60,0.05);padding:7px 12px;color:#fb923c;">5</div>
-    <div style="background:rgba(251,146,60,0.05);padding:7px 12px;color:rgba(251,146,60,0.6);">1 – 5</div>
-
-    <div style="background:rgba(251,191,36,0.05);padding:7px 12px;color:#fbbf24;">terra1ccc...333</div>
-    <div style="background:rgba(251,191,36,0.05);padding:7px 12px;color:#fb923c;">Legendary</div>
-    <div style="background:rgba(251,191,36,0.05);padding:7px 12px;color:#fbbf24;">10</div>
-    <div style="background:rgba(251,191,36,0.05);padding:7px 12px;color:rgba(251,191,36,0.6);">6 – 15</div>
+  <div class="hw-split">
+   <div class="hw-half">
+    <div class="hw-badge d">Daily &middot; one winner</div>
+    <pre class="hw-code">index = BigInt("0x" + block_hash) % total_tickets</pre>
+    <p class="vf-intro" style="margin:0;">
+     The hash read as one huge number, divided by the ticket count. The remainder is the
+     winning ticket.
+    </p>
    </div>
-  </div>
 
-  <!-- Formula -->
-  <div style="background:rgba(0,0,0,0.4);border:1px solid rgba(212,160,23,0.1);border-radius:8px;padding:14px;margin-bottom:16px;font-family:monospace;font-size:12px;line-height:1.9;">
-   <div style="color:var(--muted);font-size:10px;letter-spacing:0.1em;margin-bottom:6px;">CALCULATION</div>
-   <div><span style="color:rgba(255,255,255,0.3);">total_entries</span> <span style="color:rgba(212,160,23,0.5);">=</span> <span style="color:var(--gold-light);">1 + 5 + 10 = 16</span></div>
-   <div><span style="color:rgba(255,255,255,0.3);">block_hash</span>    <span style="color:rgba(212,160,23,0.5);">=</span> <span style="color:rgba(102,255,170,0.7);">A3F9...E72B</span> <span style="color:rgba(255,255,255,0.2);">(as BigInt)</span></div>
-   <div><span style="color:rgba(255,255,255,0.3);">winner_index</span>  <span style="color:rgba(212,160,23,0.5);">=</span> <span style="color:rgba(102,255,170,0.7);">BigInt(block_hash) % 16</span> <span style="color:rgba(212,160,23,0.5);">=</span> <span style="color:#66ffaa;font-size:14px;font-weight:700;">9</span></div>
-   <div style="margin-top:6px;"><span style="color:rgba(255,255,255,0.3);">ticket #9</span> <span style="color:rgba(212,160,23,0.5);">=</span> <span style="color:#fbbf24;font-weight:600;">terra1ccc...333</span> <span style="color:rgba(255,255,255,0.3);">(index 6–15)</span></div>
-  </div>
-
-  <div style="font-size:11px;color:rgba(102,255,170,0.5);text-align:center;">
-   Anyone can reproduce this calculation using the block hash shown in the Winners table.
+   <div class="hw-half">
+    <div class="hw-badge w">Weekly &middot; up to three places</div>
+    <pre class="hw-code">seed = block_hash
+for place p in 0, 1, 2:
+  seed  = sha256(seed + p)
+  index = BigInt("0x" + seed) % total_tickets
+  while that wallet already won:
+    index = index + 1</pre>
+    <p class="vf-intro" style="margin:0;">
+     Each place is seeded from the <em>previous</em> one, so the chain must be replayed in
+     order. If a place lands on a wallet that already won, the index steps forward until it
+     reaches a new one &mdash; one wallet cannot take two places. With fewer than three
+     participants, fewer places are paid and the unclaimed share stays in the pool.
+    </p>
+   </div>
   </div>
  </div>
 
+ <p class="vf-intro" style="text-align:center;max-width:560px;margin:2px auto 34px;">
+  Pick a round below and your browser will run exactly these steps, then compare the
+  outcome with what was recorded on chain.
+ </p>
 </div>
-<!-- END HOW IT WORKS -->
 
-<div id="draw-verify" style="max-width:700px;margin:0 auto 80px;padding:0 20px;">
- <div class="section-title">Verify Draw Result</div>
+<div class="vf-wrap" style="padding-top:0;">
+ <div class="section-title">Verify a Draw</div>
  <div class="section-line"></div>
- <p style="text-align:center;color:var(--muted);font-size:13px;margin-bottom:28px;line-height:1.7;">
- Every draw is fully verifiable. Select a round below and reproduce the winner calculation yourself.
- </p>
- <div style="background:rgba(22,12,0,0.8);border:1px solid rgba(212,160,23,0.2);border-radius:16px;padding:28px;">
- <div style="display:flex;gap:10px;margin-bottom:24px;align-items:center;">
- <select id="dv-round-select" onchange="loadDrawVerify()"
- style="flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(212,160,23,0.2);
- border-radius:8px;padding:12px 16px;color:var(--text);font-family:'Inter',sans-serif;
- font-size:14px;outline:none;cursor:pointer;">
- <option value="" style="background:#110a00;">- Select a completed round -</option>
- </select>
- </div>
- <div id="dv-result" style="display:none;">
- <div style="margin-bottom:20px;">
- <div style="font-size:10px;letter-spacing:0.2em;text-transform:uppercase;
- color:var(--gold-dim);margin-bottom:12px;"><svg class="oi oi--cyan"><use href="#i-inbox"/></svg> Input Data</div>
- <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;" id="dv-inputs"></div>
- </div>
- <div style="background:rgba(0,0,0,0.4);border:1px solid rgba(212,160,23,0.1);
- border-radius:10px;padding:16px;margin-bottom:20px;font-family:monospace;font-size:12px;">
- <div style="color:var(--muted);margin-bottom:8px;font-size:10px;letter-spacing:0.1em;"><svg class="oi oi--muted"><use href="#i-settings"/></svg> CALCULATION</div>
- <div id="dv-formula" style="color:var(--gold-light);line-height:1.8;word-break:break-all;"></div>
- </div>
- <div id="dv-winner-card" style="background:linear-gradient(135deg,rgba(212,160,23,0.08),rgba(139,0,0,0.06));
- border:1px solid rgba(212,160,23,0.3);border-radius:12px;padding:20px;text-align:center;">
- </div>
- <div style="margin-top:16px;padding:14px;background:rgba(102,255,170,0.04);
- border:1px solid rgba(102,255,170,0.1);border-radius:8px;font-size:11px;
- color:var(--muted);line-height:1.7;text-align:center;">
- <svg class="oi oi--cyan"><use href="#i-search"/></svg> Verify yourself: run
- <code style="color:#66ffaa;background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:3px;"
- id="dv-code-snippet"></code>
- in any JS console
- </div>
- </div>
- <div id="dv-empty" style="text-align:center;padding:24px;color:var(--muted);font-size:13px;">
- No completed draws yet - select a round above once draws have occurred
- </div>
- </div>
+ <select id="vf-select" class="vf-select" onchange="if(this.value!=='')renderDrawVerify(this.value)"></select>
+ <div id="vf-empty" class="vf-loading">Select a round above to replay it.</div>
+ <div id="vf-result" style="display:none;"></div>
 </div>
+
 <div id="verify" style="max-width:700px;margin:0 auto 80px;padding:0 20px;">
  <div class="section-title">Verify My Entries</div>
  <div class="section-line"></div>
@@ -1597,7 +1668,7 @@ body.modal-open{overflow:hidden}
        Обязан идти ДО app.js: app.js считает счётчики только через него. -->
   <script src="assets/js/draw-schedule.js?v=202608040710"></script>
   <script src="assets/js/oracle-nft-client.js?v=2"></script>
-  <script src="assets/js/app.js?v=202608050900"></script>
+  <script src="assets/js/app.js?v=202608051130"></script>
   <script src="assets/js/oracle-mint-v2.js?v=2"></script>
 
   <!-- Oracle Draw V2 — один собранный файл.
