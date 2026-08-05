@@ -54,14 +54,26 @@ function writeRoundSnapshot({ roundId, pool, tickets, blockHash, blockHeight, wi
     const wallets = new Set(tickets).size;
 
     const payload = {
+        // Файл публичный, на него ведёт ссылка со страницы Verify & Proof,
+        // поэтому инструкция на английском — как и весь сайт.
         _verify: [
-            "Этот файл — массив билетов на момент розыгрыша, в том порядке,",
-            "в котором его использовал lottery-draw.js.",
-            "1. Разверни tickets: пара [addr, n] даёт n подряд идущих билетов.",
-            "2. Длина должна совпасть с total и с entries в winners.json.",
-            "3. winner_index — позиция в этом развёрнутом массиве.",
-            "4. tickets[winner_index] должен равняться winner из winners.json.",
-            "   Для weekly winner_index — массив индексов трёх мест."
+            "Frozen ticket list for this round, in the exact order lottery-draw.js used it.",
+            "1. Expand `tickets`: a pair [addr, n] means n consecutive tickets for addr.",
+            "2. The expanded length must equal `total` and `entries` in winners.json.",
+            "3. `winner_index` is a position in that expanded array.",
+            "   Daily: a single number. Weekly: one index per place drawn.",
+            "4. tickets[winner_index] must equal the winner recorded in winners.json.",
+            "",
+            "Replaying the draw:",
+            "  daily  -> index = BigInt('0x' + block_hash) % total",
+            "  weekly -> seed = block_hash; for each place p (0,1,2):",
+            "              seed  = sha256(seed + String(p))          // hex",
+            "              index = BigInt('0x' + seed) % total",
+            "              while tickets[index] already won: index = (index + 1) % total",
+            "",
+            "The block is not the latest one at run time: it is the first block with a",
+            "timestamp at or after the round deadline (20:00 UTC), found by binary search.",
+            "That makes the result independent of when the script actually ran."
         ],
         round_id: roundId,
         pool,
