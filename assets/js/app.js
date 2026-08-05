@@ -2423,21 +2423,7 @@ function verifyTickets() {
 
 
 // ─── DRAW VERIFICATION ───────────────────────────────────────────────────────
-// Расчёт вынесен в блок VERIFY v2 в конце файла. Здесь остался только
-// список раундов.
-function populateDrawVerifySelect() {
-  const sel = document.getElementById('vf-select');
-  if (!sel) return;
-  const completed = winnersData.filter(function (w) { return w.places && w.places.length; });
-  sel.innerHTML = '<option value="">- Select a completed round -</option>' +
-    completed.map(function (w, i) {
-      return '<option value="' + i + '">' +
-        (w.type === 'daily' ? 'Daily' : 'Weekly') + ' \u00b7 ' +
-        (w.roundId || ('#' + w.round)) + ' \u00b7 ' + fmtDate(w.time) +
-        '</option>';
-    }).join('');
-}
-window.populateDrawVerifySelect = populateDrawVerifySelect;
+// Полностью в блоке VERIFY v2 в конце файла: расчёт, отрисовка и выбор раунда.
 
 // ─── ADMIN PANEL - Keplr wallet auth ────────────────────────────────────────
 function initAdminTrigger() {
@@ -3886,7 +3872,7 @@ async function renderDrawVerify(idx) {
   if (!snap || !snap.tickets) {
     host.innerHTML =
       '<div class="vf-verdict vf-na"><b>Cannot be replayed</b>' +
-      '<span>No ticket snapshot was written for this round. Snapshots start from ' +
+      '<span>No entry snapshot was written for this round. Snapshots start from ' +
       'the first draw after the 1 Aug 2026 upgrade — earlier rounds only have the ' +
       'recorded result.</span></div>' + vfInputsHtml(w, null);
     return;
@@ -3943,7 +3929,7 @@ function vfInputsHtml(w, snap) {
           '" target="_blank" rel="noopener">' + w.blockHeight + '</a>'
         : '&mdash;'],
     ['Block time',   w.blockTime || '&mdash;'],
-    ['Total tickets', snap ? snap.total : (w.tickets || '&mdash;')]
+    ['Total entries', snap ? snap.total : (w.tickets || '&mdash;')]
   ];
   return '<div class="vf-card"><div class="vf-h">Input data</div>' +
     '<div class="vf-kv">' + rows.map(r =>
@@ -3953,17 +3939,17 @@ function vfInputsHtml(w, snap) {
       : '') +
     (snap
       ? '<a class="vf-src" href="./rounds/' + w.roundId + '.json" target="_blank" rel="noopener">' +
-        'ticket snapshot &rarr;</a>' : '') +
+        'entry snapshot &rarr;</a>' : '') +
     '</div>';
 }
 
 function vfStepsHtml(checks, total, w) {
   const intro = w.type === 'daily'
-    ? 'One winner. The block hash is read as a number and divided by the ticket count &mdash; ' +
-      'the remainder is the winning ticket.'
+    ? 'One winner. The block hash is read as a number and divided by the entry count &mdash; ' +
+      'the remainder is the winning entry.'
     : 'Up to three places. Each place uses a seed derived from the <em>previous</em> one, ' +
       'so the chain has to be replayed in order. If a place lands on a wallet that already ' +
-      'won, the index moves forward one ticket at a time until it reaches a new wallet.';
+      'won, the index moves forward one entry at a time until it reaches a new wallet.';
 
   const body = checks.map(c => {
     const s = c.step;
@@ -3980,10 +3966,10 @@ function vfStepsHtml(checks, total, w) {
         '<div><i>index</i> = BigInt("0x" + seed) % ' + total + ' = <b>' + s.raw + '</b></div>' +
         (s.shifted
           ? '<div class="vf-shift">wallet already won &rarr; moved ' + s.shifted +
-            ' ticket' + (s.shifted > 1 ? 's' : '') + ' forward &rarr; <b>' + s.index + '</b></div>'
+            ' entr' + (s.shifted > 1 ? 'ies' : 'y') + ' forward &rarr; <b>' + s.index + '</b></div>'
           : '') +
       '</div>' +
-      '<div class="vf-lands">ticket <b>#' + s.index + '</b> belongs to <code>' + s.address + '</code></div>' +
+      '<div class="vf-lands">entry <b>#' + s.index + '</b> belongs to <code>' + s.address + '</code></div>' +
     '</div>';
   }).join('');
 
@@ -3997,7 +3983,7 @@ function vfMapHtml(ranges, total, checks) {
   const bar = ranges.map((r, i) => {
     const hit = winIdx.filter(x => x >= r.from && x <= r.to);
     return '<div class="vf-seg' + (hit.length ? ' hit' : '') + '" ' +
-      'style="flex:' + r.count + '" title="' + r.address + ' · tickets ' + r.from + '-' + r.to + '">' +
+      'style="flex:' + r.count + '" title="' + r.address + ' · entries ' + r.from + '-' + r.to + '">' +
       (hit.length ? '<span>' + hit.join(', ') + '</span>' : '') + '</div>';
   }).join('');
 
@@ -4005,14 +3991,14 @@ function vfMapHtml(ranges, total, checks) {
     const hit = winIdx.filter(x => x >= r.from && x <= r.to);
     return '<div class="vf-row' + (hit.length ? ' hit' : '') + '">' +
       '<code>' + fmtAddr(r.address) + '</code>' +
-      '<span class="vf-range">' + (r.count === 1 ? 'ticket ' + r.from : 'tickets ' + r.from + '&ndash;' + r.to) + '</span>' +
+      '<span class="vf-range">' + (r.count === 1 ? 'entry ' + r.from : 'entries ' + r.from + '&ndash;' + r.to) + '</span>' +
       '<span class="vf-cnt">' + r.count + '</span>' +
       (hit.length ? '<span class="vf-hitmark">won at #' + hit.join(', #') + '</span>' : '') +
     '</div>';
   }).join('');
 
-  return '<div class="vf-card"><div class="vf-h">Ticket map</div>' +
-    '<p class="vf-intro">Every ticket in the order the draw used it. Segment width = share of ' +
+  return '<div class="vf-card"><div class="vf-h">Entry map</div>' +
+    '<p class="vf-intro">Every entry in the order the draw used it. Segment width = share of ' +
     'the pool. The winning index falls inside one wallet&rsquo;s range &mdash; that is the whole result.</p>' +
     '<div class="vf-bar">' + bar + '</div>' +
     '<div class="vf-rows">' + list + '</div></div>';
@@ -4025,11 +4011,111 @@ function vfReproduceHtml(w, snap, total) {
       'for (let p = 0; p < 3; p++) {\n' +
       '  s = sha256(s + String(p));            // hex\n' +
       '  let i = Number(BigInt("0x" + s) % ' + total + 'n);\n' +
-      '  // skip forward while tickets[i] already won\n' +
+      '  // skip forward while entries[i] already won\n' +
       '}';
   return '<div class="vf-card vf-repro"><div class="vf-h">Reproduce it yourself</div>' +
-    '<p class="vf-intro">Take the block hash from the block explorer above and the ticket list ' +
+    '<p class="vf-intro">Take the block hash from the block explorer above and the entry list ' +
     'from the snapshot, then run:</p><pre>' + code + '</pre></div>';
 }
 
 window.renderDrawVerify = renderDrawVerify;
+
+
+// ── Выбор раунда ─────────────────────────────────────────────────────────
+// Родной <select> рисуется средствами ОС и в тёмную тему сайта не ложится
+// никак: ни фон, ни шрифт, ни стрелка не поддаются CSS. Поэтому кнопка
+// плюс собственная панель — и заодно в строку помещается больше: чип пула,
+// дата и пометка, воспроизводим ли раунд.
+var vfPickerOpen = false;
+
+function vfRounds() {
+  return winnersData.filter(function (w) { return w.places && w.places.length; });
+}
+
+function vfRowHtml(w, i, active) {
+  return '<button class="vf-opt' + (active ? ' active' : '') + '" role="option" data-i="' + i + '" ' +
+    'onclick="vfPick(' + i + ')">' +
+    '<span class="vf-opt-chip ' + (w.type === 'daily' ? 'd' : 'w') + '">' +
+      (w.type === 'daily' ? 'Daily' : 'Weekly') + '</span>' +
+    '<span class="vf-opt-id">' + (w.roundId || ('#' + w.round)) + '</span>' +
+    '<span class="vf-opt-date">' + fmtDate(w.time) + '</span>' +
+    '<span class="vf-opt-tag" data-tag="' + i + '">&middot;&middot;&middot;</span>' +
+  '</button>';
+}
+
+// Наличие снимка НЕ угадывается по данным раунда. Первая попытка помечала
+// строки по наличию block_height — и врала для пяти раундов из восьми:
+// высота есть, а снимка нет, потому что снимки пишутся только с 3 авг 2026.
+// Раз весь раздел про честность, статус берётся запросом, а не догадкой.
+var vfSnapCache = {};
+
+function vfMarkSnapshots(list) {
+  list.forEach(function (w, i) {
+    if (!w.roundId) return vfSetTag(i, false);
+    if (vfSnapCache[w.roundId] !== undefined) return vfSetTag(i, vfSnapCache[w.roundId]);
+    fetch('./rounds/' + w.roundId + '.json', { method: 'HEAD' })
+      .then(function (r) { vfSnapCache[w.roundId] = r.ok; vfSetTag(i, r.ok); })
+      .catch(function () { vfSnapCache[w.roundId] = false; vfSetTag(i, false); });
+  });
+}
+
+function vfSetTag(i, ok) {
+  var el = document.querySelector('[data-tag="' + i + '"]');
+  if (!el) return;
+  el.textContent = ok ? 'replayable' : 'result only';
+  el.className = 'vf-opt-tag' + (ok ? ' ok' : '');
+}
+
+function populateDrawVerifySelect() {
+  var menu = document.getElementById('vf-menu');
+  if (!menu) return;
+  var list = vfRounds();
+  menu.innerHTML = list.length
+    ? list.map(function (w, i) { return vfRowHtml(w, i, false); }).join('')
+    : '<div class="vf-opt-empty">No completed rounds yet.</div>';
+  vfMarkSnapshots(list);
+}
+
+function vfToggle(force) {
+  var menu = document.getElementById('vf-menu');
+  var btn  = document.getElementById('vf-trigger');
+  if (!menu || !btn) return;
+  vfPickerOpen = (force === undefined) ? !vfPickerOpen : !!force;
+  menu.style.display = vfPickerOpen ? 'block' : 'none';
+  btn.classList.toggle('open', vfPickerOpen);
+  btn.setAttribute('aria-expanded', vfPickerOpen ? 'true' : 'false');
+}
+
+function vfPick(i) {
+  var w = vfRounds()[i];
+  var lbl = document.getElementById('vf-trigger-label');
+  if (w && lbl) {
+    lbl.innerHTML =
+      '<span class="vf-opt-chip ' + (w.type === 'daily' ? 'd' : 'w') + '">' +
+        (w.type === 'daily' ? 'Daily' : 'Weekly') + '</span>' +
+      '<span class="vf-opt-id">' + (w.roundId || ('#' + w.round)) + '</span>' +
+      '<span class="vf-opt-date">' + fmtDate(w.time) + '</span>';
+  }
+  var menu = document.getElementById('vf-menu');
+  if (menu) {
+    Array.prototype.forEach.call(menu.children, function (el) {
+      if (el.classList) el.classList.toggle('active', el.dataset && String(el.dataset.i) === String(i));
+    });
+  }
+  vfToggle(false);
+  renderDrawVerify(i);
+}
+
+// Закрытие по клику мимо и по Escape — как ведёт себя родной select
+document.addEventListener('click', function (e) {
+  if (!vfPickerOpen) return;
+  var box = document.getElementById('vf-picker');
+  if (box && !box.contains(e.target)) vfToggle(false);
+});
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape' && vfPickerOpen) vfToggle(false);
+});
+
+window.populateDrawVerifySelect = populateDrawVerifySelect;
+window.vfToggle = vfToggle;
+window.vfPick   = vfPick;
