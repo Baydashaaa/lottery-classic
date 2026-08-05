@@ -19,6 +19,7 @@ import base64
 import datetime as dt
 import json
 import sys
+import subprocess
 import urllib.request
 
 NFT = "terra1hcsq79vmcqxr97sv720yw6scvyknssx62ufsa4rwlmv02gyft43s46uaqx"
@@ -27,6 +28,7 @@ LCDS = [
     "https://lcd-terra-classic.hexxagon.io",
 ]
 MIN_ENTRIES = 5
+CONSUMED_BEFORE = 1784837749  # 2026-07-23 20:15 UTC — everything up to here went into the 07-23 draw
 POOL = "daily"
 
 
@@ -36,8 +38,9 @@ def query(msg: dict) -> dict:
     for base in LCDS:
         url = f"{base}/cosmwasm/wasm/v1/contract/{NFT}/smart/{q}"
         try:
-            with urllib.request.urlopen(url, timeout=15) as r:
-                return json.loads(r.read())["data"]
+            out = subprocess.run(["curl", "-sS", "--max-time", "15", url],
+                                 capture_output=True, text=True, check=True)
+            return json.loads(out.stdout)["data"]
         except Exception as e:  # noqa: BLE001
             last = e
     raise RuntimeError(f"query failed on every LCD: {last}")
@@ -91,7 +94,7 @@ def daily_deadlines(first_ts: int, now_ts: int):
 
 
 def main():
-    tokens = [t for t in load_tokens() if t["pool"] == POOL]
+    tokens = [t for t in load_tokens() if t["pool"] == POOL and t["minted_at"] >= CONSUMED_BEFORE]
     if not tokens:
         sys.exit("no tokens in this pool")
     tokens.sort(key=lambda t: (t["minted_at"], t["id"]))
