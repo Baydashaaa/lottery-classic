@@ -1091,6 +1091,48 @@ body.modal-open{overflow:hidden}
   .hw-split{grid-template-columns:1fr}
   .hw-code{font-size:10.5px}
 }
+
+/* ── выбор раунда ──────────────────────────────────────────────────────── */
+.vf-picker{position:relative;margin-bottom:16px}
+.vf-trigger{width:100%;display:flex;align-items:center;gap:10px;cursor:pointer;
+  background:linear-gradient(150deg,rgba(20,17,28,.9),rgba(8,9,14,.8));
+  border:1px solid rgba(244,208,63,.28);border-radius:11px;padding:12px 14px;
+  font-family:inherit;color:#e9edf6;text-align:left;transition:border-color .2s,background .2s}
+.vf-trigger:hover{border-color:rgba(244,208,63,.5)}
+.vf-trigger.open{border-color:rgba(244,208,63,.6);background:rgba(244,208,63,.06)}
+.vf-trigger::after{content:'';margin-left:auto;width:8px;height:8px;flex:0 0 auto;
+  border-right:2px solid var(--gold,#f4d03f);border-bottom:2px solid var(--gold,#f4d03f);
+  transform:rotate(45deg) translateY(-2px);transition:transform .22s}
+.vf-trigger.open::after{transform:rotate(-135deg) translateY(-2px)}
+#vf-trigger-label{display:flex;align-items:center;gap:10px;min-width:0;flex-wrap:wrap}
+.vf-ph{color:var(--muted,#6b82a8);font-size:13px}
+
+.vf-menu{display:none;position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:40;
+  max-height:290px;overflow-y:auto;border-radius:11px;padding:5px;
+  background:rgba(9,10,16,.98);border:1px solid rgba(244,208,63,.28);
+  box-shadow:0 14px 34px rgba(0,0,0,.6)}
+.vf-opt{width:100%;display:flex;align-items:center;gap:10px;cursor:pointer;
+  background:none;border:0;border-radius:8px;padding:9px 10px;font-family:inherit;
+  color:#cdd8ea;text-align:left;transition:background .15s}
+.vf-opt:hover{background:rgba(244,208,63,.09)}
+.vf-opt.active{background:rgba(244,208,63,.14)}
+.vf-opt-chip{font-size:9px;letter-spacing:.12em;text-transform:uppercase;
+  border:1px solid currentColor;border-radius:99px;padding:2px 8px;flex:0 0 auto}
+.vf-opt-chip.d{color:#f4d03f}
+.vf-opt-chip.w{color:#a78bfa}
+.vf-opt-id{font-family:monospace;font-size:11.5px;color:#e9edf6}
+.vf-opt-date{font-size:11px;color:var(--muted,#6b82a8)}
+.vf-opt-tag{margin-left:auto;font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+  color:#6b7a95;border:1px solid rgba(255,255,255,.1);border-radius:99px;padding:2px 8px;flex:0 0 auto}
+.vf-opt-tag.ok{color:#00dca0;border-color:rgba(0,220,160,.4)}
+.vf-opt-empty{padding:14px;color:var(--muted,#6b82a8);font-size:12.5px;text-align:center}
+
+@media (max-width:560px){
+  /* Метка «replayable» на своей строке — иначе выталкивает дату */
+  .vf-opt{flex-wrap:wrap;gap:7px}
+  .vf-opt-tag{margin-left:0}
+  .vf-menu{max-height:250px}
+}
 </style>
 <div class="vf-wrap" style="padding-bottom:0;">
  <div class="section-title">How the Draw Works</div>
@@ -1103,13 +1145,13 @@ body.modal-open{overflow:hidden}
  <div class="vf-card">
   <div class="vf-h">Step 1 &middot; Entries</div>
   <p class="vf-intro" style="margin-bottom:10px;">
-   Every Oracle Mask you mint adds tickets to the round. The tier decides how many.
-   More tickets means a wider slice, never a guarantee.
+   Every Oracle Mask you mint adds entries to the round. The tier decides how many.
+   More entries mean a wider slice, never a guarantee.
   </p>
   <div class="hw-tiers">
-   <span class="hw-tier c">Common &middot; 1 ticket</span>
-   <span class="hw-tier r">Rare &middot; 5 tickets</span>
-   <span class="hw-tier l">Legendary &middot; 10 tickets</span>
+   <span class="hw-tier c">Common &middot; 1 entry</span>
+   <span class="hw-tier r">Rare &middot; 5 entries</span>
+   <span class="hw-tier l">Legendary &middot; 10 entries</span>
   </div>
   <p class="vf-intro" style="margin:12px 0 0;">
    Free entries earned on Terra Oracle count too. At draw time the whole list is frozen
@@ -1137,10 +1179,10 @@ body.modal-open{overflow:hidden}
   <div class="hw-split">
    <div class="hw-half">
     <div class="hw-badge d">Daily &middot; one winner</div>
-    <pre class="hw-code">index = BigInt("0x" + block_hash) % total_tickets</pre>
+    <pre class="hw-code">index = BigInt("0x" + block_hash) % total_entries</pre>
     <p class="vf-intro" style="margin:0;">
-     The hash read as one huge number, divided by the ticket count. The remainder is the
-     winning ticket.
+     The hash read as one huge number, divided by the entry count. The remainder is the
+     winning entry.
     </p>
    </div>
 
@@ -1149,7 +1191,7 @@ body.modal-open{overflow:hidden}
     <pre class="hw-code">seed = block_hash
 for place p in 0, 1, 2:
   seed  = sha256(seed + p)
-  index = BigInt("0x" + seed) % total_tickets
+  index = BigInt("0x" + seed) % total_entries
   while that wallet already won:
     index = index + 1</pre>
     <p class="vf-intro" style="margin:0;">
@@ -1171,8 +1213,14 @@ for place p in 0, 1, 2:
 <div class="vf-wrap" style="padding-top:0;">
  <div class="section-title">Verify a Draw</div>
  <div class="section-line"></div>
- <select id="vf-select" class="vf-select" onchange="if(this.value!=='')renderDrawVerify(this.value)"></select>
- <div id="vf-empty" class="vf-loading">Select a round above to replay it.</div>
+ <div class="vf-picker" id="vf-picker">
+  <button class="vf-trigger" id="vf-trigger" type="button" aria-haspopup="listbox"
+          aria-expanded="false" onclick="vfToggle()">
+   <span id="vf-trigger-label"><span class="vf-ph">Select a completed round</span></span>
+  </button>
+  <div class="vf-menu" id="vf-menu" role="listbox"></div>
+ </div>
+ <div id="vf-empty" class="vf-loading">Pick a round above to replay it.</div>
  <div id="vf-result" style="display:none;"></div>
 </div>
 
@@ -1668,7 +1716,7 @@ for place p in 0, 1, 2:
        Обязан идти ДО app.js: app.js считает счётчики только через него. -->
   <script src="assets/js/draw-schedule.js?v=202608040710"></script>
   <script src="assets/js/oracle-nft-client.js?v=2"></script>
-  <script src="assets/js/app.js?v=202608051130"></script>
+  <script src="assets/js/app.js?v=202608051330"></script>
   <script src="assets/js/oracle-mint-v2.js?v=2"></script>
 
   <!-- Oracle Draw V2 — один собранный файл.
