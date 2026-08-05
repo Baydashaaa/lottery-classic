@@ -842,13 +842,6 @@
       "randomness": "terra-classic-block-hash-at-round-deadline",
       "tx_treasury": "42FF324456B5BD1975FF6C148351BA486F3E4DDBEF59E08B3700CE3C69B4A56D",
       "seeds_lunc": 57917
-    },
-    {
-      "date": "2026-08-03",
-      "round_id": "weekly_2026-08-03",
-      "skipped": true,
-      "reason": "Not enough entries: 0",
-      "entries": 0
     }
   ]
 }
