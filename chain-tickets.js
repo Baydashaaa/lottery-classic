@@ -165,6 +165,7 @@ export async function buildTicketsFromChain({
   deadlineMs,
   blockHeight,
   minEntries = MIN_ENTRIES,
+  boundaryTs: boundaryOverride,
 }) {
   if (!pool) throw new Error('pool is required');
   if (!deadlineMs) throw new Error('deadlineMs is required');
@@ -173,7 +174,14 @@ export async function buildTicketsFromChain({
     (t) => t.pool === pool && t.mintedAt >= RULE_START_TS
   );
 
-  const boundaryTs = lastConsumedTs(meta, pool, deadlineMs, minEntries);
+  // Граница «отыграно». Для daily она выводится из цепи: источник входов один,
+  // и правило самодостаточно. Для weekly её обязан передать вызывающий — там
+  // состоялся ли раунд, зависит ещё и от бесплатных входов и от баланса пула,
+  // а этого в цепи нет. Молча посчитать её здесь означало бы выдать догадку
+  // за проверяемый факт.
+  const boundaryTs = boundaryOverride != null
+    ? boundaryOverride
+    : lastConsumedTs(meta, pool, deadlineMs, minEntries);
 
   const active = sortTokens(
     meta.filter(

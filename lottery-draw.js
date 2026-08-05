@@ -155,6 +155,55 @@ function addFreeEntries(participants) {
   return participants;
 }
 
+// Граница «отыграно» для weekly.
+//
+// Берётся из последней НЕпропущенной weekly-записи: её дедлайн и есть момент,
+// до которого все NFT этого пула уже сыграли. Вычислить её из цепи нельзя —
+// раунд мог состояться за счёт бесплатных входов, которых в цепи нет, или
+// сорваться из-за баланса пула ниже WEEKLY_MIN_LUNC.
+//
+// Значит weekly проверяем не полностью: NFT-часть списка любой пересоберёт по
+// цепи, а вот эта граница берётся из winners.json, то есть из файла, который
+// ведём мы. Проверить его можно по истории коммитов — слабее цепи, но это
+// настоящий предел, а не наша небрежность.
+function lastWeeklyBoundaryTs() {
+  const winners = loadWinners();
+  const done = (winners.weekly || []).filter(function (w) { return !w.skipped; });
+  if (done.length === 0) return null;
+
+  const last = done[done.length - 1];
+  // Новые записи несут deadline явно; старые — только дату, а weekly всегда
+  // закрывается в понедельник в 20:00 UTC.
+  const iso = last.deadline ||
+    ((last.date || String(last.round_id || '').replace('weekly_', '')) + 'T20:00:00Z');
+  const ts = Math.floor(new Date(iso).getTime() / 1000);
+  if (!Number.isFinite(ts)) {
+    console.warn('Could not read the weekly boundary from winners.json: ' + iso);
+    return null;
+  }
+  return ts;
+}
+
+// Бесплатные входы как упорядоченный список билетов.
+// Порядок — по адресу кошелька, а не по порядку ключей в JSON: только так
+// проверяющий соберёт тот же массив, что и мы.
+function buildFreeTickets() {
+  if (!fs.existsSync(FREE_ENTRIES_PATH)) return [];
+  try {
+    const data = JSON.parse(fs.readFileSync(FREE_ENTRIES_PATH, 'utf8'));
+    const entries = data.entries || {};
+    const out = [];
+    for (const wallet of Object.keys(entries).sort()) {
+      const total = (entries[wallet] && entries[wallet].total) || 0;
+      for (let i = 0; i < total; i++) out.push(wallet);
+    }
+    return out;
+  } catch (e) {
+    console.warn('Could not load free-entries.json:', e.message);
+    return [];
+  }
+}
+
 // ── Build ticket array ───────────────────────────────────────────────────────
 // [ "terra1abc", "terra1abc", "terra1xyz", ... ]
 function buildTickets(participants) {
@@ -181,6 +230,14 @@ function buildTickets(participants) {
 // Побочный плюс: участник может проверить розыгрыш сам, зная только round_id —
 // дедлайн из него вычисляется, блок находится однозначно.
 function getDrawDeadlineTs() {
+  // Только для холостых прогонов: боевой путь никогда сюда не заходит,
+  // потому что DRY_RUN запрещает любую отправку средств.
+  if (process.env.DRY_RUN === '1' && process.env.DRY_RUN_DEADLINE) {
+    const forced = new Date(process.env.DRY_RUN_DEADLINE).getTime();
+    if (!Number.isFinite(forced)) throw new Error('DRY_RUN_DEADLINE is not a valid date');
+    console.warn('DRY_RUN: deadline forced to ' + new Date(forced).toISOString());
+    return forced;
+  }
   const now = new Date();
   const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 20, 0, 0));
   if (now.getTime() < d.getTime()) d.setUTCDate(d.getUTCDate() - 1);
@@ -459,13 +516,35 @@ async function runWeeklyDraw(client, operatorAddr) {
   const roundId = getCurrentRoundId('weekly');
   console.log('Round: ' + roundId);
 
-  console.log('Fetching paid participants from Worker /round-stats...');
-  let participants = await fetchParticipants('weekly');
-  console.log('Adding free entries from free-entries.json...');
-  participants = addFreeEntries(participants);
+  // Weekly состоит из двух блоков, и порядок между ними зафиксирован:
+  //   1) NFT-билеты из контракта — то же правило, что в daily
+  //   2) бесплатные входы из free-entries.json, по возрастанию адреса
+  // NFT-часть проверяется по цепи целиком; бесплатная — только по истории
+  // коммитов free-entries.json, и об этом честно сказано на странице проверки.
+  const deadlineMs = getDrawDeadlineTs();
+  const blockInfo = await getRoundBlockInfo();
 
-  const tickets = buildTickets(participants);
-  console.log('Participants: ' + Object.keys(participants).length + ', Tickets: ' + tickets.length);
+  console.log('Building NFT tickets from the contract...');
+  const weeklyBoundary = lastWeeklyBoundaryTs();
+  console.log(weeklyBoundary
+    ? 'Boundary from winners.json: ' + new Date(weeklyBoundary * 1000).toISOString()
+    : 'No completed weekly on record — falling back to the chain replay');
+
+  const { tickets: nftTickets, tokens, boundaryTs } = await buildTicketsFromChain({
+    pool: 'weekly',
+    deadlineMs,
+    blockHeight: blockInfo.height,
+    boundaryTs: weeklyBoundary === null ? undefined : weeklyBoundary,
+  });
+  const freeTickets = buildFreeTickets();
+  const tickets = nftTickets.concat(freeTickets);
+  const uniqueAddrs = new Set(tickets);
+
+  console.log('Deadline: ' + new Date(deadlineMs).toISOString() +
+              ', unconsumed since: ' + new Date(boundaryTs * 1000).toISOString());
+  console.log('NFT tickets: ' + nftTickets.length + ' from ' + tokens.length + ' token(s)' +
+              ', free entries: ' + freeTickets.length);
+  console.log('Participants: ' + uniqueAddrs.size + ', Tickets: ' + tickets.length);
 
   // Two thresholds must both pass for weekly: entries count AND pool balance
   if (tickets.length < MIN_ENTRIES) {
@@ -473,7 +552,7 @@ async function runWeeklyDraw(client, operatorAddr) {
     const winners = loadWinners();
     if (!winners.weekly) winners.weekly = [];
     winners.weekly.push({
-      date:    new Date().toISOString().slice(0, 10),
+      date:    new Date(deadlineMs).toISOString().slice(0, 10),
       round_id: roundId,
       skipped: true,
       reason:  'Not enough entries: ' + tickets.length,
@@ -492,7 +571,7 @@ async function runWeeklyDraw(client, operatorAddr) {
     const winners = loadWinners();
     if (!winners.weekly) winners.weekly = [];
     winners.weekly.push({
-      date:     new Date().toISOString().slice(0, 10),
+      date:     new Date(deadlineMs).toISOString().slice(0, 10),
       round_id: roundId,
       skipped:  true,
       reason:   'Pool below minimum: ' + fmt(balanceLunc) + ' / ' + fmt(WEEKLY_MIN_LUNC) + ' LUNC',
@@ -504,11 +583,10 @@ async function runWeeklyDraw(client, operatorAddr) {
   }
 
   // Select up to 3 unique winners (limited by unique participant count)
-  const uniqueParticipants = Object.keys(participants).length;
+  const uniqueParticipants = uniqueAddrs.size;
   const placesCount = Math.min(3, uniqueParticipants);
   console.log('Unique participants: ' + uniqueParticipants + ' — selecting ' + placesCount + ' winner(s)');
 
-  const blockInfo = await getRoundBlockInfo();
   const blockHash = blockInfo.hash;
   const blockHeight = blockInfo.height;
   console.log('Block height: ' + blockHeight + ', hash: ' + blockHash);
@@ -567,11 +645,17 @@ async function runWeeklyDraw(client, operatorAddr) {
   const winners = loadWinners();
   if (!winners.weekly) winners.weekly = [];
   winners.weekly.push({
-    date:        new Date().toISOString().slice(0, 10),
+    date:        new Date(deadlineMs).toISOString().slice(0, 10),
     round_id:    roundId,
     winners:     txs,
     entries:     tickets.length,
-    participants: Object.keys(participants).length,
+    participants: uniqueAddrs.size,
+    ticket_rule:  'chain-v1+free',
+    nft_contract: 'terra1hcsq79vmcqxr97sv720yw6scvyknssx62ufsa4rwlmv02gyft43s46uaqx',
+    deadline:     new Date(deadlineMs).toISOString(),
+    boundary_ts:  boundaryTs,
+    nft_tickets:  nftTickets.length,
+    free_tickets: freeTickets.length,
     block_hash:   blockHash,
     block_height: blockHeight,
     block_time:   new Date(blockInfo.timeMs).toISOString(),
