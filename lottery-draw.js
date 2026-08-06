@@ -303,9 +303,38 @@ async function findBlockAtOrAfter(targetMs) {
 // Фолбэка на sha256(Date.now()) больше НЕТ: такая случайность непроверяема,
 // а в winners.json отличалась бы только block_height: null. Если блок
 // недоступен — розыгрыш не проводится, активации переходят в следующий раунд.
+// Ждём дедлайн, а не отказываемся из-за него.
+//
+// Джоб запускается заранее (cron 19:30), потому что GitHub стартует когда
+// захочет — наблюдались задержки до 40 минут. Раньше эта задержка целиком
+// прибавлялась к времени публикации результата; теперь она съедается
+// ожиданием, и розыгрыш происходит через секунды после 20:00.
+//
+// Ждём по времени цепи, а не по часам раннера: дедлайн определён в терминах
+// блоков, и только это время имеет значение.
+async function waitForDeadline(deadlineMs, maxWaitMs) {
+  const started = Date.now();
+  for (;;) {
+    const latest = await fetchBlock('latest');
+    if (latest && latest.timeMs >= deadlineMs) {
+      console.log('Deadline reached, chain time ' + new Date(latest.timeMs).toISOString());
+      return true;
+    }
+    if (Date.now() - started > maxWaitMs) {
+      console.warn('Waited ' + Math.round(maxWaitMs / 60000) + 'm and the deadline is still ahead — giving up');
+      return false;
+    }
+    const left = latest ? Math.round((deadlineMs - latest.timeMs) / 1000) : '?';
+    console.log('Waiting for the deadline, ' + left + 's to go...');
+    await new Promise(r => setTimeout(r, 10000));
+  }
+}
+
 async function getRoundBlockInfo() {
   const deadline = getDrawDeadlineTs();
   console.log('Round deadline (UTC): ' + new Date(deadline).toISOString());
+  // До 45 минут — с запасом на самый поздний старт, что мы видели.
+  await waitForDeadline(deadline, 45 * 60 * 1000);
   const b = await findBlockAtOrAfter(deadline);
   if (!b) {
     throw new Error(
