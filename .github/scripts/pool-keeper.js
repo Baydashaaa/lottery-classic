@@ -209,6 +209,7 @@ if (!['open', 'settle', 'both'].includes(action)) {
   process.exit(1);
 }
 
+console.log('pool-keeper build: fee-2026-08-06');
 const ctx = await connect();
 console.log(`keeper ${ctx.address} on ${CHAIN_ID}, action=${action}`);
 
