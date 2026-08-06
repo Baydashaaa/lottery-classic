@@ -59,7 +59,7 @@ export const CONFIG = {
     // только схлопывание мелкого хвоста в один раскрываемый сектор.
     MAX_SECTORS: 48,
 
-    IDLE_RPM: 4,                        // холостое вращение в PRE_DRAW/AWAITING
+    IDLE_RPM: 10,                        // холостое вращение в PRE_DRAW/AWAITING
     SPIN_TURNS_MIN: 5,
     SPIN_TURNS_MAX: 8,
     SPIN_DURATION: 6500,
