@@ -511,7 +511,7 @@ function updatePoolDisplay() {
   const _pt=document.getElementById('pool-tickets');if(_pt)_pt.textContent = nftCount + ' NFT' + (nftCount !== 1 ? 's' : '') + ' minted this round';
 
   const minNotice = document.getElementById('pool-min-notice');
-  if (count <= MIN_TICKETS && count > 0) {
+  if (count < MIN_TICKETS && count > 0) {
     minNotice.style.display = 'block';
   } else {
     minNotice.style.display = 'none';
