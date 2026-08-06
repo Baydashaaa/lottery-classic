@@ -29,14 +29,28 @@
 import crypto from 'crypto';
 import { DirectSecp256k1HdWallet } from '@cosmjs/proto-signing';
 import { SigningCosmWasmClient } from '@cosmjs/cosmwasm-stargate';
-import { GasPrice } from '@cosmjs/stargate';
 import { stringToPath } from '@cosmjs/crypto';
 
 const LCD = process.env.LCD || 'https://terra-classic-lcd.publicnode.com';
 const RPC = process.env.RPC || 'https://terra-classic-rpc.publicnode.com';
 const CHAIN_ID = process.env.CHAIN_ID || 'columbus-5';
 const DENOM = 'uluna';
-const GAS_PRICE = '28.325uluna';
+const GAS_PRICE_ULUNA = 28.325;
+
+/**
+ * Fixed gas limits. Generous on purpose: an under-estimated draw would revert
+ * after doing all its work, and the round would sit unsettled until somebody
+ * noticed. gasUsed is logged so these can be trimmed once there is real data.
+ */
+const GAS_LIMITS = { open: 400000, settle: 1500000 };
+
+function feeFor(kind) {
+  const gas = GAS_LIMITS[kind];
+  return {
+    amount: [{ denom: DENOM, amount: String(Math.ceil(gas * GAS_PRICE_ULUNA)) }],
+    gas: String(gas),
+  };
+}
 
 /** Open the next round once the current one is within this of closing. */
 const OPEN_AHEAD_SECS = 6 * 3600;
@@ -111,9 +125,7 @@ async function connect() {
     hdPaths: [stringToPath("m/44'/330'/0'/0/0")],
   });
   const [account] = await wallet.getAccounts();
-  const client = await SigningCosmWasmClient.connectWithSigner(RPC, wallet, {
-    gasPrice: GasPrice.fromString(GAS_PRICE),
-  });
+  const client = await SigningCosmWasmClient.connectWithSigner(RPC, wallet);
   return { client, address: account.address };
 }
 
@@ -146,10 +158,10 @@ async function openIfDue(pool, addr, ctx) {
     ctx.address,
     addr,
     { open_round: { seed_hash: seedHash, close_time: String(closeTime * 1_000_000) } },
-    'auto',
+    feeFor('open'),
     `oracle-pool: open ${pool} round ${nextId}`
   );
-  console.log(`[${pool}] opened, tx ${res.transactionHash}`);
+  console.log(`[${pool}] opened, tx ${res.transactionHash}, gas ${res.gasUsed}/${GAS_LIMITS.open}`);
 }
 
 async function settleDue(pool, addr, ctx) {
@@ -174,10 +186,10 @@ async function settleDue(pool, addr, ctx) {
       ctx.address,
       addr,
       { execute_draw: { round_id: id, secret } },
-      'auto',
+      feeFor('settle'),
       `oracle-pool: settle ${pool} round ${id}`
     );
-    console.log(`[${pool}] settled, tx ${res.transactionHash}`);
+    console.log(`[${pool}] settled, tx ${res.transactionHash}, gas ${res.gasUsed}/${GAS_LIMITS.settle}`);
 
     const after = await query(addr, { round: { round_id: id } });
     console.log(`[${pool}] status ${after.status}, entries ${after.total_entries}, ` +
