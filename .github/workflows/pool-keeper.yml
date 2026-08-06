@@ -1,0 +1,61 @@
+name: Oracle Pool — Keeper
+
+# Two runs a day, on purpose.
+#
+#  19:00 — open the next round while the current one is still taking entries.
+#          That ordering is the whole guarantee: the seed is committed before
+#          the round's participants exist. Running it an hour early leaves room
+#          for GitHub's scheduling delay, which is routinely 10-30 minutes.
+#  20:05 — settle whatever has closed. Late is harmless: the outcome is fixed
+#          at close_time and revealing later cannot change it.
+#
+# Both steps are idempotent and work from on-chain state, so a missed run is
+# picked up by the next one rather than needing a human.
+on:
+  schedule:
+    - cron: '0 19 * * *'
+    - cron: '5 20 * * *'
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'What to do'
+        required: true
+        default: 'both'
+        type: choice
+        options: [open, settle, both]
+
+concurrency:
+  group: pool-keeper
+  cancel-in-progress: false
+
+jobs:
+  keeper:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm install @cosmjs/proto-signing @cosmjs/cosmwasm-stargate @cosmjs/stargate @cosmjs/crypto
+
+      - name: Decide action
+        id: what
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "action=${{ github.event.inputs.action }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event.schedule }}" = "0 19 * * *" ]; then
+            echo "action=open" >> $GITHUB_OUTPUT
+          else
+            echo "action=settle" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run keeper
+        env:
+          ORACLE_MASTER_SEED: ${{ secrets.ORACLE_MASTER_SEED }}
+          POOL_KEEPER_MNEMONIC: ${{ secrets.POOL_KEEPER_MNEMONIC }}
+          POOL_DAILY: terra1d9ga3dzhg63v6rmm8ahts55ekjpwlm6dusw5cwhpt60s6t0actqqsul6tm
+          POOL_WEEKLY: terra19w39c3qz6kc756hap92x374reptah9kp5825f5c67hmquy383r5qd7dmd8
+        run: node .github/scripts/pool-keeper.js ${{ steps.what.outputs.action }}
