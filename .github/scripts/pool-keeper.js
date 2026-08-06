@@ -113,7 +113,6 @@ async function connect() {
   const [account] = await wallet.getAccounts();
   const client = await SigningCosmWasmClient.connectWithSigner(RPC, wallet, {
     gasPrice: GasPrice.fromString(GAS_PRICE),
-    chainId: CHAIN_ID,
   });
   return { client, address: account.address };
 }
