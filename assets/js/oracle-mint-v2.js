@@ -314,7 +314,12 @@
       var txHash = await sendExecuteContract(
         wallet,
         CONTRACT,
-        { extension: { msg: { mint: { tier: tier, pool: pool } } } },
+        { extension: { msg: { mint: {
+          tier: tier,
+          pool: pool,
+          // см. OracleNFT.freshEntropy — один генератор на обе ветки минта
+          entropy: OracleNFT.freshEntropy(),
+        } } } },
         [{ denom: 'uluna', amount: String(price) }],
         'draw:' + pool + ':' + tier,
         CHAIN_ID

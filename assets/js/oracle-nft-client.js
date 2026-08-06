@@ -160,6 +160,21 @@
     });
   }
 
+  // ---------------------------------------------------------------- entropy
+  /**
+   * 32 случайных байта в base64 для поля mint.entropy.
+   *
+   * crypto.getRandomValues, а не Math.random: значение уходит в накопитель
+   * раунда, и предсказуемость здесь означала бы предсказуемость победителя.
+   */
+  function freshEntropy() {
+    var b = new Uint8Array(32);
+    (window.crypto || window.msCrypto).getRandomValues(b);
+    var s = '';
+    for (var i = 0; i < b.length; i++) s += String.fromCharCode(b[i]);
+    return btoa(s);
+  }
+
   // ------------------------------------------------------------------ mint
 
   /**
@@ -176,7 +191,11 @@
     if (pool !== 'daily' && pool !== 'weekly') throw new Error('buildMintMsg: pool must be daily or weekly');
     if (!opts.price) throw new Error('buildMintMsg: price is required (use getMintPrice)');
 
-    var exec = { extension: { msg: { mint: { tier: String(opts.tier).toLowerCase(), pool: pool } } } };
+    var exec = { extension: { msg: { mint: {
+      tier: String(opts.tier).toLowerCase(),
+      pool: pool,
+      entropy: opts.entropy || freshEntropy(),
+    } } } };
     if (opts.recipient) exec.extension.msg.mint.recipient = opts.recipient;
 
     return {
@@ -239,6 +258,7 @@
     getStats: getStats,
     getContractTokens: getContractTokens,
     getOwnedTokens: getOwnedTokens,
+    freshEntropy: freshEntropy,
     buildMintMsg: buildMintMsg,
     prepareMint: prepareMint,
     toLegacyNfts: toLegacyNfts,
