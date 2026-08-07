@@ -1,0 +1,372 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Oracle Field - prototype</title>
+<link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;600;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{--gold:#f4d03f;--gold-light:#f6dd7a;--muted:#6b82a8;--violet:#a78bfa;--green:#00dca0;--red:#ff5f5f}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:radial-gradient(1100px 620px at 50% -8%,#1a1140,#06080f 62%);color:#e8f0ff;
+  font-family:'Exo 2',sans-serif;padding:22px 14px 60px}
+.wrap{max-width:940px;margin:0 auto}
+h1{font-family:'Rajdhani',sans-serif;font-size:26px;letter-spacing:.06em;text-align:center}
+.sub{text-align:center;color:var(--muted);font-size:12.5px;margin:6px 0 20px}
+
+.top{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:14px}
+.box{background:linear-gradient(155deg,rgba(22,17,8,.7),rgba(9,10,16,.6));
+  border:1px solid rgba(120,90,20,.34);border-radius:12px;padding:11px 13px;position:relative;overflow:hidden}
+.box::after{content:'';position:absolute;top:0;left:0;width:100%;height:1px;
+  background:linear-gradient(90deg,rgba(244,208,63,.5),transparent 70%)}
+.box b{display:block;font-family:'Rajdhani',sans-serif;font-size:20px;color:var(--gold-light);line-height:1.1}
+.box span{display:block;margin-top:4px;font-size:8.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted)}
+.box.roll b{color:var(--violet)}
+
+.bar{height:6px;border-radius:99px;background:rgba(255,255,255,.06);margin-bottom:12px;overflow:hidden}
+.bar>i{display:block;height:100%;background:linear-gradient(90deg,#c9a227,var(--gold));
+  border-radius:99px;transition:width .4s}
+
+.field{background:rgba(0,0,0,.34);border:1px solid rgba(255,255,255,.07);border-radius:14px;
+  padding:11px;display:grid;grid-template-columns:repeat(25,1fr);gap:2px;margin-bottom:8px;
+  position:relative}
+.z{aspect-ratio:1;border-radius:2px;background:rgba(255,255,255,.045);position:relative;
+  transition:background .1s}
+.z.own{background:var(--c)}
+
+/* Зоны вне раунда - красный крест, а не просто тусклый квадрат */
+.z.out{background:rgba(255,60,60,.045);box-shadow:inset 0 0 0 1px rgba(255,95,95,.22)}
+.z.out::before,.z.out::after{content:'';position:absolute;left:50%;top:50%;width:66%;height:1.5px;
+  background:rgba(255,95,95,.55);border-radius:2px}
+.z.out::before{transform:translate(-50%,-50%) rotate(45deg)}
+.z.out::after{transform:translate(-50%,-50%) rotate(-45deg)}
+
+/* Победившая клетка НЕ увеличивается: раздутая клетка наезжает на соседей,
+   и перестаёт быть понятно, в какой именно ячейке сетки она стоит.
+   Вместо этого гасим всё поле и ведём к ней перекрестье. */
+.z.win{background:var(--gold)!important;
+  box-shadow:0 0 0 2px #fff,0 0 0 4px rgba(244,208,63,.55),0 0 26px 9px rgba(244,208,63,.75);
+  z-index:6;transform:scale(1.12)}
+.z.near{box-shadow:0 0 0 1.5px var(--green),0 0 12px 3px rgba(0,220,160,.7);z-index:4}
+
+.field.reveal .z:not(.win):not(.near){opacity:.13;filter:saturate(.25)}
+.field .z{transition:background .1s,opacity .45s,filter .45s}
+
+.xhair{position:absolute;background:linear-gradient(90deg,transparent,rgba(244,208,63,.75),transparent);
+  pointer-events:none;z-index:5;opacity:0;transition:opacity .45s}
+.xhair.v{background:linear-gradient(180deg,transparent,rgba(244,208,63,.75),transparent)}
+.field.reveal .xhair{opacity:1}
+.zlabel{position:absolute;transform:translateX(-50%);pointer-events:none;z-index:7;
+  font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;letter-spacing:.12em;
+  text-transform:uppercase;color:#0b0b10;background:var(--gold);border-radius:5px;
+  padding:2px 8px;white-space:nowrap;opacity:0;transition:opacity .45s;
+  box-shadow:0 3px 12px rgba(0,0,0,.6)}
+.field.reveal .zlabel{opacity:1}
+
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--muted);margin-bottom:16px}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.legend .x{position:relative;background:rgba(255,60,60,.06);box-shadow:inset 0 0 0 1px rgba(255,95,95,.35)}
+
+.ctl{display:flex;gap:9px;align-items:center;justify-content:center;margin-bottom:14px;flex-wrap:wrap}
+button{font-family:inherit;font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+  padding:9px 17px;border-radius:99px;cursor:pointer;background:rgba(244,208,63,.1);
+  color:var(--gold);border:1px solid rgba(244,208,63,.45);transition:all .2s}
+button:hover:not(:disabled){background:rgba(244,208,63,.2)}
+button:disabled{opacity:.32;cursor:default}
+button.ghost{background:none;color:var(--muted);border-color:rgba(255,255,255,.13)}
+button.ghost:hover{color:#e8f0ff;border-color:rgba(255,255,255,.3);background:rgba(255,255,255,.04)}
+.state{font-family:'Rajdhani',sans-serif;font-size:15px;color:var(--muted);min-width:150px;text-align:center}
+.count{font-family:'Rajdhani',sans-serif;font-size:52px;color:var(--gold);line-height:1;
+  text-align:center;min-height:56px;letter-spacing:.05em}
+
+.res{border-radius:13px;padding:15px 17px;margin-bottom:12px;display:none;border:1px solid}
+.res.show{display:block}
+.res.win{border-color:rgba(244,208,63,.5);background:linear-gradient(150deg,rgba(48,36,4,.55),rgba(9,10,16,.5))}
+.res.roll{border-color:rgba(167,139,250,.45);background:linear-gradient(150deg,rgba(30,20,58,.55),rgba(9,10,16,.5))}
+.res h3{font-family:'Rajdhani',sans-serif;font-size:19px;margin-bottom:5px}
+.res.win h3{color:var(--gold)}
+.res.roll h3{color:var(--violet)}
+.res p{font-size:12.5px;color:#9fb0c9;line-height:1.65}
+.res code{color:#cdd8ea;font-size:11.5px}
+.nearline{margin-top:8px;font-size:12px;color:var(--green)}
+
+.proof{background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.06);border-radius:11px;
+  padding:12px 14px;font-family:monospace;font-size:11px;line-height:1.9;color:#8fa3c0;overflow-x:auto}
+.proof b{color:var(--gold-light)}
+.proof i{color:var(--muted);font-style:normal;display:inline-block;min-width:78px}
+.note{font-size:12px;color:var(--muted);line-height:1.7;margin-top:14px}
+.note b{color:#cdd8ea;font-weight:600}
+
+@media(max-width:620px){
+  .top{grid-template-columns:repeat(2,1fr)}
+  .field{grid-template-columns:repeat(13,1fr)}
+  .box b{font-size:17px}
+  .count{font-size:42px}
+}
+</style></head><body>
+<div class="wrap">
+<h1>Oracle Field</h1>
+<p class="sub">up to 250 zones &middot; claimed back to back &middot; a round every 3 hours &middot; minimum 20 zones</p>
+
+<div class="top">
+  <div class="box"><b id="s-pool">&mdash;</b><span>round pool</span></div>
+  <div class="box roll"><b id="s-roll">&mdash;</b><span>carried over</span></div>
+  <div class="box"><b id="s-fill">&mdash;</b><span>zones claimed</span></div>
+  <div class="box"><b id="s-burn">&mdash;</b><span>USTC burned</span></div>
+</div>
+<div class="bar"><i id="s-bar" style="width:0%"></i></div>
+
+<div class="res" id="res"><h3 id="res-h"></h3><p id="res-p"></p><div class="nearline" id="res-near"></div></div>
+
+<div class="field" id="field"></div>
+<div class="legend" id="legend"></div>
+
+<div class="count" id="count"></div>
+<div class="ctl">
+  <button id="go">Start round</button>
+  <span class="state" id="state">ready</span>
+</div>
+<div class="ctl">
+  <button class="ghost" id="b95">95 of 250</button>
+  <button class="ghost" id="bfull">full board</button>
+  <button class="ghost" id="blow">12 &mdash; below minimum</button>
+  <button class="ghost" id="brnd">random</button>
+</div>
+
+<div class="proof" id="proof"></div>
+
+<p class="note"><b>What this shows.</b> Zones are claimed strictly back to back &mdash; there are never
+gaps between them. Everything past the last claimed zone is crossed out in red and takes no part in
+the round: the winning index is taken modulo the number of <em>claimed</em> zones, not 250.
+The marker decides nothing &mdash; the winning zone is derived from the block hash before the
+animation starts, and the animation only replays it.</p>
+</div>
+
+<script>
+const N = 250, MIN_ZONES = 20, TRAIL = 4;
+const PALETTE = ['#4da3ff','#a78bfa','#00dca0','#e3a869','#ff6b9d','#6be3d8','#c9a227','#8f7bff'];
+let owners = [], board = [], pool = 0, rollover = 0, burned = 0, sold = 0, running = false;
+let painted = [];
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const rnd = (a,b) => a + Math.floor(Math.random()*(b-a+1));
+const fmt = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+const cell = i => document.getElementById('z' + i);
+
+// Zones are taken back to back: each buyer gets the next free numbers,
+// so a gap inside the claimed part cannot happen by construction.
+function newBoard(fill){
+  board = new Array(N).fill(null);
+  owners = [];
+  const target = (fill === undefined) ? rnd(14, N) : fill;
+  let cursor = 0, h = 0;
+  while (cursor < target){
+    const run = Math.min(rnd(3, 30), target - cursor);
+    const addr = 'terra1' + Math.random().toString(36).slice(2,6) + '\u2026' +
+                 Math.random().toString(36).slice(2,6);
+    owners.push({ addr, color: PALETTE[h % PALETTE.length], from: cursor, to: cursor + run - 1 });
+    for (let i = cursor; i < cursor + run; i++) board[i] = h;
+    cursor += run; h++;
+  }
+  sold   = cursor;
+  burned = sold * 10;
+  pool   = rollover + Math.round(sold * 10 * 0.9 * 120);
+  render();
+}
+
+function render(){
+  const f = document.getElementById('field');
+  f.classList.remove('reveal');
+  f.innerHTML = '';
+  painted = [];
+  for (let i = 0; i < N; i++){
+    const d = document.createElement('div');
+    d.id = 'z' + i;
+    if (board[i] !== null){
+      d.className = 'z own';
+      d.style.setProperty('--c', owners[board[i]].color);
+      d.title = 'zone ' + (i+1) + ' \u00b7 ' + owners[board[i]].addr;
+    } else {
+      d.className = 'z out';
+      d.title = 'zone ' + (i+1) + ' \u00b7 unclaimed, not in this round';
+    }
+    f.appendChild(d);
+  }
+  document.getElementById('legend').innerHTML =
+    owners.map(o => '<span><i style="background:' + o.color + '"></i>' + o.addr +
+      ' \u00b7 zones ' + (o.from+1) + '\u2013' + (o.to+1) + '</span>').join('') +
+    '<span><i class="x"></i>not in this round</span>';
+  document.getElementById('s-pool').textContent = fmt(pool) + ' LUNC';
+  document.getElementById('s-roll').textContent = rollover ? fmt(rollover) + ' LUNC' : '\u2014';
+  document.getElementById('s-fill').textContent = sold + ' / ' + N;
+  document.getElementById('s-burn').textContent = fmt(burned) + ' USTC';
+  document.getElementById('s-bar').style.width = (sold / N * 100) + '%';
+  document.getElementById('res').className = 'res';
+  document.getElementById('proof').innerHTML = '<div><i>waiting</i> for the block at the round deadline\u2026</div>';
+}
+
+// ── Бегунок ───────────────────────────────────────────────────────────────
+// Одна подсвеченная клетка на скорости не читается - глаз её не догоняет.
+// Поэтому за головой тянется хвост из TRAIL клеток с падающей яркостью:
+// движение видно как комета, а не как мигание.
+function clearTrail(){
+  painted.forEach(i => {
+    const e = cell(i);
+    if (!e) return;
+    e.style.background = ''; e.style.boxShadow = '';
+    e.style.transform = '';  e.style.zIndex = '';
+  });
+  painted = [];
+}
+
+function paintTrail(head){
+  clearTrail();
+  for (let k = 0; k < TRAIL; k++){
+    const i = (head - k + sold * 2) % sold;
+    const e = cell(i);
+    if (!e) continue;
+    const f = 1 - k / TRAIL;                    // 1 у головы, 0 у хвоста
+    if (k === 0){
+      e.style.background = '#ffffff';
+      e.style.boxShadow  = '0 0 0 2px rgba(255,255,255,.95), 0 0 20px 6px rgba(255,255,255,.85),' +
+                           '0 0 34px 12px rgba(244,208,63,.55)';
+      e.style.transform  = 'scale(1.9)';
+      e.style.zIndex     = '5';
+    } else {
+      e.style.background = 'rgba(255,245,200,' + (0.16 + 0.62 * f) + ')';
+      e.style.boxShadow  = '0 0 ' + (4 + 10 * f) + 'px ' + (1 + 3 * f) + 'px rgba(244,208,63,' + (0.5 * f) + ')';
+      e.style.transform  = 'scale(' + (1 + 0.45 * f) + ')';
+      e.style.zIndex     = String(4 - k);
+    }
+    painted.push(i);
+  }
+}
+
+// Однозначно показать, ГДЕ остановились: гасим остальное поле, проводим
+// через клетку перекрестье и вешаем над ней номер зоны.
+function markWinner(c, idx){
+  const f = document.getElementById('field');
+  const L = c.offsetLeft, T = c.offsetTop, W = c.offsetWidth, H = c.offsetHeight;
+
+  const h = document.createElement('div');
+  h.className = 'xhair'; h.id = 'xh';
+  h.style.cssText += 'left:0;width:100%;height:1px;top:' + (T + H/2) + 'px';
+  f.appendChild(h);
+
+  const v = document.createElement('div');
+  v.className = 'xhair v'; v.id = 'xv';
+  v.style.cssText += 'top:0;height:100%;width:1px;left:' + (L + W/2) + 'px';
+  f.appendChild(v);
+
+  const lb = document.createElement('div');
+  lb.className = 'zlabel'; lb.id = 'xl';
+  lb.textContent = 'zone ' + (idx + 1);
+  lb.style.left = (L + W/2) + 'px';
+  // у верхнего края подпись уходит под клетку, иначе вылезет за поле
+  lb.style.top = (T < 26 ? T + H + 6 : T - 22) + 'px';
+  f.appendChild(lb);
+
+  f.classList.add('reveal');
+}
+
+function clearWinner(){
+  document.getElementById('field').classList.remove('reveal');
+  ['xh','xv','xl'].forEach(id => { const e = document.getElementById(id); if (e) e.remove(); });
+}
+
+async function runRound(){
+  if (running) return;
+  running = true;
+  document.getElementById('go').disabled = true;
+  const res = document.getElementById('res'),
+        rh  = document.getElementById('res-h'),
+        rp  = document.getElementById('res-p'),
+        nr  = document.getElementById('res-near'),
+        st  = document.getElementById('state'),
+        cnt = document.getElementById('count');
+  nr.textContent = '';
+
+  // Порог участия: пустых зон в игре нет, значит промах в пустоту раунд
+  // больше не страхует - эту роль берёт минимум проданных зон.
+  if (sold < MIN_ZONES){
+    res.className = 'res roll show';
+    rh.textContent = 'Round not held';
+    rp.innerHTML = 'Only ' + sold + ' zones claimed, minimum is ' + MIN_ZONES +
+      '. <b style="color:var(--violet)">' + fmt(pool) + ' LUNC</b> carry over to the next round ' +
+      'and the zones go back to their owners.';
+    rollover = pool;
+    st.textContent = 'carried over';
+    document.getElementById('s-roll').textContent = fmt(rollover) + ' LUNC';
+    running = false;
+    return;
+  }
+
+  // 1. Результат фиксируется ДО анимации
+  const hash = Array.from({length:64}, () => '0123456789ABCDEF'[rnd(0,15)]).join('');
+  const target = Number(BigInt('0x' + hash) % BigInt(sold));
+  document.getElementById('proof').innerHTML =
+    '<div><i>block_hash</i> <b>' + hash.slice(0,42) + '\u2026</b></div>' +
+    '<div><i>zone</i> BigInt("0x" + hash) % ' + sold +
+      ' <span style="color:#6b82a8">(claimed zones, not 250)</span> = <b>' + (target+1) + '</b></div>' +
+    '<div><i>status</i> settled before the animation starts</div>';
+
+  // 2. Отсчёт
+  st.textContent = 'minting closed';
+  for (let i = 5; i >= 1; i--){ cnt.textContent = i; await sleep(600); }
+  cnt.textContent = ''; st.textContent = 'running';
+
+  // 3. Анимация проигрывает уже известный результат
+  const steps = (2 + rnd(0,1)) * sold + target;
+  const T = 8200;
+  const ease = x => x < 0.5 ? 8*x*x*x*x : 1 - Math.pow(-2*x + 2, 4)/2;
+  await new Promise(done => {
+    const t0 = performance.now(); let prev = -1;
+    (function frame(now){
+      const x = Math.min(1, (now - t0) / T);
+      const pos = Math.round(steps * ease(x));
+      if (pos !== prev){ paintTrail(pos % sold); prev = pos; }
+      if (x < 1) requestAnimationFrame(frame); else done();
+    })(performance.now());
+  });
+
+  // 4. Итог - победитель есть всегда, пустых зон в игре нет
+  clearTrail();
+  const c = cell(target);
+  c.classList.add('win');
+  markWinner(c, target);
+  const o = owners[board[target]];
+  res.className = 'res win show';
+  rh.textContent = 'Zone ' + (target+1) + ' \u2014 winner';
+  rp.innerHTML = '<code>' + o.addr + '</code> takes <b style="color:var(--gold-light)">' +
+    fmt(pool) + ' LUNC</b>. The NFT stays with them as a record: &laquo;zone ' + (target+1) +
+    ', round 412&raquo;.';
+
+  const near = [];
+  [target-1, target+1].forEach(i => {
+    if (i >= 0 && i < sold && board[i] !== null && board[i] !== board[target]){
+      near.push(owners[board[i]]);
+      cell(i).classList.add('near');
+    }
+  });
+  if (near.length) nr.textContent = 'Next to it: ' + near.map(x => x.addr).join(', ') +
+    ' \u2014 consolation share ' + fmt(Math.round(pool*0.05)) + ' LUNC';
+
+  rollover = 0;
+  document.getElementById('s-roll').textContent = '\u2014';
+  st.textContent = 'round closed';
+  running = false;
+}
+
+function reset(fill){
+  clearTrail();
+  clearWinner();
+  newBoard(fill);
+  document.getElementById('go').disabled = false;
+  document.getElementById('state').textContent = 'ready';
+  document.getElementById('count').textContent = '';
+}
+document.getElementById('go').onclick    = runRound;
+document.getElementById('b95').onclick   = () => reset(95);
+document.getElementById('bfull').onclick = () => reset(250);
+document.getElementById('blow').onclick  = () => reset(12);
+document.getElementById('brnd').onclick  = () => reset();
+newBoard(95);
+</script>
+</body></html>
