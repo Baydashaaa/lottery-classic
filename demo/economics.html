@@ -1,0 +1,150 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Oracle Field — Economics</title>
+<link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;600;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{--gold:#f4d03f;--gold-light:#f6dd7a;--muted:#6b82a8;--violet:#a78bfa;--cyan:#4da3ff;--green:#00dca0;--red:#ff6b6b}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:radial-gradient(1100px 700px at 50% -10%,#1a1140,#06080f 60%);color:#e8f0ff;
+  font-family:'Exo 2',sans-serif;padding:30px 14px 80px;line-height:1.62}
+.wrap{max-width:840px;margin:0 auto}
+h1{font-family:'Rajdhani',sans-serif;font-size:31px;letter-spacing:.04em;text-align:center}
+.sub{text-align:center;color:var(--muted);font-size:12.5px;margin:7px 0 8px}
+.rate{text-align:center;font-size:11px;color:var(--gold-light);margin-bottom:26px;
+  font-family:monospace;letter-spacing:.03em}
+h2{font-family:'Rajdhani',sans-serif;font-size:12px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--gold);margin:0 0 14px}
+.card{background:linear-gradient(150deg,rgba(15,13,22,.85),rgba(8,9,14,.72));
+  border:1px solid rgba(60,52,30,.5);border-radius:14px;padding:19px;margin-bottom:13px}
+p{font-size:13px;color:#9fb0c9;margin-bottom:11px}
+p:last-child{margin-bottom:0}
+b{color:#e9edf6}
+.lead{font-size:13.5px;color:#b9c6dc}
+
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);
+  text-align:left;padding:0 10px 9px 0;font-weight:400}
+th.r,td.r{text-align:right;padding-right:0}
+td{padding:9px 10px 9px 0;border-top:1px solid rgba(255,255,255,.06);color:#9fb0c9}
+td:first-child{color:#e9edf6;font-weight:600;white-space:nowrap}
+td.n{font-family:'Rajdhani',sans-serif;font-size:15px;color:var(--gold-light);font-weight:700}
+td.g{color:var(--green)}
+tr.hi td{background:rgba(244,208,63,.05)}
+
+.split{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:4px 0 14px}
+.piece{border-radius:11px;padding:15px;text-align:center;border:1px solid}
+.piece.p{border-color:rgba(244,208,63,.45);background:rgba(244,208,63,.07)}
+.piece.u{border-color:rgba(77,163,255,.4);background:rgba(77,163,255,.06)}
+.piece.t{border-color:rgba(0,220,160,.35);background:rgba(0,220,160,.05)}
+.piece b{display:block;font-family:'Rajdhani',sans-serif;font-size:29px;line-height:1}
+.piece.p b{color:var(--gold)}.piece.u b{color:var(--cyan)}.piece.t b{color:var(--green)}
+.piece span{display:block;font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin-top:6px}
+
+.flags{display:grid;gap:9px;margin-top:4px}
+.flag{display:grid;grid-template-columns:22px 1fr;gap:11px;font-size:12.5px;color:#9fb0c9}
+.flag i{font-style:normal;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:15px;text-align:center}
+.flag.ok i{color:var(--green)}
+.flag.no i{color:var(--red)}
+
+.note{border-left:2px solid rgba(167,139,250,.5);padding-left:14px;margin-top:14px}
+.note p{color:#a9a2c4;font-size:12.5px}
+@media(max-width:600px){
+  .split{grid-template-columns:1fr}
+  td:first-child{white-space:normal}
+}
+</style></head><body>
+<div class="wrap">
+
+<h1>Oracle Field &mdash; Economics</h1>
+<p class="sub">A round every 3 hours &middot; up to 250 zones &middot; draft for review</p>
+<p class="rate">all USD figures at 1 LUNC = $0.0000504, taken from the Terra Oracle treasury dashboard, 5 Aug 2026</p>
+
+<div class="card">
+<h2>How a player pays</h2>
+<p class="lead">Two separate things, and this is the part most people get wrong at first.</p>
+<table>
+  <tr><th>What</th><th>When</th><th>Cost</th><th class="r">What it gives</th></tr>
+  <tr><td>Oracle Mask</td><td>once, ever</td><td>25,000 &ndash; 250,000 LUNC<br>($1.26 &ndash; $12.59)</td><td class="r">permanent access to Field,<br>tier sets the zone cap</td></tr>
+  <tr><td>Zones</td><td>every round</td><td>from 1,000 LUNC ($0.05)</td><td class="r">a share of that round's board</td></tr>
+</table>
+<p style="margin-top:12px">The mask is a <b>pass, not a ticket</b>. Buy it once and it works in every round from then on. Mask revenue goes to the Daily and Weekly pools exactly as it does today &mdash; Field takes nothing from it and funds itself entirely from zone sales.</p>
+</div>
+
+<div class="card">
+<h2>Zone price rises within a round</h2>
+<p>Base 1,000 LUNC, <b>+5% for each further zone the same wallet takes in that round</b>. The count is cumulative: splitting one purchase into five does not reset it.</p>
+<table>
+  <tr><th>Zones taken</th><th>Total</th><th>USD</th><th>Average per zone</th><th class="r">Markup</th></tr>
+  <tr><td>3</td><td>3,152</td><td>$0.16</td><td>1,051</td><td class="n r">1.05x</td></tr>
+  <tr><td>10</td><td>12,578</td><td>$0.63</td><td>1,258</td><td class="n r">1.26x</td></tr>
+  <tr><td>25</td><td>47,727</td><td>$2.40</td><td>1,909</td><td class="n r">1.91x</td></tr>
+  <tr><td>50</td><td>209,348</td><td>$10.55</td><td>4,187</td><td class="n r">4.19x</td></tr>
+</table>
+<p style="margin-top:12px">Why it matters: zones are claimed back to back and the unsold tail sits out the round, so there is no empty zone for a large buyer to miss on. Without the rising price, whoever buys 80 of 95 zones wins 84% of rounds with no risk at all. The markup makes concentration expensive without touching small players &mdash; three zones cost 5% over base, fifty cost more than four times.</p>
+</div>
+
+<div class="card">
+<h2>Mask tiers</h2>
+<table>
+  <tr><th>Tier</th><th>Price</th><th>Zone cap per round</th><th>Cost to fill the cap</th><th class="r">Daily &amp; Weekly</th></tr>
+  <tr><td>Common</td><td>25,000 ($1.26)</td><td class="n">10</td><td>12,578 ($0.63)</td><td class="r">1 entry</td></tr>
+  <tr><td>Rare</td><td>125,000 ($6.30)</td><td class="n">25</td><td>47,727 ($2.40)</td><td class="r">5 entries</td></tr>
+  <tr><td>Legendary</td><td>250,000 ($12.59)</td><td class="n">50</td><td>209,348 ($10.55)</td><td class="r">10 entries</td></tr>
+</table>
+<p style="margin-top:12px">The cap comes from the <b>best mask held, not the sum</b>. Five Commons give a cap of 10, the same as one. Otherwise stacking cheap masks would beat a Rare and the tiers would stop meaning anything.</p>
+<p>Masks behave differently in the two games: in Daily and Weekly entries <b>stack and are consumed</b>, in Field the pass is <b>permanent and does not stack</b>. A collector holding 3 Legendary, 5 Rare and 14 Common has 69 entries for the draws and a cap of 50 zones in Field.</p>
+</div>
+
+<div class="card">
+<h2>Where the money goes</h2>
+<div class="split">
+  <div class="piece p"><b>80%</b><span>prize pool</span></div>
+  <div class="piece u"><b>12%</b><span>buy USTC on the market and burn it</span></div>
+  <div class="piece t"><b>8%</b><span>protocol treasury</span></div>
+</div>
+<table>
+  <tr><th>Board</th><th>Collected</th><th>USD</th><th>Prize</th><th>To USTC</th><th class="r">Treasury</th></tr>
+  <tr><td>20 zones (minimum)</td><td>21,600</td><td>$1.09</td><td>17,280</td><td>2,592</td><td class="r">1,728</td></tr>
+  <tr class="hi"><td>95 zones (typical)</td><td>102,600</td><td>$5.17</td><td>82,080</td><td>12,312</td><td class="r">8,208</td></tr>
+  <tr><td>250 zones (full)</td><td>270,000</td><td>$13.60</td><td>216,000</td><td>32,400</td><td class="r">21,600</td></tr>
+</table>
+<p style="margin-top:12px">The 12% is spent <b>buying USTC on the open market</b> and burning it, once per round rather than batched &mdash; small orders do not move a thin book. Recurring buy pressure matters more here than the burn itself.</p>
+</div>
+
+<div class="card">
+<h2>Two rules that carry the economics</h2>
+<p><b>A round starts when the board fills, with three hours as the ceiling.</b> Not a fixed tick. Without this the economy hits a wall: only 250 zones can be sold per round, so 100 players and 600 players produce identical revenue. With it, activity converts into rounds.</p>
+<table style="margin-top:6px">
+  <tr><th>Active players</th><th>Rounds per day</th><th>Daily turnover</th><th class="r">Treasury per month</th></tr>
+  <tr><td>40</td><td>8</td><td>1.73M LUNC</td><td class="n r">$209</td></tr>
+  <tr><td>100</td><td>16</td><td>4.32M LUNC</td><td class="n r">$522</td></tr>
+  <tr><td>250</td><td>40</td><td>10.8M LUNC</td><td class="n r">$1,306</td></tr>
+  <tr><td>600</td><td>96</td><td>25.9M LUNC</td><td class="n r">$3,134</td></tr>
+</table>
+<p style="margin-top:14px"><b>A round that misses the minimum is not refunded &mdash; it merges forward.</b> Zones and pool carry into the next round and the board keeps filling.</p>
+<table style="margin-top:6px">
+  <tr><th>Quiet rounds merged</th><th>Board by morning</th><th>Prize pool</th><th class="r">Player paid for</th></tr>
+  <tr><td>1</td><td>78 zones</td><td>67,392 LUNC</td><td class="r">1 entry instead of 2</td></tr>
+  <tr><td>2</td><td>96 zones</td><td>82,944 LUNC</td><td class="r">1 entry instead of 3</td></tr>
+  <tr><td>3</td><td>114 zones</td><td>98,496 LUNC</td><td class="r">1 entry instead of 4</td></tr>
+</table>
+<p style="margin-top:12px">This is the answer to the obvious objection about eight rounds a day. Overnight the quiet rounds fuse into one bigger morning draw, so a player who bought at 3am is still in play at 9am for a larger pool instead of losing three times in a row.</p>
+</div>
+
+<div class="card">
+<h2>Honest notes</h2>
+<div class="flags">
+  <div class="flag no"><i>&minus;</i><div><b>The game is negative expectation for players, like any prize draw.</b> 80% of what is collected is paid back out. A player taking five zones loses about 1,105 LUNC per round on average &mdash; <b>$0.06</b>. Playing all eight rounds of a day costs roughly <b>$0.45</b>.</div></div>
+  <div class="flag no"><i>&minus;</i><div><b>Players collectively cannot profit</b> while the pool is funded only by entries. That is arithmetic, not design. The only way a round returns more than it takes is external money &mdash; a sponsor adding to the pool. A 150,000 LUNC sponsorship turns a 95-zone round into a 238% return for the players in it.</div></div>
+  <div class="flag no"><i>&minus;</i><div><b>At current LUNC prices no fee structure makes this a business.</b> Forty active players produce about $209 a month. The realistic return is sponsor money, treasury LUNC appreciating, and a project token later &mdash; not the take on turnover.</div></div>
+  <div class="flag ok"><i>+</i><div><b>The low prices remove the gambling concern.</b> A zone is five cents. Nobody is harmed at 45 cents a day, and there is no scenario where a player loses meaningful money.</div></div>
+  <div class="flag ok"><i>+</i><div><b>Field feeds the other two games.</b> It gives a new reason to mint a mask, and mask revenue goes to the Daily and Weekly pools. It does not compete with them for money.</div></div>
+  <div class="flag ok"><i>+</i><div><b>The randomness is already solved and already verifiable.</b> The winning zone is derived from the Terra Classic block hash at the round deadline before the animation runs, and the board snapshot is published, so anyone can replay the result.</div></div>
+</div>
+<div class="note">
+<p><b>Still open:</b> a consolation share for blocks adjacent to the winning zone; the base zone price (1,000 LUNC is deliberately cheap); the exact tier caps; and how much REP a round should award &mdash; it must stay small, or players would farm reputation here instead of asking questions on the Board, where a question costs 50,000 LUNC.</p>
+</div>
+</div>
+
+</div>
+</body></html>

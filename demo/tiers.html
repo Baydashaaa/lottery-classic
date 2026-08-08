@@ -1,0 +1,202 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Oracle Field — buy zones</title>
+<link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;600;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{--gold:#f4d03f;--gold-light:#f6dd7a;--muted:#6b82a8;--violet:#a78bfa;--cyan:#4da3ff;--red:#ff5f5f;--green:#00dca0}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:radial-gradient(1100px 620px at 50% -8%,#1a1140,#06080f 62%);color:#e8f0ff;
+  font-family:'Exo 2',sans-serif;padding:24px 14px 70px}
+.wrap{max-width:760px;margin:0 auto}
+h1{font-family:'Rajdhani',sans-serif;font-size:25px;letter-spacing:.05em;text-align:center}
+.sub{text-align:center;color:var(--muted);font-size:12.5px;margin:6px 0 22px}
+
+.card{background:linear-gradient(150deg,rgba(15,13,22,.85),rgba(8,9,14,.72));
+  border:1px solid rgba(60,52,30,.5);border-radius:14px;padding:17px;margin-bottom:12px}
+.h{font-family:'Rajdhani',sans-serif;font-size:12px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--gold);margin-bottom:13px}
+
+/* ── выбор маски ─────────────────────────────────────────────── */
+.tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.tier{border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:12px 11px;cursor:pointer;
+  background:rgba(255,255,255,.02);transition:all .2s;text-align:center}
+.tier:hover{border-color:rgba(255,255,255,.24)}
+.tier.on{background:rgba(244,208,63,.07)}
+.tier.on.c{border-color:rgba(159,176,201,.6)}
+.tier.on.r{border-color:rgba(77,163,255,.6)}
+.tier.on.l{border-color:rgba(244,208,63,.7)}
+.tier b{display:block;font-family:'Rajdhani',sans-serif;font-size:15px;letter-spacing:.06em;text-transform:uppercase}
+.tier.c b{color:#9fb0c9}.tier.r b{color:var(--cyan)}.tier.l b{color:var(--gold)}
+.tier em{display:block;font-style:normal;font-size:10.5px;color:var(--muted);margin-top:3px}
+.tier u{display:block;text-decoration:none;font-family:'Rajdhani',sans-serif;font-size:19px;
+  color:#e9edf6;margin-top:8px}
+.tier span{display:block;font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin-top:2px}
+
+/* ── счётчик зон ─────────────────────────────────────────────── */
+.buy{display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap}
+.step{display:flex;align-items:center;gap:2px}
+.step button{width:36px;height:36px;border-radius:9px;font-size:19px;line-height:1;cursor:pointer;
+  background:rgba(244,208,63,.09);color:var(--gold);border:1px solid rgba(244,208,63,.4);
+  font-family:inherit;transition:all .18s}
+.step button:hover:not(:disabled){background:rgba(244,208,63,.2)}
+.step button:disabled{opacity:.25;cursor:default}
+.step i{display:grid;place-items:center;min-width:64px;height:36px;font-family:'Rajdhani',sans-serif;
+  font-size:23px;font-style:normal;color:#fff}
+.buy .lbl{font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+
+.capbar{height:5px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden;margin:4px 0 7px}
+.capbar>i{display:block;height:100%;border-radius:99px;background:var(--green);transition:width .25s,background .25s}
+.capbar.full>i{background:var(--red)}
+.capnote{font-size:11.5px;color:var(--muted)}
+.capnote.full{color:var(--red)}
+.capnote b{color:#cdd8ea}
+
+.rows{display:grid;gap:7px;margin-top:14px}
+.row{display:flex;align-items:baseline;gap:10px;font-size:12.5px;color:var(--muted)}
+.row b{margin-left:auto;font-family:'Rajdhani',sans-serif;font-size:16px;color:#e9edf6;font-weight:700}
+.row.tot b{color:var(--gold-light);font-size:21px}
+.row.warn{color:var(--red)}
+
+/* ── мини-доска ──────────────────────────────────────────────── */
+.mini{display:grid;grid-template-columns:repeat(50,1fr);gap:1.5px;margin-top:13px}
+.mini i{aspect-ratio:1;border-radius:1px;background:rgba(255,255,255,.05)}
+.mini i.taken{background:rgba(167,139,250,.5)}
+.mini i.mine{background:var(--gold);box-shadow:0 0 5px rgba(244,208,63,.8)}
+.mini i.out{background:rgba(255,60,60,.07);box-shadow:inset 0 0 0 .5px rgba(255,95,95,.25)}
+.minicap{font-size:10.5px;color:var(--muted);margin-top:7px;display:flex;gap:13px;flex-wrap:wrap}
+.minicap em{font-style:normal}
+.minicap u{text-decoration:none;display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+
+table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:4px}
+th{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);
+  text-align:left;padding:0 8px 9px 0;font-weight:400}
+td{padding:9px 8px 9px 0;border-top:1px solid rgba(255,255,255,.06);color:#9fb0c9}
+td:first-child{color:#e9edf6;font-weight:600}
+td.n{font-family:'Rajdhani',sans-serif;font-size:15px;color:var(--gold-light);font-weight:700}
+.note{font-size:12px;color:var(--muted);line-height:1.7;margin-top:16px}
+.note b{color:#cdd8ea}
+
+@media(max-width:560px){
+  .tiers{grid-template-columns:1fr}
+  .mini{grid-template-columns:repeat(25,1fr)}
+  .buy{gap:10px}
+}
+</style></head><body>
+<div class="wrap">
+<h1>Buy zones</h1>
+<p class="sub">Round 412 &middot; closes in 47 min &middot; 84 of 250 zones taken</p>
+
+<div class="card">
+  <div class="h">Your Oracle Mask</div>
+  <div class="tiers">
+    <div class="tier c on" data-t="0"><b>Common</b><em>25,000 LUNC</em><u>10</u><span>zones per round</span></div>
+    <div class="tier r"    data-t="1"><b>Rare</b><em>125,000 LUNC</em><u>25</u><span>zones per round</span></div>
+    <div class="tier l"    data-t="2"><b>Legendary</b><em>250,000 LUNC</em><u>50</u><span>zones per round</span></div>
+  </div>
+  <p class="note" style="margin-top:13px">The limit comes from your <b>best</b> mask, not the sum of them.
+  Otherwise stacking cheap Commons would beat a Legendary and the tiers would stop meaning anything.</p>
+</div>
+
+<div class="card">
+  <div class="h">Zones this round</div>
+  <div class="buy">
+    <div class="step">
+      <button id="minus">&minus;</button><i id="cnt">5</i><button id="plus">+</button>
+    </div>
+    <span class="lbl" id="capLbl"></span>
+  </div>
+  <div class="capbar" id="capbar"><i id="capfill"></i></div>
+  <p class="capnote" id="capnote"></p>
+
+  <div class="rows">
+    <div class="row">next zone costs <b id="pNext"></b></div>
+    <div class="row">average per zone <b id="pAvg"></b></div>
+    <div class="row tot">total <b id="pTot"></b></div>
+    <div class="row" id="pOver"></div>
+  </div>
+
+  <div class="mini" id="mini"></div>
+  <div class="minicap">
+    <em><u style="background:rgba(167,139,250,.5)"></u>taken by others</em>
+    <em><u style="background:var(--gold)"></u>yours</em>
+    <em><u style="background:rgba(255,255,255,.05)"></u>still free</em>
+    <em><u style="background:rgba(255,60,60,.12)"></u>not in this round</em>
+  </div>
+</div>
+
+<div class="card">
+  <div class="h">What each tier unlocks</div>
+  <table>
+    <tr><th>Tier</th><th>Field</th><th>Daily &amp; Weekly</th><th>Mint</th></tr>
+    <tr><td>Common</td><td class="n">10</td><td>1 entry</td><td>25,000 LUNC</td></tr>
+    <tr><td>Rare</td><td class="n">25</td><td>5 entries</td><td>125,000 LUNC</td></tr>
+    <tr><td>Legendary</td><td class="n">50</td><td>10 entries</td><td>250,000 LUNC</td></tr>
+  </table>
+  <p class="note">A mask is bought <b>once</b> and works in every round from then on &mdash; it is a pass,
+  not a ticket. Zones are paid for separately, and their price climbs with every zone the same wallet
+  takes in that round. Even a Legendary holder pays sharply more for zone 40 than for zone 4.</p>
+</div>
+</div>
+
+<script>
+const CAPS = [10, 25, 50], BASE = 1000, STEP = 0.05, BOARD = 250, TAKEN = 84;
+let tier = 0, n = 5;
+
+const cost = k => { let s = 0; for (let i = 0; i < k; i++) s += BASE * Math.pow(1+STEP, i); return s; };
+const fmt  = v => Math.round(v).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+
+function draw(){
+  const cap = CAPS[tier];
+  n = Math.min(n, cap);
+
+  document.getElementById('cnt').textContent = n;
+  document.getElementById('minus').disabled = n <= 1;
+  document.getElementById('plus').disabled  = n >= cap;
+
+  const pct = n / cap * 100, full = n >= cap;
+  document.getElementById('capfill').style.width = pct + '%';
+  document.getElementById('capbar').className = 'capbar' + (full ? ' full' : '');
+  document.getElementById('capLbl').textContent = n + ' of ' + cap;
+  const note = document.getElementById('capnote');
+  note.className = 'capnote' + (full ? ' full' : '');
+  note.innerHTML = full
+    ? (tier < 2
+        ? 'Limit reached for <b>' + ['Common','Rare'][tier] + '</b>. A ' +
+          ['Rare','Legendary'][tier] + ' mask would allow ' + CAPS[tier+1] + '.'
+        : 'Limit reached &mdash; 50 zones is the ceiling for any single wallet.')
+    : 'You may still take <b>' + (cap - n) + '</b> more this round.';
+
+  const tot = cost(n), next = BASE * Math.pow(1+STEP, n);
+  document.getElementById('pNext').textContent = fmt(next) + ' LUNC';
+  document.getElementById('pAvg').textContent  = fmt(tot / n) + ' LUNC';
+  document.getElementById('pTot').textContent  = fmt(tot) + ' LUNC';
+  const over = document.getElementById('pOver');
+  const k = tot / (n * BASE);
+  over.className = 'row' + (k >= 1.3 ? ' warn' : '');
+  over.innerHTML = 'flat price would be ' + fmt(n*BASE) +
+    ' &mdash; you pay <b style="color:inherit">' + k.toFixed(2) + 'x</b>';
+
+  const m = document.getElementById('mini');
+  m.innerHTML = '';
+  const end = TAKEN + n;
+  for (let i = 0; i < BOARD; i++){
+    const e = document.createElement('i');
+    if (i < TAKEN) e.className = 'taken';
+    else if (i < end) e.className = 'mine';
+    else if (i < end + 40) e.className = '';
+    else e.className = 'out';
+    m.appendChild(e);
+  }
+}
+
+document.getElementById('plus').onclick  = () => { n++; draw(); };
+document.getElementById('minus').onclick = () => { n--; draw(); };
+document.querySelectorAll('.tier').forEach(el => el.onclick = () => {
+  document.querySelectorAll('.tier').forEach(x => x.classList.remove('on'));
+  el.classList.add('on');
+  tier = +el.dataset.t;
+  draw();
+});
+draw();
+</script>
+</body></html>
