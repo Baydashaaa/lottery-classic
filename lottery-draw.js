@@ -250,9 +250,22 @@ function getDrawDeadlineTs() {
     console.warn('DRY_RUN: deadline forced to ' + new Date(forced).toISOString());
     return forced;
   }
+  // The job is scheduled at 19:30 so GitHub's start delay is absorbed by
+  // waiting rather than added to the result. That means "now" is normally
+  // BEFORE the deadline, and taking the last one that passed would re-run
+  // yesterday's round — which is exactly what happened on 2026-08-08.
+  const EARLY_START_WINDOW_MS = 3 * 60 * 60 * 1000;
   const now = new Date();
-  const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 20, 0, 0));
-  if (now.getTime() < d.getTime()) d.setUTCDate(d.getUTCDate() - 1);
+  const d = new Date(Date.UTC(
+    now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 20, 0, 0
+  ));
+  if (now.getTime() < d.getTime()) {
+    // Close enough to be an early start for today's draw; otherwise this is a
+    // late run and the round it belongs to is the one already closed.
+    if (d.getTime() - now.getTime() > EARLY_START_WINDOW_MS) {
+      d.setUTCDate(d.getUTCDate() - 1);
+    }
+  }
   return d.getTime();
 }
 
