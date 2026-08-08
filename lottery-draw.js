@@ -166,19 +166,31 @@ function addFreeEntries(participants) {
 // цепи, а вот эта граница берётся из winners.json, то есть из файла, который
 // ведём мы. Проверить его можно по истории коммитов — слабее цепи, но это
 // настоящий предел, а не наша небрежность.
+// Для daily — то же самое, и по той же причине, что стала видна 6 августа:
+// расписание говорит, когда розыгрыш ДОЛЖЕН был случиться, а не случился ли он.
+// В тот день Actions лежали, розыгрыш не прошёл, но правило по расписанию уже
+// считало пять NFT отыгранными — они бы молча пропали.
+function lastDailyBoundaryTs() {
+  return lastBoundaryTs('daily');
+}
+
 function lastWeeklyBoundaryTs() {
+  return lastBoundaryTs('weekly');
+}
+
+function lastBoundaryTs(pool) {
   const winners = loadWinners();
-  const done = (winners.weekly || []).filter(function (w) { return !w.skipped; });
+  const done = (winners[pool] || []).filter(function (w) { return !w.skipped; });
   if (done.length === 0) return null;
 
   const last = done[done.length - 1];
   // Новые записи несут deadline явно; старые — только дату, а weekly всегда
   // закрывается в понедельник в 20:00 UTC.
   const iso = last.deadline ||
-    ((last.date || String(last.round_id || '').replace('weekly_', '')) + 'T20:00:00Z');
+    ((last.date || String(last.round_id || '').replace(pool + '_', '')) + 'T20:00:00Z');
   const ts = Math.floor(new Date(iso).getTime() / 1000);
   if (!Number.isFinite(ts)) {
-    console.warn('Could not read the weekly boundary from winners.json: ' + iso);
+    console.warn('Could not read the '+pool+' boundary from winners.json: ' + iso);
     return null;
   }
   return ts;
@@ -452,10 +464,19 @@ async function runDailyDraw(client, operatorAddr) {
   const blockInfo = await getRoundBlockInfo();
 
   console.log('Building tickets from the NFT contract...');
+  // Граница берётся из winners.json, а не выводится из расписания. 6 августа
+  // Actions лежали, розыгрыш не состоялся — но правило по расписанию уже
+  // считало пять NFT отыгранными, и они бы молча выпали из игры.
+  const dailyBoundary = lastDailyBoundaryTs();
+  console.log(dailyBoundary
+    ? 'Boundary from winners.json: ' + new Date(dailyBoundary * 1000).toISOString()
+    : 'No completed daily on record — falling back to the chain replay');
+
   const { tickets, tokens, boundaryTs } = await buildTicketsFromChain({
     pool: 'daily',
     deadlineMs,
     blockHeight: blockInfo.height,
+    boundaryTs: dailyBoundary === null ? undefined : dailyBoundary,
   });
   const participantCount = new Set(tokens.map(function (t) { return t.owner; })).size;
   console.log('Deadline: ' + new Date(deadlineMs).toISOString() +
