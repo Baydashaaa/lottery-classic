@@ -7,6 +7,10 @@ on:
     # скрипт сам дожидается дедлайна по времени цепи. Так задержка
     # поглощается ожиданием вместо того, чтобы прибавляться к нему.
     - cron: '30 19 * * *'
+  # Fired by the Cloudflare Worker at 20:00 UTC sharp. GitHub's own scheduler
+  # is minutes to hours late; this is what makes the result appear on time.
+  repository_dispatch:
+    types: [run-draw]
   workflow_dispatch:
     inputs:
       draw_type:
