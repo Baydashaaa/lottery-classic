@@ -14,7 +14,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;500;600;700&family=Rajdhani:wght@500;600;700&family=Stalinist+One&family=Boldonse&display=swap" rel="stylesheet">
 
   <!-- Стили -->
-  <link rel="stylesheet" href="assets/css/style.css?v=202608101430">
+  <link rel="stylesheet" href="assets/css/style.css?v=202608101505">
 <style>
 /* Weekly prize split animation */
 #weekly-prize-1, #weekly-prize-2, #weekly-prize-3 {
@@ -693,6 +693,10 @@ body.modal-open{overflow:hidden}
 .dg-stage{min-width:0}
 .dg-stage .hero-split{margin-top:0;padding-top:0}
 .dg-stage > div > .hero-split > .hero > h1:first-of-type{margin-top:0}
+/* Панель колеса несла inline margin-top:60px, подобранный под старую
+   раскладку на всю ширину. В рельсовой заголовок стоит у верха сцены,
+   и этот отступ опускал колесо ровно на 60px ниже. */
+.dg-stage .wheel-panel{margin-top:0}
 .dg-stage .hero{padding-top:0}
 
 @media (max-width:860px){
@@ -930,7 +934,7 @@ body.modal-open{overflow:hidden}
  </div>
  </div>
  </div>
- <div class="wheel-panel anim-right" id="wheel-panel-hero" style="align-self:flex-start;margin-top:60px;">
+ <div class="wheel-panel anim-right" id="wheel-panel-hero" style="align-self:flex-start;">
  <div class="wheel-panel-label" id="wheel-panel-label">ORACLE WHEEL</div>
  <div style="display:flex;flex-direction:column;align-items:center;gap:20px;">
  <div id="wheel-canvas-wrap">
@@ -1861,7 +1865,7 @@ for place p in 0, 1, 2:
        Обязан идти ДО app.js: app.js считает счётчики только через него. -->
   <script src="assets/js/draw-schedule.js?v=202608040710"></script>
   <script src="assets/js/oracle-nft-client.js?v=3"></script>
-  <script src="assets/js/app.js?v=202608101430"></script>
+  <script src="assets/js/app.js?v=202608101505"></script>
   <script src="assets/js/oracle-mint-v2.js?v=3"></script>
 
   <!-- Oracle Draw V2 — один собранный файл.
