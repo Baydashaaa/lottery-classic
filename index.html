@@ -14,7 +14,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;500;600;700&family=Rajdhani:wght@500;600;700&family=Stalinist+One&family=Boldonse&display=swap" rel="stylesheet">
 
   <!-- Стили -->
-  <link rel="stylesheet" href="assets/css/style.css?v=202608040710">
+  <link rel="stylesheet" href="assets/css/style.css?v=202608091500">
 <style>
 /* Weekly prize split animation */
 #weekly-prize-1, #weekly-prize-2, #weekly-prize-3 {
@@ -648,18 +648,96 @@ body.modal-open{overflow:hidden}
 
 <!-- ═══ DRAW PAGE ═══ -->
 <div id="page-draw" class="tab-page" style="display:none;">
-<div class="draw-tabs" style="max-width:1300px;margin:32px auto 0;padding:0 20px;display:flex;flex-direction:row;gap:12px;box-sizing:border-box;width:100%;">
- <div class="lottery-tab active-daily" id="tab-daily" onclick="switchLottery('daily')" style="flex:1;">
- <div class="tab-icon" style="font-size:32px;"><svg class="oi oi--gold"><use href="#i-reels"/></svg></div>
- <div class="tab-title" style="font-size:20px;">Daily Draw</div>
- <div class="tab-sub" style="font-size:14px;">NFT Oracle Masks · Draw at 20:00 UTC, every day except Monday</div>
+
+<!-- ═══ ПЕРЕКЛЮЧАТЕЛЬ ИГР ═══════════════════════════════════════════════════
+     Вертикальный рельс слева, содержимое выбранной игры справа. Рельс живёт
+     ТОЛЬКО на игровой странице: на Winners и Verify выбирать нечего, и он
+     занимал бы место зря. Winners и Verify остаются в верхней навигации.
+     Ниже 860px рельс превращается в горизонтальную ленту с прокруткой —
+     колонка на узком экране съела бы половину ширины. -->
+<style id="game-rail">
+.dg-shell{display:grid;grid-template-columns:236px 1fr;gap:18px;
+  max-width:1400px;margin:26px auto 0;padding:0 20px 40px;align-items:start;box-sizing:border-box}
+.dg-rail{display:flex;flex-direction:column;gap:10px;position:sticky;top:96px}
+.dg-rail-h{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);padding:0 4px 2px}
+.dg-game{position:relative;text-align:left;cursor:pointer;border-radius:13px;padding:14px 15px;
+  background:linear-gradient(150deg,rgba(14,18,32,.9),rgba(8,9,14,.8));
+  border:1px solid rgba(255,255,255,.07);font-family:inherit;color:var(--text);
+  transition:border-color .2s,transform .18s,background .2s;overflow:hidden}
+.dg-game:hover{transform:translateX(2px);border-color:rgba(255,255,255,.18)}
+/* Активная игра помечена полосой слева, а не заливкой: заливка спорит
+   с живыми цифрами внутри карточки и мешает их читать. */
+.dg-game::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:var(--c);opacity:0;transition:opacity .2s}
+.dg-game.on::before{opacity:1}
+.dg-game.on{border-color:var(--c);background:linear-gradient(150deg,var(--tint),rgba(8,9,14,.85))}
+.dg-r1{display:flex;align-items:center;gap:9px;margin-bottom:9px}
+.dg-ico{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;
+  background:var(--tint);color:var(--c);flex:0 0 auto}
+.dg-ico svg{width:15px;height:15px}
+.dg-nm{font-family:'Rajdhani',sans-serif;font-size:15.5px;font-weight:700;letter-spacing:.03em;display:block}
+.dg-game.on .dg-nm{color:var(--c)}
+.dg-sub{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.dg-stat{display:flex;align-items:baseline;gap:7px;margin-top:2px}
+.dg-big{font-family:'Rajdhani',sans-serif;font-size:19px;font-weight:700;color:var(--gold-light,#f6dd7a)}
+.dg-game.on .dg-big{color:var(--c)}
+.dg-tick{margin-left:auto;font-size:11px;color:var(--muted);font-family:'Rajdhani',sans-serif}
+.dg-bar{height:3px;border-radius:99px;background:rgba(255,255,255,.07);margin-top:9px;overflow:hidden}
+.dg-bar>i{display:block;height:100%;border-radius:99px;background:var(--c);transition:width .4s}
+.dg-stage{min-width:0}
+.dg-stage .hero-split{margin-top:0}
+
+@media (max-width:860px){
+  .dg-shell{grid-template-columns:1fr;gap:14px;margin-top:16px;padding:0 14px 30px}
+  .dg-rail{position:static;flex-direction:row;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+  .dg-rail::-webkit-scrollbar{display:none}
+  .dg-rail-h{display:none}
+  .dg-game{min-width:172px;flex:0 0 auto;padding:11px 12px}
+  .dg-game:hover{transform:none}
+  .dg-bar{display:none}
+}
+</style>
+
+<div class="dg-shell">
+ <div class="dg-rail">
+  <div class="dg-rail-h">Games</div>
+
+  <button class="dg-game on" id="dg-daily" data-g="daily"
+          style="--c:#f4d03f;--tint:rgba(244,208,63,.1)" onclick="selectGame('daily')">
+   <span class="dg-r1">
+    <span class="dg-ico"><svg class="oi"><use href="#i-reels"/></svg></span>
+    <span><span class="dg-nm">Daily</span><span class="dg-sub">every day but Monday</span></span>
+   </span>
+   <span class="dg-stat"><span class="dg-big" id="dg-daily-pool">—</span>
+     <span class="dg-sub">LUNC</span><span class="dg-tick" id="dg-daily-tick">—</span></span>
+   <span class="dg-bar"><i id="dg-daily-bar" style="width:0%"></i></span>
+  </button>
+
+  <button class="dg-game" id="dg-weekly" data-g="weekly"
+          style="--c:#a78bfa;--tint:rgba(167,139,250,.1)" onclick="selectGame('weekly')">
+   <span class="dg-r1">
+    <span class="dg-ico"><svg class="oi"><use href="#i-trophy"/></svg></span>
+    <span><span class="dg-nm">Weekly</span><span class="dg-sub">3 winners &middot; Monday</span></span>
+   </span>
+   <span class="dg-stat"><span class="dg-big" id="dg-weekly-pool">—</span>
+     <span class="dg-sub">LUNC</span><span class="dg-tick" id="dg-weekly-tick">—</span></span>
+   <span class="dg-bar"><i id="dg-weekly-bar" style="width:0%"></i></span>
+  </button>
+
+  <button class="dg-game" id="dg-circuit" data-g="circuit"
+          style="--c:#38d9d0;--tint:rgba(56,217,208,.1)" onclick="selectGame('circuit')">
+   <span class="dg-r1">
+    <span class="dg-ico"><svg class="oi"><use href="#i-search"/></svg></span>
+    <span><span class="dg-nm">Circuit</span><span class="dg-sub">every 3 hours</span></span>
+   </span>
+   <span class="dg-stat"><span class="dg-big" id="dg-circuit-zones">—</span>
+     <span class="dg-sub">/ 250 zones</span><span class="dg-tick" id="dg-circuit-tick">—</span></span>
+   <span class="dg-bar"><i id="dg-circuit-bar" style="width:0%"></i></span>
+  </button>
  </div>
- <div class="lottery-tab" id="tab-weekly" onclick="switchLottery('weekly')" style="flex:1;">
- <div class="tab-icon" style="font-size:32px;"><svg class="oi oi--gold"><use href="#i-trophy"/></svg></div>
- <div class="tab-title" style="font-size:20px;">Weekly Draw</div>
- <div class="tab-sub" style="font-size:14px;">3 winners · Draw every Monday at 20:00 UTC</div>
- </div>
-</div>
+
+ <div class="dg-stage">
+  <div id="stage-draw">
 <div class="hero-split" style="align-items:flex-start;width:100%;box-sizing:border-box;">
  <div class="hero" style="min-height:620px;">
  <h1 id="hero-title" class="anim-left">DAILY <span class="gold" id="hero-subtitle">DRAW</span></h1>
@@ -864,7 +942,25 @@ body.modal-open{overflow:hidden}
  </div>
  </div>
 </div>
+  </div><!-- /stage-draw -->
+
+  <!-- Circuit: разметка появится вместе с фронтом игры. Пока заглушка,
+       чтобы переключатель был рабочим с первого дня. -->
+  <div id="stage-circuit" style="display:none;">
+   <div style="text-align:center;padding:80px 20px;">
+    <div style="font-family:'Rajdhani',sans-serif;font-size:34px;letter-spacing:.02em;">
+      <span style="color:#38d9d0;">CIRCUIT</span></div>
+    <div style="width:60px;height:2px;background:linear-gradient(90deg,transparent,#38d9d0,transparent);margin:10px auto 18px;"></div>
+    <p style="color:var(--muted);font-size:13px;max-width:420px;margin:0 auto;line-height:1.7;">
+      Claim consecutive zones on a 250&#8209;zone board. A marker runs across it and stops on one
+      &mdash; whoever owns that zone takes the round.</p>
+    <p style="color:var(--muted);font-size:11px;letter-spacing:.16em;text-transform:uppercase;margin-top:22px;">
+      coming soon</p>
+   </div>
+  </div>
+ </div>
 </div>
+</div><!-- /page-draw -->
 
 <!-- ═══ WINNERS PAGE ═══ -->
 <style id="winners-v2">
@@ -1716,7 +1812,7 @@ for place p in 0, 1, 2:
        Обязан идти ДО app.js: app.js считает счётчики только через него. -->
   <script src="assets/js/draw-schedule.js?v=202608040710"></script>
   <script src="assets/js/oracle-nft-client.js?v=3"></script>
-  <script src="assets/js/app.js?v=202608061712"></script>
+  <script src="assets/js/app.js?v=202608091500"></script>
   <script src="assets/js/oracle-mint-v2.js?v=3"></script>
 
   <!-- Oracle Draw V2 — один собранный файл.
@@ -2451,5 +2547,100 @@ document.getElementById('luncdash-modal').addEventListener('click', function(e) 
 <script src="assets/js/oracle-notify.js?v=1"></script>
 <!-- ═══ END ORACLE EYE ═══ -->
 
+
+<script>
+// ═══ ПЕРЕКЛЮЧАТЕЛЬ ИГР ═════════════════════════════════════════════════════
+// Рельс не заменяет switchLottery, а надстраивается над ним: daily и weekly
+// по-прежнему идут через существующую функцию со всей её логикой, а Circuit
+// просто прячет игровую сцену и показывает свою.
+(function () {
+  const COLORS = { daily:'#f4d03f', weekly:'#a78bfa', circuit:'#38d9d0' };
+
+  window.selectGame = function (game) {
+    document.querySelectorAll('.dg-game').forEach(b =>
+      b.classList.toggle('on', b.dataset.g === game));
+
+    const draw    = document.getElementById('stage-draw');
+    const circuit = document.getElementById('stage-circuit');
+    if (!draw || !circuit) return;
+
+    if (game === 'circuit') {
+      draw.style.display = 'none';
+      circuit.style.display = 'block';
+    } else {
+      circuit.style.display = 'none';
+      draw.style.display = 'block';
+      if (typeof switchLottery === 'function') switchLottery(game);
+    }
+    try { localStorage.setItem('dgGame', game); } catch (e) {}
+  };
+
+  // Живые цифры в рельсе.
+  // Пулы daily и weekly берём балансами кошельков напрямую: узел pool-lunc
+  // в DOM держит только ВЫБРАННУЮ игру, а рельс должен показывать все три
+  // сразу — иначе теряется весь смысл видеть их рядом.
+  const POOL_WALLETS = {
+    daily:  'terra1amp68zg7vph3nq84ummnfma4dz753ezxfqa9px',
+    weekly: 'terra1p5l6q95kfl3hes7edy76tywav9f79n6xlkz6qz',
+  };
+  const LCD = 'https://terra-classic-lcd.publicnode.com';
+  const short = n => n >= 1e6 ? (n/1e6).toFixed(2) + 'M'
+               : n >= 1e3 ? (n/1e3).toFixed(1) + 'K' : Math.round(n);
+
+  async function refreshPools() {
+    for (const [game, addr] of Object.entries(POOL_WALLETS)) {
+      try {
+        const r = await fetch(LCD + '/cosmos/bank/v1beta1/balances/' + addr + '/by_denom?denom=uluna',
+                              { signal: AbortSignal.timeout(8000) });
+        if (!r.ok) continue;
+        const d = await r.json();
+        const lunc = Number(d?.balance?.amount || 0) / 1e6;
+        const el = document.getElementById('dg-' + game + '-pool');
+        if (el) el.textContent = short(lunc);
+        const bar = document.getElementById('dg-' + game + '-bar');
+        // Полоска у weekly — прогресс до минимума в 500 000 LUNC,
+        // у daily — до порога в 5 входов, которого в балансе нет,
+        // поэтому там просто заполненность относительно недельного.
+        if (bar) bar.style.width = Math.min(100, lunc / (game === 'weekly' ? 500000 : 200000) * 100) + '%';
+      } catch (e) {}
+    }
+  }
+
+  // Отсчёты — из общего модуля расписания, без единого запроса
+  function refreshTicks() {
+    if (!window.DRAW_SCHEDULE) return;
+    const S = window.DRAW_SCHEDULE;
+    const d = document.getElementById('dg-daily-tick');
+    const w = document.getElementById('dg-weekly-tick');
+    if (d) d.textContent = S.format(S.msToNext('daily'));
+    if (w) w.textContent = S.format(S.msToNext('weekly'));
+  }
+
+  // Circuit: доска и отсчёт из воркера. Пока эндпоинт не поднят — молча
+  // оставляем прочерки, рельс не должен ломаться из-за 404.
+  async function refreshCircuit() {
+    try {
+      const r = await fetch(DRAW_WORKER + '/circuit/state', { signal: AbortSignal.timeout(8000) });
+      if (!r.ok) return;
+      const d = await r.json();
+      document.getElementById('dg-circuit-zones').textContent = d.sold;
+      document.getElementById('dg-circuit-bar').style.width   = (d.sold / d.maxZones * 100) + '%';
+      const m = Math.max(0, Math.round(d.msLeft / 60000));
+      document.getElementById('dg-circuit-tick').textContent =
+        m >= 60 ? Math.floor(m / 60) + 'h ' + (m % 60) + 'm' : m + 'm';
+    } catch (e) {}
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    let saved = null;
+    try { saved = localStorage.getItem('dgGame'); } catch (e) {}
+    if (saved === 'circuit') selectGame('circuit');
+    refreshTicks(); refreshPools(); refreshCircuit();
+    setInterval(refreshTicks, 1000);      // счётчик — локально, без сети
+    setInterval(refreshPools, 45000);     // балансы меняются редко
+    setInterval(refreshCircuit, 20000);
+  });
+})();
+</script>
 </body>
 </html>
