@@ -466,6 +466,18 @@ async function runDailyDraw(client, operatorAddr) {
   const roundId = getCurrentRoundId('daily');
   console.log('Round: ' + roundId);
 
+  // Already settled? Then this is a second trigger, and running again would
+  // pay the prize a second time. Two triggers are deliberate — the Worker's
+  // cron is punctual, GitHub's schedule is the fallback — so this check is
+  // what makes that safe.
+  {
+    const _prior = loadWinners();
+    if ((_prior.daily || []).some(w => w && w.round_id === roundId)) {
+      console.log('Round ' + roundId + ' is already recorded - nothing to do.');
+      return;
+    }
+  }
+
   // Билеты строятся из NFT-контракта, а не из воркера. Правило описано в
   // chain-tickets.js: жёсткая отсечка minted_at < deadline, порядок по
   // (minted_at, token_id), владелец на высоте блока дедлайна. Любой может
@@ -578,6 +590,18 @@ async function runWeeklyDraw(client, operatorAddr) {
   console.log('\n=== WEEKLY DRAW ===');
   const roundId = getCurrentRoundId('weekly');
   console.log('Round: ' + roundId);
+
+  // Already settled? Then this is a second trigger, and running again would
+  // pay the prize a second time. Two triggers are deliberate — the Worker's
+  // cron is punctual, GitHub's schedule is the fallback — so this check is
+  // what makes that safe.
+  {
+    const _prior = loadWinners();
+    if ((_prior.weekly || []).some(w => w && w.round_id === roundId)) {
+      console.log('Round ' + roundId + ' is already recorded - nothing to do.');
+      return;
+    }
+  }
 
   // Weekly состоит из двух блоков, и порядок между ними зафиксирован:
   //   1) NFT-билеты из контракта — то же правило, что в daily

@@ -18,6 +18,12 @@ on:
           - daily
           - weekly
 
+# One draw at a time. The file check above cannot catch two runs that start
+# together — both would read winners.json before either writes it.
+concurrency:
+  group: lottery-draw
+  cancel-in-progress: false
+
 jobs:
   lottery-draw:
     name: Lottery Draw (daily or weekly)
