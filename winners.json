@@ -882,6 +882,40 @@
       "randomness": "terra-classic-block-hash-at-round-deadline",
       "tx_treasury": "42FF324456B5BD1975FF6C148351BA486F3E4DDBEF59E08B3700CE3C69B4A56D",
       "seeds_lunc": 57917
+    },
+    {
+      "date": "2026-08-10",
+      "round_id": "weekly_2026-08-10",
+      "winners": [
+        {
+          "place": 1,
+          "address": "terra180wgtfvhmxcarmddhwzpapt8pasmvgv5skegx7",
+          "amount_lunc": 262088,
+          "tx": "29A02CBCBF1869552EFC00128DF0429178D9BE6E9F13AADB0A7705D990317CA4",
+          "winner_index": 5
+        },
+        {
+          "place": 2,
+          "address": "terra1jhtmkmakjvvtwur05klc7fd72e5n39m4x75c2l",
+          "amount_lunc": 109203,
+          "tx": "0B546A03EF5A4EC0B4FC876049E7DF8A9D3DCEA7A0A4F370BB5EB8352974DCEA",
+          "winner_index": 15
+        }
+      ],
+      "entries": 16,
+      "participants": 2,
+      "ticket_rule": "chain-v1+free",
+      "nft_contract": "terra1hcsq79vmcqxr97sv720yw6scvyknssx62ufsa4rwlmv02gyft43s46uaqx",
+      "deadline": "2026-08-10T20:00:00.000Z",
+      "boundary_ts": 1785787200,
+      "nft_tickets": 15,
+      "free_tickets": 1,
+      "block_hash": "8E3294594EAD07BFF1E19AB17C100EFEC53A6EB5B1DF4358D6582D6C2F07BDBA",
+      "block_height": "29890512",
+      "block_time": "2026-08-10T20:00:05.802Z",
+      "randomness": "terra-classic-block-hash-at-round-deadline",
+      "tx_treasury": "6BBA616A17FB2A356201D394C4F20F6B876A13F1A3BECD35BBC895664CA7054C",
+      "seeds_lunc": 54601
     }
   ]
 }
