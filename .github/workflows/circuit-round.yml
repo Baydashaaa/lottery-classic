@@ -1,0 +1,72 @@
+name: Circuit — Round Closer
+
+# Раунд Circuit закрывается по заполнению доски ИЛИ по истечении трёх часов —
+# что раньше. Момент заранее неизвестен, поэтому крон частый, а решение
+# принимает сам скрипт: не пора — тихо выходит.
+#
+# Раз в 15 минут это до 96 запусков в сутки. Каждый — несколько секунд, если
+# закрывать нечего.
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Только показать, что было бы сделано (без отправки средств)'
+        type: boolean
+        default: false
+
+# Два запуска одновременно закрыли бы раунд дважды. Отменять текущий нельзя —
+# он может быть посреди выплат, поэтому новый ждёт.
+concurrency:
+  group: circuit-round-closer
+  cancel-in-progress: false
+
+jobs:
+  close:
+    name: Close a Circuit round if it is due
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm install @cosmjs/proto-signing @cosmjs/stargate @cosmjs/crypto
+
+      # Ловит поломки загрузки модулей ДО того, как скрипт тронет деньги.
+      # 2–3 августа 2026 розыгрыши не состоялись из-за require() в ESM-репо:
+      # node --check такого не видит, падает только реальный импорт.
+      - name: Preflight
+        run: node dev/_preflight.js
+
+      - name: Close round
+        env:
+          OPERATOR_MNEMONIC_CIRCUIT: ${{ secrets.OPERATOR_MNEMONIC_CIRCUIT }}
+          DISTRIBUTION_SECRET:       ${{ secrets.DISTRIBUTION_SECRET }}
+          CIRCUIT_WORKER_URL:        ${{ secrets.CIRCUIT_WORKER_URL }}
+          CIRCUIT_NEIGHBOUR_SHARE:   ${{ vars.CIRCUIT_NEIGHBOUR_SHARE }}
+          DRY_RUN:                   ${{ inputs.dry_run && '1' || '0' }}
+        run: node circuit-draw.js
+
+      # Снимок пишется только когда раунд реально закрылся. Коммитим ТОЧЕЧНО:
+      # шаг выше делает npm install в корне, и `git add -A` утащил бы
+      # node_modules в репозиторий.
+      - name: Commit round snapshot
+        run: |
+          if [ -z "$(git status --porcelain rounds/)" ]; then
+            echo "no snapshot to commit"
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add rounds/
+          git commit -m "chore: circuit round snapshot [skip ci]"
+          # Без pull --rebase push падает non-fast-forward, если между
+          # checkout и push прилетел чужой коммит — призы уже отправлены,
+          # а снимок потерялся бы.
+          git pull --rebase --autostash
+          git push
