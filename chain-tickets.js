@@ -46,8 +46,18 @@ const PAGE = 30;
 
 // ── LCD plumbing ────────────────────────────────────────────────────────────
 
+/** base64 in Node and in the browser. TextEncoder exists in both, so only the
+ *  final step differs. */
+function toBase64(str) {
+  const bytes = new TextEncoder().encode(str);
+  if (typeof Buffer !== 'undefined') return Buffer.from(bytes).toString('base64');
+  let bin = '';
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin);
+}
+
 async function smartQuery(msg, { height } = {}) {
-  const q = Buffer.from(JSON.stringify(msg)).toString('base64');
+  const q = toBase64(JSON.stringify(msg));
   const path = `/cosmwasm/wasm/v1/contract/${NFT_CONTRACT}/smart/${q}`;
   const headers = { Accept: 'application/json' };
   if (height) headers['x-cosmos-block-height'] = String(height);
@@ -208,9 +218,102 @@ export async function buildTicketsFromChain({
   return { tickets, tokens, boundaryTs };
 }
 
+
+// ── The deadline block ──────────────────────────────────────────────────────
+
+/** LCD returns block hashes base64-encoded; winners.json records them as hex,
+ *  and the winner is derived from the hex. Convert once, here. */
+function hashToHex(h) {
+  if (/^[0-9a-fA-F]{64}$/.test(h)) return h.toUpperCase();
+  const bin = atobUniversal(h);
+  let out = '';
+  for (let i = 0; i < bin.length; i++) out += bin.charCodeAt(i).toString(16).padStart(2, '0');
+  return out.toUpperCase();
+}
+
+function atobUniversal(b64) {
+  if (typeof Buffer !== 'undefined') return Buffer.from(b64, 'base64').toString('binary');
+  return atob(b64);
+}
+
+async function blockAt(height) {
+  const path = height === 'latest'
+    ? '/cosmos/base/tendermint/v1beta1/blocks/latest'
+    : `/cosmos/base/tendermint/v1beta1/blocks/${height}`;
+  let last;
+  for (const base of LCD_NODES) {
+    try {
+      const res = await fetch(base + path, { signal: AbortSignal.timeout(15000) });
+      if (!res.ok) { last = new Error(`${base}: HTTP ${res.status}`); continue; }
+      const b = await res.json();
+      return {
+        height: Number(b.block.header.height),
+        timeMs: new Date(b.block.header.time).getTime(),
+        hash: hashToHex(b.block_id.hash),
+      };
+    } catch (e) { last = e; }
+  }
+  throw new Error(`block ${height}: ${last && last.message}`);
+}
+
+/**
+ * The first block at or after the deadline. That block decides the winner, and
+ * it is the same block whoever looks — which is why re-running the draw cannot
+ * change the outcome.
+ */
+export async function findDeadlineBlock(deadlineMs) {
+  const latest = await blockAt('latest');
+  if (latest.timeMs < deadlineMs) throw new Error('deadline is still ahead of the chain');
+
+  // Blocks are roughly 6s apart; start from an estimate and widen until the
+  // lower bound really is before the deadline.
+  let lo = Math.max(1, latest.height - Math.ceil((latest.timeMs - deadlineMs) / 6000) - 2000);
+  let hi = latest.height;
+  for (let i = 0; i < 6; i++) {
+    const probe = await blockAt(lo);
+    if (probe.timeMs < deadlineMs) break;
+    hi = lo;
+    lo = Math.max(1, lo - 20000);
+  }
+
+  while (lo < hi) {
+    const mid = Math.floor((lo + hi) / 2);
+    const b = await blockAt(mid);
+    if (b.timeMs >= deadlineMs) hi = mid; else lo = mid + 1;
+  }
+  return blockAt(lo);
+}
+
+/**
+ * The winner, derived from nothing but the chain.
+ *
+ *   index = BigInt('0x' + blockHash) % tickets.length
+ *
+ * Same rule the draw script applies, because it is the same code. If this ever
+ * disagrees with what gets published, the disagreement is a bug worth shouting
+ * about — not something to paper over by trusting the published value.
+ */
+export async function computeWinner({ pool, deadlineMs, boundaryTs, minEntries = MIN_ENTRIES }) {
+  const block = await findDeadlineBlock(deadlineMs);
+  const { tickets, tokens } = await buildTicketsFromChain({
+    pool,
+    deadlineMs,
+    blockHeight: block.height,
+    minEntries,
+    boundaryTs,
+  });
+
+  if (tickets.length < minEntries) {
+    return { skipped: true, tickets, tokens, block, reason: `${tickets.length} < ${minEntries}` };
+  }
+
+  const index = Number(BigInt('0x' + block.hash) % BigInt(tickets.length));
+  return { skipped: false, tickets, tokens, block, index, winner: tickets[index] };
+}
+
 // ── Dry run: node chain-tickets.js daily [blockHeight] ──────────────────────
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (typeof process !== 'undefined' && process.argv && import.meta.url === `file://${process.argv[1]}`) {
   const pool = process.argv[2] || 'daily';
   const height = process.argv[3] || undefined;
 
