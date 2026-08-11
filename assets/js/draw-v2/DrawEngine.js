@@ -16,6 +16,10 @@ import TicketModel from "../wheel/TicketModel.js";
 import { PHASE, derivePhase } from "./DrawPhase.js";
 import { CONFIG } from "./Config.js";
 import { nextDeadline, prevDeadline, msToNextDeadline, inActiveWindow } from "./DrawClock.js";
+// The same module lottery-draw.js uses. Deliberately not a second copy of
+// the rule: two copies drift, and a drifted rule shows one winner while
+// paying another.
+import { buildLocalSnapshot } from "../../../chain-tickets.js";
 
 export default class DrawEngine {
 
@@ -135,6 +139,87 @@ export default class DrawEngine {
             this.state.phase = phase;
             this.events.emit(EVENTS.PHASE_CHANGED, { from, to: phase, pool: this.state.pool });
         }
+        // Waiting for a result we can work out ourselves. Fire and forget: a
+        // failure here costs nothing, the published file still arrives.
+        if (phase === PHASE.AWAITING) this.#tryLocalResult(now);
+    }
+
+    /* ---------- локальный расчёт ---------- */
+
+    /**
+     * Работает результат сам, не дожидаясь публикации.
+     *
+     * Кладём его в this.local, а НЕ в state: #adoptLatest выходит рано, если
+     * ключ совпал с текущим, и опубликованный снимок был бы отброшен молча.
+     * Сверка с ним — единственное, что доказывает, что правило не разъехалось.
+     */
+    async #tryLocalResult(now = Date.now()) {
+        if (this.localBusy) return;
+        const pool = this.state.pool;
+        const deadline = prevDeadline(pool, now);
+        if (!deadline) return;
+
+        const date = new Date(deadline).toISOString().slice(0, 10);
+        const key = `${pool}_${date}`;
+        if (this.local && this.local.key === key) return;
+        if (this.state.roundKey === key) return;   // опубликованный уже пришёл
+
+        this.localBusy = true;
+        try {
+            // Граница «отыграно» — дедлайн последнего состоявшегося раунда,
+            // ровно как её берёт lottery-draw.js.
+            const done = (this.data[pool] || []).filter(r => !r.skipped && r.date);
+            const prev = done[done.length - 1] || null;
+            const boundaryTs = prev
+                ? Math.floor(Date.parse(prev.date + "T20:00:00Z") / 1000)
+                : undefined;
+
+            const r = await buildLocalSnapshot({ pool, deadlineMs: deadline, roundId: key, boundaryTs });
+            if (!r || r.skipped) { this.local = { key, skipped: true }; return; }
+            if (this.state.roundKey === key) return;   // пока считали, приехал настоящий
+
+            const model = new TicketModel(r.snapshot, { maxSectors: CONFIG.MAX_SECTORS });
+            const round = {
+                key, pool, date,
+                skipped: false, reason: null,
+                winner: r.winner, winnerIndex: r.index, prize: 0,
+                winners: [{ place: 1, address: r.winner, prize: 0, tx: null, index: r.index }],
+                entries: r.snapshot.total, participants: r.snapshot.wallets,
+                blockHash: r.block.hash, blockHeight: String(r.block.height),
+                randomness: "terra-classic-block-hash-at-round-deadline",
+                txTreasury: null, drawnAt: deadline, raw: r.snapshot, local: true
+            };
+            this.local = { key, round, model, winner: r.winner, index: r.index };
+
+            // Раунд считается просмотренным сразу: перезагрузка страницы не
+            // должна крутить колесо повторно.
+            this.state.markSeen(key);
+            this.events.emit(EVENTS.RESULT_READY, { round, firstLoad: false, model, verified: true });
+            this.events.emit(EVENTS.DRAW_FINISHED, { round, model, replay: false });
+        } catch (e) {
+            console.warn("[DrawEngine] локальный расчёт не удался:", e.message);
+        } finally {
+            this.localBusy = false;
+        }
+    }
+
+    /**
+     * Сверка опубликованного результата с тем, что уже показано.
+     * Совпало — тишина. Разошлось — говорим громко: это значит, что правило в
+     * браузере и правило в скрипте больше не одно и то же.
+     */
+    #reconcileLocal(latest) {
+        const loc = this.local;
+        if (!loc || loc.key !== latest.key || loc.skipped) return false;
+        const same = loc.winner === latest.winner && loc.index === latest.winnerIndex;
+        if (!same) {
+            console.error(
+                `[DrawEngine] локальный результат разошёлся с опубликованным для ${latest.key}: ` +
+                `показали ${loc.winner} (index ${loc.index}), в winners.json ${latest.winner} ` +
+                `(index ${latest.winnerIndex}). Победитель — опубликованный.`
+            );
+        }
+        return same;
     }
 
     /* ---------- приём нового раунда ---------- */
@@ -172,6 +257,15 @@ export default class DrawEngine {
         if (latest.skipped) {
             this.state.markSeen(latest.key);
             this.events.emit(EVENTS.DRAW_SKIPPED, { round: latest, firstLoad });
+            return;
+        }
+
+        // Уже показали этот раунд из локального расчёта? Тогда крутить второй
+        // раз незачем — если только он не разошёлся с опубликованным.
+        const agreed = this.#reconcileLocal(latest);
+        if (agreed) {
+            this.state.markSeen(latest.key);
+            if (firstLoad) this.events.emit(EVENTS.READY, this.snapshot());
             return;
         }
 

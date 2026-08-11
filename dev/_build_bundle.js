@@ -17,6 +17,10 @@ const CORE  = ["Config.js","DrawClock.js","DrawPhase.js","DrawState.js","DrawEve
                "DrawAPI.js","DrawEngine.js","DrawScheduler.js","SectorDetails.js","DrawBridge.js","index.js"];
 
 const files = [
+  // Правило построения билетов. Лежит в корне, потому что им пользуется и
+  // lottery-draw.js — один экземпляр на скрипт и на браузер. Идёт первым:
+  // на него ссылается DrawEngine, а ему самому ничего отсюда не нужно.
+  ["chain-tickets.js", "chain-tickets.js"],
   ...WHEEL.map(f => ["assets/js/wheel/" + f, f]),
   ...CORE .map(f => ["assets/js/draw-v2/" + f, f]),
 ];
