@@ -1,7 +1,7 @@
 /* Oracle Draw V2 — собранный бандл. НЕ РЕДАКТИРОВАТЬ.
    Источники: assets/js/wheel/ и assets/js/draw-v2/
    Пересобрать: node dev/_build_bundle.js
-   Версия сборки: 202608110748 */
+   Версия сборки: 202608111312 */
 
 /* ── chain-tickets.js ─────────────────────────────────── */
 /**
@@ -2315,9 +2315,9 @@ const CONFIG = {
     MAX_SECTORS: 48,
 
     IDLE_RPM: 10,                        // холостое вращение в PRE_DRAW/AWAITING
-    SPIN_TURNS_MIN: 5,
-    SPIN_TURNS_MAX: 8,
-    SPIN_DURATION: 6500,
+    SPIN_TURNS_MIN: 12,
+    SPIN_TURNS_MAX: 18,
+    SPIN_DURATION: 10000,
     REVEAL_HOLD: 2200,                  // пауза на подсветке перед карточкой
     GROUP_REVEAL_MS: 1600,              // раскрытие хвостового сектора
 
