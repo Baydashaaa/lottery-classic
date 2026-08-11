@@ -461,6 +461,17 @@ function resetFreeEntries() {
 }
 
 // ── DAILY DRAW ───────────────────────────────────────────────────────────────
+// address -> the first token seen for it, so the wheel can show the NFT art.
+// Only the first matters: packTickets attaches it to the pair, and a wallet
+// appearing twice gets its own pair anyway.
+function snapshotMeta(tokens) {
+  const meta = {};
+  for (const t of tokens || []) {
+    if (t && t.owner && !meta[t.owner]) meta[t.owner] = { tokenId: t.id, tier: t.tier };
+  }
+  return meta;
+}
+
 async function runDailyDraw(client, operatorAddr) {
   console.log('\n=== DAILY DRAW ===');
   const roundId = getCurrentRoundId('daily');
@@ -580,6 +591,7 @@ async function runDailyDraw(client, operatorAddr) {
     roundId, pool: 'daily',
     tickets, blockHash, blockHeight,
     winnerIndex: index,
+      meta: snapshotMeta(tokens),
   });
 
   console.log('Daily draw complete!');
@@ -756,6 +768,7 @@ async function runWeeklyDraw(client, operatorAddr) {
     roundId, pool: 'weekly',
     tickets, blockHash, blockHeight,
     winnerIndex: places.map(function (p) { return p.index; }),
+      meta: snapshotMeta(tokens),
   });
 
   resetFreeEntries(); // entries consumed — reset for next round

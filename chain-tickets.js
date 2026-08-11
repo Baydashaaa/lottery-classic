@@ -311,6 +311,81 @@ export async function computeWinner({ pool, deadlineMs, boundaryTs, minEntries =
   return { skipped: false, tickets, tokens, block, index, winner: tickets[index] };
 }
 
+
+// ── Snapshot, built locally ─────────────────────────────────────────────────
+
+/**
+ * Flat address list → [address, count] pairs, exactly as round-snapshot.js
+ * packs it. A wallet appearing again later in the list gets its OWN pair: that
+ * is what preserves the original order, and therefore the indexes.
+ */
+function packTickets(tickets, meta) {
+  const pairs = [];
+  for (const address of tickets) {
+    const last = pairs[pairs.length - 1];
+    if (last && last[0] === address) last[1]++;
+    else {
+      const m = meta && meta[address];
+      pairs.push(m ? [address, 1, m.tokenId ?? null, m.tier ?? null] : [address, 1]);
+    }
+  }
+  return pairs;
+}
+
+/**
+ * The same object the draw script writes to rounds/<round_id>.json, derived
+ * from the chain alone.
+ *
+ * Handing the wheel this instead of waiting for the published file is the
+ * whole point: the winner is fixed by the deadline block, so there is nothing
+ * to wait for except somebody writing it down.
+ */
+export async function buildLocalSnapshot({ pool, deadlineMs, roundId, boundaryTs, minEntries = MIN_ENTRIES }) {
+  const r = await computeWinner({ pool, deadlineMs, boundaryTs, minEntries });
+  if (r.skipped) return { skipped: true, reason: r.reason, block: r.block };
+
+  // address -> first token seen for it, so the wheel can show the art.
+  const meta = {};
+  for (const t of r.tokens) {
+    if (!meta[t.owner]) meta[t.owner] = { tokenId: t.id, tier: t.tier };
+  }
+
+  const packed = packTickets(r.tickets, meta);
+
+  // Same self-check as round-snapshot.js: never hand out a snapshot that does
+  // not agree with itself.
+  const flat = [];
+  for (const [addr, n] of packed) for (let i = 0; i < n; i++) flat.push(addr);
+  if (flat.length !== r.tickets.length) {
+    throw new Error(`local snapshot: packing lost tickets (${flat.length} vs ${r.tickets.length})`);
+  }
+  for (let i = 0; i < flat.length; i++) {
+    if (flat[i] !== r.tickets[i]) throw new Error(`local snapshot: order diverged at ${i}`);
+  }
+
+  return {
+    skipped: false,
+    snapshot: {
+      round_id: roundId,
+      pool,
+      total: r.tickets.length,
+      wallets: new Set(r.tickets).size,
+      tickets: packed,
+      block_hash: r.block.hash,
+      block_height: String(r.block.height),  // the published file stores it as a string
+      winner_index: r.index,
+      generated_at: new Date().toISOString(),
+      // Marks this as computed in the browser rather than published by the
+      // draw script. The wheel should replace it with the real file when that
+      // arrives, and complain if the two disagree.
+      _local: true,
+    },
+    winner: r.winner,
+    index: r.index,
+    block: r.block,
+  };
+}
+
 // ── Dry run: node chain-tickets.js daily [blockHeight] ──────────────────────
 
 if (typeof process !== 'undefined' && process.argv && import.meta.url === `file://${process.argv[1]}`) {
