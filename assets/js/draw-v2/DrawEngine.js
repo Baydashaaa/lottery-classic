@@ -164,6 +164,13 @@ export default class DrawEngine {
         if (this.local && this.local.key === key) return;
         if (this.state.roundKey === key) return;   // опубликованный уже пришёл
 
+        // Дедлайн-блок рождается на несколько секунд позже дедлайна, а тик
+        // приходит раз в секунду — без паузы и троттлинга мы бомбим LCD
+        // бинарным поиском по блокам ежесекундно, пока не приедет публикация.
+        if (now - deadline < 15000) return;
+        if (this.localNextTry && now < this.localNextTry) return;
+        this.localNextTry = now + 5000;
+
         this.localBusy = true;
         try {
             // Граница «отыграно» — дедлайн последнего состоявшегося раунда,
@@ -171,7 +178,7 @@ export default class DrawEngine {
             const done = (this.data[pool] || []).filter(r => !r.skipped && r.date);
             const prev = done[done.length - 1] || null;
             const boundaryTs = prev
-                ? Math.floor(Date.parse(prev.date + "T20:00:00Z") / 1000)
+                ? Math.floor(Date.parse(prev.deadline || (prev.date + "T20:00:00Z")) / 1000)
                 : undefined;
 
             const r = await buildLocalSnapshot({ pool, deadlineMs: deadline, roundId: key, boundaryTs });
