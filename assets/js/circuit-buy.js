@@ -30,8 +30,22 @@
 
   const base = () => (typeof DRAW_WORKER !== 'undefined' ? DRAW_WORKER : '');
   const chain = () => (typeof CHAIN_ID !== 'undefined' ? CHAIN_ID : 'columbus-5');
-  const myWallet = () =>
-    (typeof lotteryAddress !== 'undefined' && lotteryAddress) ? lotteryAddress : null;
+  // Кошелёк подключается несколькими путями, и каждый заполняет СВОЮ переменную:
+  // кнопка в шапке пишет connectedWalletAddress, поток Draw — lotteryAddress,
+  // и при подключении через шапку вторая остаётся null. Поэтому перебираем
+  // источники и проверяем формат, а не полагаемся на одно имя.
+  const ADDR_RE = /^terra1[0-9a-z]{38}$/i;
+  const pickAddr = (v) => (typeof v === 'string' && ADDR_RE.test(v)) ? v : null;
+
+  function myWallet() {
+    let a = null;
+    try { a = pickAddr(connectedWalletAddress); } catch (e) {}
+    if (!a) { try { a = pickAddr(lotteryAddress); } catch (e) {} }
+    if (!a && typeof window._getConnectedAddress === 'function') {
+      try { a = pickAddr(window._getConnectedAddress()); } catch (e) {}
+    }
+    return a;
+  }
 
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const $ = (id) => document.getElementById(id);
