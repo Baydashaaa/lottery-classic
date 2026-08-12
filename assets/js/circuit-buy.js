@@ -173,6 +173,7 @@
 
     const wallet = myWallet();
     if (!wallet) {
+      clearPreview();
       priceEl.innerHTML = '&mdash;<small>LUNC</small>';
       buyEl.disabled = true;
       buyEl.textContent = 'Connect wallet';
@@ -185,6 +186,7 @@
       buyEl.disabled = false;
       buyEl.textContent = 'Claim ' + count + (count > 1 ? ' zones' : ' zone');
       const left = quote.cap - quote.owned;
+      paintPreview(quote.wouldGet.from, quote.wouldGet.to);
       metaEl.innerHTML =
         'Zones <b>' + quote.wouldGet.from + '&ndash;' + quote.wouldGet.to + '</b> &middot; ' +
         '<b>' + quote.tier + '</b> mask, ' + left + ' of ' + quote.cap + ' left this round' +
@@ -194,6 +196,7 @@
     }
 
     // Купить нельзя — объясняем почему и что делать.
+    clearPreview();
     priceEl.innerHTML = '&mdash;<small>LUNC</small>';
     buyEl.disabled = true;
     buyEl.textContent = 'Claim zones';
@@ -210,6 +213,38 @@
       if (e.free > 0) { setTimeout(() => setCount(e.free), 0); }
     } else {
       metaEl.textContent = e.reason || e.error || 'Price unavailable right now.';
+    }
+  }
+
+  /* ── подсветка выбранных зон на доске ──────────────────────────────────── */
+  // Красим ИНЛАЙНОВЫМ стилем, а не классом: refreshCircuit() в index.html
+  // каждые 20 секунд переписывает className у всех клеток и стёр бы подсветку.
+  // Инлайн переживает это, и чужой код трогать не нужно.
+
+  let painted = [];
+
+  function clearPreview() {
+    painted.forEach((c) => {
+      c.style.background = '';
+      c.style.boxShadow = '';
+      c.style.outline = '';
+      c.style.opacity = '';
+    });
+    painted = [];
+  }
+
+  function paintPreview(from, to) {
+    clearPreview();
+    const bd = $('cir-board');
+    if (!bd || !bd.children.length) return;
+    for (let k = from; k <= to && k < bd.children.length; k++) {
+      const c = bd.children[k];
+      if (!c) continue;
+      c.style.background = 'rgba(56,217,208,.55)';
+      c.style.boxShadow = '0 0 6px rgba(56,217,208,.75)';
+      c.style.outline = '1px solid #38d9d0';
+      c.style.opacity = '1';
+      painted.push(c);
     }
   }
 
@@ -387,6 +422,7 @@
       set('dg-circuit-zones', d.sold);
       const bar = $('dg-circuit-bar');
       if (bar) bar.style.width = (d.sold / d.maxZones * 100) + '%';
+      clearPreview();
       const bd = $('cir-board');
       if (bd && bd.children.length === d.maxZones) {
         Array.prototype.forEach.call(bd.children, (c, k) => { c.className = k < d.sold ? 't' : ''; });
