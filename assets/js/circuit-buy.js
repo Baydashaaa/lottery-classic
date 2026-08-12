@@ -304,6 +304,23 @@
         return;
       }
 
+      // Раунд нужен в memo, чтобы платёж был самодостаточен на цепочке.
+      // Заодно ловим блокировку перед стартом раунда: сказать об этом до
+      // открытия кошелька лучше, чем после подписи и потраченной комиссии.
+      let roundId = '';
+      try {
+        const sr = await fetch(base() + '/circuit/state', { signal: AbortSignal.timeout(8000) });
+        const sd = await sr.json();
+        roundId = sd.roundId || '';
+        if (sd.locked) {
+          note('warn', 'The round is about to start — claiming is closed for a moment. ' +
+                       'Your funds have not moved. Try again when the next round opens.');
+          busy = false;
+          render();
+          return;
+        }
+      } catch (e) { /* состояние недоступно — идём дальше, воркер проверит сам */ }
+
       buyEl.textContent = 'Waiting for wallet...';
       note('warn', 'Approve the transfer in your wallet. Do not close this tab.');
 
@@ -312,7 +329,7 @@
         : (typeof sendLuncDirect === 'function' ? sendLuncDirect : null);
       if (!send) throw new Error('Wallet module not loaded. Reload the page.');
 
-      const memo = 'circuit:' + count;
+      const memo = roundId ? 'circuit:' + roundId + ':' + count : 'circuit:' + count;
       const txHash = await send(wallet, q.payTo, q.totalUluna, memo, chain());
       if (!txHash) throw new Error('No transaction hash returned.');
 
