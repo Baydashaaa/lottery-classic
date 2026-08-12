@@ -272,13 +272,20 @@ async function main() {
 
   const { client, address } = await getClient();
 
+  // Кошельки долей TCO. Деньги переводятся туда сразу при закрытии раунда,
+  // чтобы обязательство было видно НА ЦЕПОЧКЕ, а не только счётчиком в KV:
+  // пропадёт база — пропадёт и след, а баланс кошелька проверит кто угодно.
+  const TCO_DROP_WALLET = 'terra1x3axkacpes4d8q2svfeneqdtv8rvcvccrn66j5';
+  const TCO_BURN_WALLET = 'terra10zptfez4jdvakrhu58q4nqj2te7mnpewqhu27a';
+
   // Выплаты. Утешительная доля соседям берётся ИЗ призового фонда, а не сверх.
   const prizeTotal = round.split.prize;
   const neigh      = NEIGHBOUR_SHARE > 0 ? neighboursOf(round.blocks, zone, round.sold) : [];
   const perNeigh   = neigh.length ? Math.floor(prizeTotal * NEIGHBOUR_SHARE / neigh.length) : 0;
   const toWinner   = prizeTotal - perNeigh * neigh.length;
 
-  const payouts = { winner: null, neighbours: [], treasury: null };
+  const payouts = { winner: null, neighbours: [], treasury: null,
+                    tcoDrop: null, tcoBurn: null };
   payouts.winner = {
     wallet: winner.wallet, uluna: toWinner,
     tx: await sendLunc(client, address, winner.wallet, toWinner,
@@ -296,8 +303,37 @@ async function main() {
     tx: await sendLunc(client, address, TREASURY, round.split.treasury,
                        'Circuit ' + round.roundId + ' — treasury'),
   };
-  // Доля на выкуп TCO НЕ отправляется: она копится в воркере до порога,
-  // покупать по 16 центов за раунд бессмысленно — комиссия съест больше.
+  // Доли TCO уходят на свои кошельки и ЖДУТ там.
+  //
+  // Раздача: покупка идёт партией в конце эпохи — покупать по 31 центу за
+  // раунд бессмысленно, комиссия свопа и проскальзывание съедят больше.
+  // Доля каждого участника уже зафиксирована воркером в LUNC.
+  //
+  // Сжигание: не включается до попадания в белый список. До тех пор доля
+  // просто копится — ни покупки, ни сжигания.
+  //
+  // Поле split.tcoDrop появилось вместе с разделением 6/6; пока воркер
+  // старой версии, его нет, и переводы молча пропускаются.
+  const dropUluna = round.split.tcoDrop || 0;
+  const burnUluna = round.split.tcoBurn || 0;
+
+  if (dropUluna > 0) {
+    payouts.tcoDrop = {
+      wallet: TCO_DROP_WALLET, uluna: dropUluna,
+      tx: await sendLunc(client, address, TCO_DROP_WALLET, dropUluna,
+                         'Circuit ' + round.roundId + ' — TCO drop share'),
+    };
+  }
+  if (burnUluna > 0) {
+    payouts.tcoBurn = {
+      wallet: TCO_BURN_WALLET, uluna: burnUluna,
+      tx: await sendLunc(client, address, TCO_BURN_WALLET, burnUluna,
+                         'Circuit ' + round.roundId + ' — TCO burn share'),
+    };
+  }
+  if (dropUluna === 0 && burnUluna === 0) {
+    console.log('WARNING: split has no tcoDrop/tcoBurn — worker is on the old format, TCO shares stay in the pool wallet');
+  }
 
   writeSnapshot(round, blockInfo, zone, winner, payouts);
 
