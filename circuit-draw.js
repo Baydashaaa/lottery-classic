@@ -275,8 +275,10 @@ async function main() {
   // Кошельки долей TCO. Деньги переводятся туда сразу при закрытии раунда,
   // чтобы обязательство было видно НА ЦЕПОЧКЕ, а не только счётчиком в KV:
   // пропадёт база — пропадёт и след, а баланс кошелька проверит кто угодно.
-  const TCO_DROP_WALLET = 'terra1x3axkacpes4d8q2svfeneqdtv8rvcvccrn66j5';
-  const TCO_BURN_WALLET = 'terra10zptfez4jdvakrhu58q4nqj2te7mnpewqhu27a';
+  // Сюда стекается вся доля TCO (6% + 6%) и отсюда идёт единственная
+  // покупка в конце эпохи. Ключ этого кошелька — единственный, который
+  // нужен скрипту эпохи.
+  const TCO_BUYBACK_WALLET = 'terra1x3axkacpes4d8q2svfeneqdtv8rvcvccrn66j5';
 
   // Выплаты. Утешительная доля соседям берётся ИЗ призового фонда, а не сверх.
   const prizeTotal = round.split.prize;
@@ -314,24 +316,23 @@ async function main() {
   //
   // Поле split.tcoDrop появилось вместе с разделением 6/6; пока воркер
   // старой версии, его нет, и переводы молча пропускаются.
+  // Обе доли уходят ОДНИМ переводом на кошелёк выкупа. Разделение
+  // произойдёт после покупки: скрипт эпохи поделит купленный TCO пополам —
+  // половину в claim-контракт, половину на бёрн-кошелёк.
+  //
+  // Бёрн-кошелёк только принимает, его ключ в CI не нужен.
   const dropUluna = round.split.tcoDrop || 0;
   const burnUluna = round.split.tcoBurn || 0;
+  const tcoUluna  = dropUluna + burnUluna;
 
-  if (dropUluna > 0) {
-    payouts.tcoDrop = {
-      wallet: TCO_DROP_WALLET, uluna: dropUluna,
-      tx: await sendLunc(client, address, TCO_DROP_WALLET, dropUluna,
-                         'Circuit ' + round.roundId + ' — TCO drop share'),
-    };
-  }
-  if (burnUluna > 0) {
-    payouts.tcoBurn = {
-      wallet: TCO_BURN_WALLET, uluna: burnUluna,
-      tx: await sendLunc(client, address, TCO_BURN_WALLET, burnUluna,
-                         'Circuit ' + round.roundId + ' — TCO burn share'),
-    };
-  }
-  if (dropUluna === 0 && burnUluna === 0) {
+  if (tcoUluna > 0) {
+    const tx = await sendLunc(client, address, TCO_BUYBACK_WALLET, tcoUluna,
+                              'Circuit ' + round.roundId + ' — TCO buyback share');
+    // Суммы пишем раздельно: пропорция 6/6 должна быть видна в снимке
+    // раунда, даже когда перевод один.
+    payouts.tcoDrop = { wallet: TCO_BUYBACK_WALLET, uluna: dropUluna, purpose: 'rewards', tx };
+    payouts.tcoBurn = { wallet: TCO_BUYBACK_WALLET, uluna: burnUluna, purpose: 'burn', tx };
+  } else {
     console.log('WARNING: split has no tcoDrop/tcoBurn — worker is on the old format, TCO shares stay in the pool wallet');
   }
 
