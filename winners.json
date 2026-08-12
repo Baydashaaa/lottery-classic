@@ -731,6 +731,25 @@
       "winner_index": 7,
       "tx_winner": "157F0619F8454B69DD54A850FE55FDBE730A392F18D7D984102ACC6836A43BB3",
       "tx_treasury": "F48ABEA06072267CCF51AE4AFF7C7203BAC319FB07DF72E947C2D37FC940CFA7"
+    },
+    {
+      "date": "2026-08-12",
+      "round_id": "daily_2026-08-12",
+      "winner": "terra1jhtmkmakjvvtwur05klc7fd72e5n39m4x75c2l",
+      "prize_lunc": 137116,
+      "entries": 6,
+      "participants": 2,
+      "ticket_rule": "chain-v1",
+      "nft_contract": "terra1hcsq79vmcqxr97sv720yw6scvyknssx62ufsa4rwlmv02gyft43s46uaqx",
+      "deadline": "2026-08-12T20:00:00.000Z",
+      "boundary_ts": 1786478400,
+      "block_hash": "893B65ABAEE2FD94C839B45B2731EEFA9586CE93F454FB9D0C36C840094C9ACF",
+      "block_height": "29919773",
+      "block_time": "2026-08-12T20:00:00.095Z",
+      "randomness": "terra-classic-block-hash-at-round-deadline",
+      "winner_index": 3,
+      "tx_winner": "16D32D5D55FE79C311ECBAC965E4D3D0C71DE418B04F09E69205097D6CE1DD47",
+      "tx_treasury": "7908968751B73B850A819227F2C9C00BC0B3652B35390BC5A561805B03C6654A"
     }
   ],
   "weekly": [
