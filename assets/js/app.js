@@ -948,8 +948,9 @@ async function nativeMint() {
   return window.nativeMintV2();
 }
 
-// Sends a single TX with TWO MsgSend messages (pool payment + Paco fee)
-async function sendTwoMsgSend(fromAddr, toAddr1, amount1, toAddr2, amount2, memo, chainId) {
+// Sends a single TX with one or more MsgSend messages.
+// sends: [{ to, amount }, ...] — amounts in uluna.
+async function sendMsgSends(fromAddr, sends, memo, chainId) {
   const _keplr = getWalletKeplr(walletProvider);
   const _isWC  = _isWCProvider(walletProvider);
   if (!_keplr && !_isWC) throw new Error('No wallet connected.');
@@ -997,14 +998,12 @@ async function sendTwoMsgSend(fromAddr, toAddr1, amount1, toAddr2, amount2, memo
       encodeField(2, 2, value)
     );
   }
-  const msg1 = makeMsgAny('/cosmos.bank.v1beta1.MsgSend', encodeMsgSend(fromAddr, toAddr1, amount1, 'uluna'));
-  const msg2 = makeMsgAny('/cosmos.bank.v1beta1.MsgSend', encodeMsgSend(fromAddr, toAddr2, amount2, 'uluna'));
-  const memoBytes = enc.encode(memo);
-  const txBodyBytes = concat(
-    encodeField(1, 2, msg1),
-    encodeField(1, 2, msg2),
-    encodeField(2, 2, memoBytes)
-  );
+  if (!Array.isArray(sends) || !sends.length) throw new Error('No transfers to send.');
+  const msgFields = sends.map(sd => encodeField(1, 2,
+    makeMsgAny('/cosmos.bank.v1beta1.MsgSend', encodeMsgSend(fromAddr, sd.to, sd.amount, 'uluna'))
+  ));
+  const memoBytes = enc.encode(memo || '');
+  const txBodyBytes = concat(...msgFields, encodeField(2, 2, memoBytes));
 
   // ── account info ──
   const LCD_LIST = ['https://terra-classic-lcd.publicnode.com', 'https://lcd-terra-classic.hexxagon.io', 'https://terraclassic.community/cosmos'];
@@ -1031,16 +1030,17 @@ async function sendTwoMsgSend(fromAddr, toAddr1, amount1, toAddr2, amount2, memo
     pubkeyBytes = accounts[0].pubkey;
     // Use address from signer to ensure it matches
     if (accounts[0].address && accounts[0].address !== fromAddr) {
-      console.warn('[sendTwoMsgSend] signer address mismatch, using signer address:', accounts[0].address);
+      console.warn('[sendMsgSends] signer address mismatch, using signer address:', accounts[0].address);
       fromAddr = accounts[0].address;
     }
   }
 
   // ── authInfo ──
-  // Gas: 600000 (two MsgSend; real TX used 467863, requested 569338)
-  // Fee: 600000 × 28.325 uluna/gas = 16,995,000 uluna ≈ 17 LUNC
-  const GAS_LIMIT_2MSG = 600000;
-  const totalFee    = Math.ceil(GAS_LIMIT_2MSG * 28.325);
+  // 300000 gas per MsgSend. One send = 8,497,500 uluna ≈ 8.5 LUNC, the same
+  // figure the daily payouts use and that a 189K LUNC transfer went through
+  // with. Two sends keep the previous 600000 exactly.
+  const GAS_LIMIT = 300000 * sends.length;
+  const totalFee  = Math.ceil(GAS_LIMIT * 28.325);
   const pubkeyProto = encodeField(1, 2, pubkeyBytes);
   const pubkeyAny   = concat(
     encodeField(1, 2, enc.encode('/cosmos.crypto.secp256k1.PubKey')),
@@ -1059,7 +1059,7 @@ async function sendTwoMsgSend(fromAddr, toAddr1, amount1, toAddr2, amount2, memo
   );
   const feeProto    = concat(
     encodeField(1, 2, feeCoin),
-    encodeVarint((2 << 3) | 0), encodeVarint(GAS_LIMIT_2MSG)
+    encodeVarint((2 << 3) | 0), encodeVarint(GAS_LIMIT)
   );
   const authInfoBytes = concat(
     encodeField(1, 2, signerInfo),
@@ -1118,6 +1118,13 @@ async function sendTwoMsgSend(fromAddr, toAddr1, amount1, toAddr2, amount2, memo
   if (code !== 0) throw new Error(`TX rejected (code ${code}): ${broadcastData.tx_response?.raw_log || ''}`);
   if (!txHash)    throw new Error('No txhash in broadcast response.');
   return txHash;
+}
+
+// Old two-payment signature, kept as a thin wrapper. No callers today.
+async function sendTwoMsgSend(fromAddr, toAddr1, amount1, toAddr2, amount2, memo, chainId) {
+  return sendMsgSends(fromAddr,
+    [{ to: toAddr1, amount: amount1 }, { to: toAddr2, amount: amount2 }],
+    memo, chainId);
 }
 
 // Snapshot of NFTs owned BEFORE opening mint iframe — used to detect newly minted NFT
