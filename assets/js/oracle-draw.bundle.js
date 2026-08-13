@@ -1,7 +1,7 @@
 /* Oracle Draw V2 — собранный бандл. НЕ РЕДАКТИРОВАТЬ.
    Источники: assets/js/wheel/ и assets/js/draw-v2/
    Пересобрать: node dev/_build_bundle.js
-   Версия сборки: 202608130956 */
+   Версия сборки: 202608131002 */
 
 /* ── chain-tickets.js ─────────────────────────────────── */
 /**
@@ -2914,6 +2914,9 @@ class DrawEngine {
         if (pool === this.state.pool) return;
         this.state.reset(pool);
         await this.#adoptLatest({ silent: true });
+        // Тот же случай: пока грузились, пул мог смениться снова. Событие с
+        // устаревшим снимком состояния разослало бы чужие цифры по интерфейсу.
+        if (this.state.pool !== pool) return;
         this.syncPhase();
         this.events.emit(EVENTS.DATA_UPDATED, this.snapshot());
     }
@@ -3099,7 +3102,9 @@ class DrawEngine {
     /* ---------- приём нового раунда ---------- */
 
     async #adoptLatest({ silent }) {
-        const list = this.data[this.state.pool] || [];
+        // Пул, с которого начали. Всё, что ниже, относится к НЕМУ.
+        const pool = this.state.pool;
+        const list = this.data[pool] || [];
         const latest = DrawAPI.pickLatest(list);
         if (!latest) { this.state.hydrated = true; return; }
 
@@ -3108,6 +3113,13 @@ class DrawEngine {
 
         // снимок билетов + модель колеса
         const raw = await this.api.loadSnapshot(latest.key);
+
+        // Пока грузился снимок, вкладку могли переключить — и не один раз.
+        // Тогда наш результат устарел: записывать его нельзя, иначе раунд
+        // чужого пула ляжет поверх текущего, и отсчёт под колесом начнёт
+        // считаться от чужого дедлайна. Ровно так недельный «4d 23:55»
+        // появлялся на вкладке Daily.
+        if (this.state.pool !== pool) return;
         const model = raw ? new TicketModel(raw, { maxSectors: CONFIG.MAX_SECTORS }) : null;
         const verified = !!(model && !latest.skipped &&
             model.verify(latest.winnerIndex, latest.winner));
