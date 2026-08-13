@@ -41,6 +41,11 @@ const TOKEN     = process.env.TCO_TOKEN   || 'terra1566znlxwke0kp9jkhe6qgapsmcfd
 const BURN_WALLET = process.env.TCO_BURN_WALLET || 'terra10zptfez4jdvakrhu58q4nqj2te7mnpewqhu27a';
 const REWARDS   = process.env.CIRCUIT_REWARDS_CONTRACT;   // адрес claim-контракта
 
+// Из какой мнемоники ДОЛЖЕН получиться кошелёк выкупа. Сверка обязательна:
+// в секрет один раз уже попала фраза постороннего счёта, и скрипт этого
+// не заметил — просто увидел нулевой баланс и вышел.
+const EXPECTED_WALLET = process.env.CIRCUIT_BUYBACK_ADDRESS || 'terra1x3axkacpes4d8q2svfeneqdtv8rvcvccrn66j5';
+
 // Порог: покупать на меньшее бессмысленно — комиссия свопа съест больше
 const THRESHOLD_ULUNA = BigInt(process.env.CIRCUIT_EPOCH_THRESHOLD_ULUNA || 50_000_000_000);
 // Оставляем на комиссии следующих транзакций этой же эпохи
@@ -140,6 +145,15 @@ async function main() {
   const [account] = await wallet.getAccounts();
   const me = account.address;
   console.log('кошелёк выкупа: ' + me);
+
+  if (me !== EXPECTED_WALLET) {
+    throw new Error(
+      'мнемоника даёт не тот кошелёк.\n' +
+      '  получен:  ' + me + '\n' +
+      '  ожидался: ' + EXPECTED_WALLET + '\n' +
+      'Проверь секрет CIRCUIT_BUYBACK_MNEMONIC. Ничего не потрачено.'
+    );
+  }
 
   // ── 1. Хватает ли накопленного ───────────────────────────────────────────
   const balance = await nativeBalance(me);
