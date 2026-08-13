@@ -1001,7 +1001,7 @@ body.modal-open{overflow:hidden}
     <div class="dg-cir-grid">
      <div class="dg-cir-box"><span>Board</span><b id="cir-sold">0</b><i>of 250 zones</i></div>
      <div class="dg-cir-box"><span>Round pool</span><b id="cir-pool">0</b><i>LUNC</i></div>
-     <div class="dg-cir-box"><span>Next round in</span><b id="cir-left">&mdash;</b><i>starts when full</i></div>
+     <div class="dg-cir-box"><span>Next round in</span><b id="cir-left">&mdash;</b><i>draws with 20+ zones</i></div>
     </div>
 
     <div class="dg-cir-board" id="cir-board"></div>
@@ -1869,6 +1869,7 @@ for place p in 0, 1, 2:
   <script src="assets/js/circuit-buy.js?v=4"></script>
   <script src="assets/js/oracle-mint-v2.js?v=3"></script>
   <script src="assets/js/circuit-claim.js?v=1"></script>
+  <script src="assets/js/circuit-board.js?v=1"></script>
 
   <!-- Oracle Draw V2 — один собранный файл.
        Раздельные модули кэшируются намертво: у вложенных import нет
@@ -2681,7 +2682,10 @@ document.getElementById('luncdash-modal').addEventListener('click', function(e) 
       document.getElementById('dg-circuit-zones').textContent = d.sold;
       document.getElementById('dg-circuit-bar').style.width   = (d.sold / d.maxZones * 100) + '%';
       const m = Math.max(0, Math.round(d.msLeft / 60000));
-      const tick = m >= 60 ? Math.floor(m / 60) + 'h ' + (m % 60) + 'm' : m + 'm';
+      // Дедлайн прошёл, ждём ближайшего запуска circuit-round.yml — GitHub
+      // держит крон «примерно раз в час», и честнее сказать это, чем висеть на 0m.
+      const tick = d.msLeft <= 0 ? 'closing' :
+                   m >= 60 ? Math.floor(m / 60) + 'h ' + (m % 60) + 'm' : m + 'm';
       document.getElementById('dg-circuit-tick').textContent = tick;
 
       // Та же выборка кормит и сцену Circuit — второй запрос не нужен
