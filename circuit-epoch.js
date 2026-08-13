@@ -22,6 +22,7 @@
 // явным расширением .js.
 
 import { DirectSecp256k1HdWallet } from '@cosmjs/proto-signing';
+import { stringToPath }            from '@cosmjs/crypto';
 import { SigningCosmWasmClient }   from '@cosmjs/cosmwasm-stargate';
 import { calculateFee, GasPrice }  from '@cosmjs/stargate';
 import fs   from 'fs';
@@ -39,6 +40,13 @@ const DENOM     = 'uluna';
 const BOND      = process.env.TCO_BOND    || 'terra1xnejslpfa398nn2mexv34y8737fcq998zz4dsnq74qn464lu9m4s604du5';
 const TOKEN     = process.env.TCO_TOKEN   || 'terra1566znlxwke0kp9jkhe6qgapsmcfdmc7k9czh380tlx80va8zlsgqzvjtfp';
 const BURN_WALLET = process.env.TCO_BURN_WALLET || 'terra10zptfez4jdvakrhu58q4nqj2te7mnpewqhu27a';
+// Ожидаемый адрес кошелька выкупа. Сверяется с тем, что вывелся из
+// мнемоники: несовпадение означает не ту фразу или не тот путь деривации,
+// и продолжать нельзя.
+const BUYBACK_WALLET = process.env.TCO_BUYBACK_WALLET || 'terra1x3axkacpes4d8q2svfeneqdtv8rvcvccrn66j5';
+// Terra Classic — coin type 330. По умолчанию cosmjs берёт 118, и та же
+// мнемоника даёт совершенно другой адрес.
+const HD_PATH = process.env.CIRCUIT_HD_PATH || "m/44'/330'/0'/0/0";
 const REWARDS   = process.env.CIRCUIT_REWARDS_CONTRACT;   // адрес claim-контракта
 
 // Из какой мнемоники ДОЛЖЕН получиться кошелёк выкупа. Сверка обязательна:
@@ -141,10 +149,20 @@ async function main() {
   if (!MNEMONIC) throw new Error('CIRCUIT_BUYBACK_MNEMONIC не задан');
   if (!REWARDS)  throw new Error('CIRCUIT_REWARDS_CONTRACT не задан — контракт наград ещё не развёрнут');
 
-  const wallet = await DirectSecp256k1HdWallet.fromMnemonic(MNEMONIC, { prefix: PREFIX });
+  const wallet = await DirectSecp256k1HdWallet.fromMnemonic(MNEMONIC, {
+    prefix: PREFIX,
+    hdPaths: [stringToPath(HD_PATH)],
+  });
   const [account] = await wallet.getAccounts();
   const me = account.address;
   console.log('кошелёк выкупа: ' + me);
+
+  if (me !== BUYBACK_WALLET) {
+    throw new Error(
+      'из мнемоники вывелся ' + me + ', а ожидался ' + BUYBACK_WALLET +
+      '. Проверь CIRCUIT_BUYBACK_MNEMONIC и путь деривации (' + HD_PATH + ').'
+    );
+  }
 
   if (me !== EXPECTED_WALLET) {
     throw new Error(
