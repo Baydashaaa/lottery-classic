@@ -1651,8 +1651,12 @@ async function sendLuncDirect(fromAddr, toAddr, amountUluna, memo, chainId) {
     encodeField(2, 2, enc.encode(memo))
   );
 
-  // Gas fee: 600000 gas × 28.325 = 16,995,000 uluna (two MsgSend need ~470K gas; real TX used 467863)
-  const GAS_LIMIT = 600000;
+  // Gas: здесь ОДНО MsgSend. Комментарий про «two MsgSend, real TX used
+  // 467863» и лимит 600000 достались от sendMsgSends, откуда эта функция
+  // копировалась, — и стоили 17 LUNC вместо 8.5 с каждой покупки.
+  // 300000 — столько же, сколько sendMsgSends кладёт на одно сообщение,
+  // с запасом больше чем вдвое к реальному расходу перевода.
+  const GAS_LIMIT = 300000;
   const gasFee   = Math.ceil(GAS_LIMIT * 28.325);
   const taxFee   = Math.ceil(amountUluna * 0.005);
   const totalFee = gasFee + taxFee;
