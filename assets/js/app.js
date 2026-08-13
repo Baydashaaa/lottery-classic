@@ -1548,6 +1548,25 @@ async function sendLuncDirect(fromAddr, toAddr, amountUluna, memo, chainId) {
 
   if (!_keplr && !_isWC) throw new Error('No wallet connected. Please connect a wallet first.');
 
+  // Keplr по умолчанию подменяет комиссию и memo своими и подписывает уже
+  // изменённый документ. Ниже в TxRaw кладётся НАШ authInfoBytes — с чужой
+  // подписью он не сходится, и цепь отвечает «signature verification failed»,
+  // перечисляя поля signDoc, из-за чего кажется, будто дело в account number.
+  //
+  // Просим не трогать: тогда подписанное и отправленное совпадают, а наши
+  // 600k газа, налог 0.5% и memo с номером раунда доезжают как есть.
+  if (_keplr) {
+    try {
+      const prev = _keplr.defaultOptions || {};
+      _keplr.defaultOptions = Object.assign({}, prev, {
+        sign: Object.assign({}, prev.sign, {
+          preferNoSetFee:  true,
+          preferNoSetMemo: true,
+        }),
+      });
+    } catch (e) { /* кошелёк без defaultOptions — не повод падать */ }
+  }
+
   // For WC providers we don't have getOfflineSigner — get pubkey differently
   let pubkeyBytes;
   if (_isWC) {
@@ -1561,11 +1580,32 @@ async function sendLuncDirect(fromAddr, toAddr, amountUluna, memo, chainId) {
   }
 
   const LCD_BASE = 'https://terra-classic-lcd.publicnode.com';
-  const accRes  = await fetch(`${LCD_BASE}/cosmos/auth/v1beta1/accounts/${fromAddr}`);
-  const accData = await accRes.json();
-  const acct    = accData?.account || {};
-  const accountNumber = parseInt(acct.account_number || '0');
-  const sequence      = parseInt(acct.sequence || '0');
+  // Узлы перебираем и падаем явно. Раньше при ошибке единственного узла
+  // accountNumber молча становился нулём, подпись не сходилась, и цепь
+  // отвечала тем же «signature verification failed» — причину приходилось
+  // искать вслепую.
+  const ACC_NODES = [
+    LCD_BASE,
+    'https://rest.cosmos.directory/terraclassic',
+    'https://terra-classic-lcd.hexxagon.io',
+  ];
+  let accountNumber, sequence;
+  for (const _node of ACC_NODES) {
+    try {
+      const r = await fetch(`${_node}/cosmos/auth/v1beta1/accounts/${fromAddr}`,
+                            { signal: AbortSignal.timeout(8000) });
+      if (!r.ok) continue;
+      const d = await r.json();
+      const acct = (d.account && (d.account.base_account || d.account)) || {};
+      if (acct.account_number === undefined) continue;
+      accountNumber = parseInt(acct.account_number, 10);
+      sequence      = parseInt(acct.sequence || '0', 10);
+      break;
+    } catch (e) { /* следующий узел */ }
+  }
+  if (accountNumber === undefined) {
+    throw new Error('Could not read your account from the chain. Check your connection and try again.');
+  }
 
   function encodeVarint(n) {
     const buf = []; let v = n;
