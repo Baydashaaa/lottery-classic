@@ -196,7 +196,21 @@ export default class DrawBridge {
         }
 
         if (this.engine.state.revealing) return;      // во время анимации не трогаем
-        if (this.engine.state.model) return;          // снимок главнее
+
+        // Снимок главнее — но только пока показываем ТОТ раунд.
+        //
+        // Здесь был баг: выход стоял безусловным. state.model — снимок
+        // завершённого раунда, поднятый при старте из winners.json; пока он
+        // есть, живые участники не рисовались вообще. Колесо показывало
+        // состав прошлого раунда, а счётчики под ним — текущего. Переключение
+        // вкладки звало setPool(), тот сбрасывал модель, и всё «чинилось».
+        //
+        // В OPEN, LOCKED и ROLLOVER идёт уже НОВЫЙ раунд: снимок устарел,
+        // и вытеснять его должны живые входы.
+        const _ph = this.engine.state.phase;
+        const _stillShowingThatRound =
+            _ph !== PHASE.OPEN && _ph !== PHASE.LOCKED && _ph !== PHASE.ROLLOVER;
+        if (this.engine.state.model && _stillShowingThatRound) return;
 
         // Пустой раунд — тоже состояние: колесо крутится вхолостую и пишет
         // «No entries yet». Раньше здесь стоял return, и канвас оставался
