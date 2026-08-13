@@ -51,6 +51,9 @@
   const short = (a) => String(a).slice(0, 9) + '…' + String(a).slice(-4);
 
   let painted = [];
+  // Сколько раз уже ждали появления доски. Ограничение на случай, если
+  // воркер недоступен и доска не построится вовсе — иначе таймеры плодятся.
+  let waitingForBoard = 0;
 
   function clearPaint() {
     painted.forEach((c) => {
@@ -179,9 +182,18 @@
 
     const holders = holdersOf(state, myWallet());
 
-    // Доску строит refreshCircuit() из index.html; если её ещё нет, ждём
-    // следующего круга, а не создаём вторую.
-    if ($('cir-board') && $('cir-board').children.length) paintBoard(holders);
+    // Доску строит refreshCircuit() из index.html при своём первом успешном
+    // ответе. Мы можем оказаться раньше — тогда ждём её появления, а не
+    // следующего двадцатисекундного круга: иначе после перезагрузки цвета
+    // «слетают» и возвращаются только через полминуты.
+    const bd = $('cir-board');
+    if (bd && bd.children.length) {
+      paintBoard(holders);
+    } else if (waitingForBoard < 40) {          // доска ещё не построена
+      waitingForBoard++;
+      setTimeout(() => { paintBoard(holders); }, 400);
+      setTimeout(refresh, 400);
+    }
     renderLegend(state, holders);
   }
 
