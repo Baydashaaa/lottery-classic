@@ -28,8 +28,14 @@ export const NFT_CONTRACT =
   'terra1hcsq79vmcqxr97sv720yw6scvyknssx62ufsa4rwlmv02gyft43s46uaqx';
 
 export const LCD_NODES = [
+  // Список из двух, где второй не существовал, стоил трёх минут ожидания на
+  // розыгрыше 12 августа: бинарный поиск блока дедлайна шлёт 9–14 запросов
+  // подряд, и при первом же отказе publicnode переходить было некуда.
+  // Правильное имя хексагона — terra-classic-lcd, а не lcd-terra-classic.
   'https://terra-classic-lcd.publicnode.com',
-  'https://lcd-terra-classic.hexxagon.io',
+  'https://rest.cosmos.directory/terraclassic',
+  'https://terra-classic-lcd.hexxagon.io',
+  'https://lcd.terraclassic.community',
 ];
 
 export const MIN_ENTRIES = 5;
