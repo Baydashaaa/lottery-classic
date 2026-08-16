@@ -1,13 +1,13 @@
 {
   "_meta": {
-    "description": "Free Weekly Draw entries — Terra Oracle protocol",
+    "description": "Free Weekly Draw entries - Terra Oracle protocol",
     "sources": {
       "chat": "1 entry per 10 messages, max 20 per round",
       "questions": "entries per question tariff (Basic +1, Priority +4)",
       "streak": "2 one-time entries at 14-day streak milestone",
       "trusted": "1 entry per round for Trusted Users (30-day streak), backed from Reserve"
     },
-    "updated": "2026-08-16T12:31:48.975Z",
+    "updated": "2026-08-16T13:28:07.361Z",
     "history_from": "2026-08-10T20:00:00.000Z",
     "cutoff_source": "last completed weekly draw",
     "resets": "после состоявшегося weekly-розыгрыша (обычно Пн 20:00 UTC)",
