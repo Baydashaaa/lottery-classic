@@ -233,11 +233,17 @@ else {
     const code = refresh.replace(/\/\*[\s\S]*?\*\//g, '')
                         .replace(/^\s*\/\/.*$/gm, '');
     const iPool  = code.indexOf('pagePool !== this.engine.pool');
-    const iModel = code.indexOf('state.model) return');
+    // Раньше искали дословно `state.model) return`. Коммит 1523a5a сделал
+    // выход условным — `state.model && _stillShowingThatRound` — строка
+    // исчезла, и тест падал на живом и правильном коде.
+    //
+    // Инвариант не в форме выхода, а в ПОРЯДКЕ: любой выход по снимку обязан
+    // стоять ниже сверки пула, иначе движок не узнает о переключении вкладки
+    // и колесо останется в чужой теме. Ищем по подстроке без формы.
+    const iModel = code.indexOf('state.model');
     check('сверка пула вообще есть', iPool >= 0, 'true');
-    check('ранний выход по state.model есть', iModel >= 0, 'true');
-    // Вот он, инвариант: пул сверяется РАНЬШЕ выхода
-    check('сверка пула ВЫШЕ раннего выхода', iPool >= 0 && iModel >= 0 && iPool < iModel, 'true');
+    check('выход по снимку есть', iModel >= 0, 'true');
+    check('сверка пула ВЫШЕ выхода по снимку', iPool >= 0 && iModel >= 0 && iPool < iModel, 'true');
     check('тема приводится сразу, не ждём раунд', /this\.ensure\(pagePool\)/.test(code), 'true');
   }
 
