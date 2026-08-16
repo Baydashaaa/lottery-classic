@@ -723,6 +723,19 @@ body.modal-open{overflow:hidden}
   background:linear-gradient(90deg,transparent,#38d9d0,transparent);opacity:.6}
 .dg-cir-title{font-family:'Rajdhani',sans-serif;font-size:34px;font-weight:700;
   letter-spacing:.06em;color:#38d9d0;text-align:center}
+/* Справка по игре. Правила нигде не описаны, а разбивку не помнят даже свои. */
+.dg-cir-i{position:absolute;top:14px;right:14px;width:26px;height:26px;border-radius:50%;
+  border:1px solid rgba(56,217,208,.4);background:rgba(56,217,208,.08);color:#38d9d0;
+  font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;line-height:1;
+  cursor:pointer;z-index:2;transition:background .15s,border-color .15s}
+.dg-cir-i:hover{background:rgba(56,217,208,.18);border-color:rgba(56,217,208,.7)}
+.dg-cir-info{display:none;max-width:560px;margin:0 auto 22px;padding:16px 18px;
+  background:rgba(0,0,0,.3);border:1px solid rgba(56,217,208,.16);border-radius:12px;
+  font-size:12.5px;line-height:1.7;color:var(--muted)}
+.dg-cir-info.open{display:block}
+.dg-cir-info b{color:#38d9d0;font-weight:600}
+.dg-cir-info p{margin:0 0 10px}
+.dg-cir-info p:last-child{margin:0}
 .dg-cir-line{width:60px;height:2px;margin:9px auto 16px;
   background:linear-gradient(90deg,transparent,#38d9d0,transparent)}
 .dg-cir-lead{max-width:460px;margin:0 auto 22px;text-align:center;
@@ -997,10 +1010,31 @@ body.modal-open{overflow:hidden}
        чтобы переключатель был рабочим с первого дня. -->
   <div id="stage-circuit" style="display:none;">
    <div class="dg-panel">
+    <button class="dg-cir-i" id="cir-i" title="How Circuit works"
+            onclick="document.getElementById('cir-info').classList.toggle('open')">i</button>
     <div class="dg-cir-title">CIRCUIT</div>
     <div class="dg-cir-line"></div>
     <p class="dg-cir-lead">Claim consecutive zones on a 250&#8209;zone board. A marker runs across it
       and stops on one &mdash; whoever owns that zone takes the round.</p>
+
+    <div class="dg-cir-info" id="cir-info">
+     <p><b>How it works.</b> Zones are handed out back to back from the first free one.
+        A round draws when the board fills, or every three hours once at least 20 zones
+        are taken. Below that the zones and the pot carry into the next round &mdash;
+        nothing is refunded and nothing is lost.</p>
+     <p><b>Price.</b> 1,000 LUNC for your first zone, +5% for each one after it. The
+        markup is cumulative per wallet per round, so splitting a purchase does not
+        dodge it. Your Oracle Mask sets the cap: 10 zones for Common, 25 for Rare,
+        50 for Legendary.</p>
+     <p><b>The pool splits</b> 80% to the winner, 6% to TCO rewards for everyone who
+        took zones, 6% to TCO burn, 8% to the treasury.</p>
+     <p><b>Rewards.</b> Your share is fixed in LUNC the moment a round draws, then
+        converted to TCO in one batch once 50,000 LUNC has built up &mdash; buying a few
+        cents' worth per round would be eaten by fees. Claims are cumulative, so many
+        epochs come out in a single transaction.</p>
+     <p><b>The draw is checkable.</b> The winning zone comes from the Terra Classic
+        block hash at the round's deadline, not from a number our server picked.</p>
+    </div>
 
     <div class="dg-cir-grid">
      <div class="dg-cir-box"><span>Board</span><b id="cir-sold">0</b><i>of 250 zones</i></div>
