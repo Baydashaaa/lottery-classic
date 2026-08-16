@@ -1,12 +1,12 @@
 /**
- * chain-tickets.js — build the draw's ticket list from the NFT contract alone.
+ * chain-tickets.js - build the draw's ticket list from the NFT contract alone.
  *
  * Replaces fetchParticipants() + buildTickets(), which took the participant set
  * from the Worker at the moment the workflow happened to run. Two problems with
  * that: a delayed start changed who was in the round, and the ordering that
  * decides winner_index came from data only the operator could produce.
  *
- * The rule implemented here — publish it, it is the whole point:
+ * The rule implemented here - publish it, it is the whole point:
  *
  *   1. A token enters the first draw of its pool after minted_at.
  *   2. A round with fewer than MIN_ENTRIES tickets is skipped and consumes
@@ -31,7 +31,7 @@ export const LCD_NODES = [
   // Список из двух, где второй не существовал, стоил трёх минут ожидания на
   // розыгрыше 12 августа: бинарный поиск блока дедлайна шлёт 9–14 запросов
   // подряд, и при первом же отказе publicnode переходить было некуда.
-  // Правильное имя хексагона — terra-classic-lcd, а не lcd-terra-classic.
+  // Правильное имя хексагона - terra-classic-lcd, а не lcd-terra-classic.
   'https://terra-classic-lcd.publicnode.com',
   'https://rest.cosmos.directory/terraclassic',
   'https://terra-classic-lcd.hexxagon.io',
@@ -43,7 +43,7 @@ export const MIN_ENTRIES = 5;
 /**
  * Tokens minted at or after this instant are governed by the rule above.
  * Everything earlier was settled under the old Worker-driven flow and is not
- * replayable — the 2026-07-23 draw ran late and swept in tokens minted after
+ * replayable - the 2026-07-23 draw ran late and swept in tokens minted after
  * its own deadline. History is left alone on purpose.
  */
 export const RULE_START_TS = 1784837749; // 2026-07-23 20:15 UTC
@@ -101,7 +101,7 @@ async function allTokenIds() {
   return out;
 }
 
-/** Metadata only — no owner, so this is height-independent and cacheable. */
+/** Metadata only - no owner, so this is height-independent and cacheable. */
 async function loadTokenMeta() {
   const ids = await allTokenIds();
   const rows = [];
@@ -191,7 +191,7 @@ export async function buildTicketsFromChain({
   );
 
   // Граница «отыграно». Для daily она выводится из цепи: источник входов один,
-  // и правило самодостаточно. Для weekly её обязан передать вызывающий — там
+  // и правило самодостаточно. Для weekly её обязан передать вызывающий - там
   // состоялся ли раунд, зависит ещё и от бесплатных входов и от баланса пула,
   // а этого в цепи нет. Молча посчитать её здесь означало бы выдать догадку
   // за проверяемый факт.
@@ -264,7 +264,7 @@ async function blockAt(height) {
 
 /**
  * The first block at or after the deadline. That block decides the winner, and
- * it is the same block whoever looks — which is why re-running the draw cannot
+ * it is the same block whoever looks - which is why re-running the draw cannot
  * change the outcome.
  */
 export async function findDeadlineBlock(deadlineMs) {
@@ -297,7 +297,7 @@ export async function findDeadlineBlock(deadlineMs) {
  *
  * Same rule the draw script applies, because it is the same code. If this ever
  * disagrees with what gets published, the disagreement is a bug worth shouting
- * about — not something to paper over by trusting the published value.
+ * about - not something to paper over by trusting the published value.
  */
 export async function computeWinner({ pool, deadlineMs, boundaryTs, minEntries = MIN_ENTRIES }) {
   const block = await findDeadlineBlock(deadlineMs);
@@ -406,7 +406,7 @@ if (typeof process !== 'undefined' && process.argv && import.meta.url === `file:
 
   console.log(`pool: ${pool}`);
   console.log(`deadline: ${d.toISOString()}`);
-  if (!height) console.log('WARNING: no block height given — owners read at latest state');
+  if (!height) console.log('WARNING: no block height given - owners read at latest state');
 
   buildTicketsFromChain({ pool, deadlineMs: d.getTime(), blockHeight: height })
     .then(({ tickets, tokens, boundaryTs }) => {
@@ -421,7 +421,7 @@ if (typeof process !== 'undefined' && process.argv && import.meta.url === `file:
       console.log(
         tickets.length < MIN_ENTRIES
           ? `\nwould SKIP (${tickets.length} < ${MIN_ENTRIES})`
-          : `\nwould DRAW — winner_index in 0..${tickets.length - 1}`
+          : `\nwould DRAW - winner_index in 0..${tickets.length - 1}`
       );
     })
     .catch((e) => { console.error(e.message); process.exit(1); });

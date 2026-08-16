@@ -1,10 +1,10 @@
 /**
- * Oracle Draw V2 — DrawEngine
+ * Oracle Draw V2 - DrawEngine
  *
  * Читает winners.json, подтягивает снимок билетов раунда, строит
  * TicketModel и держит фазу. DOM не трогает.
  *
- * Правило про winner_index: индекс — основа, адрес — предохранитель.
+ * Правило про winner_index: индекс - основа, адрес - предохранитель.
  * Если tickets[winner_index] !== winner из winners.json, снимок не от
  * этого раунда → verified=false, колесо не крутим.
  */
@@ -62,7 +62,7 @@ export default class DrawEngine {
         return true;
     }
 
-    /** Мост сообщает, что анимация началась/кончилась — фаза REVEALING */
+    /** Мост сообщает, что анимация началась/кончилась - фаза REVEALING */
     beginReveal() { this.state.revealing = true; this.syncPhase(); }
     endReveal() { this.state.revealing = false; this.syncPhase(); }
 
@@ -154,7 +154,7 @@ export default class DrawEngine {
      *
      * Кладём его в this.local, а НЕ в state: #adoptLatest выходит рано, если
      * ключ совпал с текущим, и опубликованный снимок был бы отброшен молча.
-     * Сверка с ним — единственное, что доказывает, что правило не разъехалось.
+     * Сверка с ним - единственное, что доказывает, что правило не разъехалось.
      */
     async #tryLocalResult(now = Date.now()) {
         if (this.localBusy) return;
@@ -168,7 +168,7 @@ export default class DrawEngine {
         if (this.state.roundKey === key) return;   // опубликованный уже пришёл
 
         // Дедлайн-блок рождается на несколько секунд позже дедлайна, а тик
-        // приходит раз в секунду — без паузы и троттлинга мы бомбим LCD
+        // приходит раз в секунду - без паузы и троттлинга мы бомбим LCD
         // бинарным поиском по блокам ежесекундно, пока не приедет публикация.
         if (now - deadline < 15000) return;
         if (this.localNextTry && now < this.localNextTry) return;
@@ -176,7 +176,7 @@ export default class DrawEngine {
 
         this.localBusy = true;
         try {
-            // Граница «отыграно» — дедлайн последнего состоявшегося раунда,
+            // Граница «отыграно» - дедлайн последнего состоявшегося раунда,
             // ровно как её берёт lottery-draw.js.
             const done = (this.data[pool] || []).filter(r => !r.skipped && r.date);
             const prev = done[done.length - 1] || null;
@@ -215,7 +215,7 @@ export default class DrawEngine {
 
     /**
      * Сверка опубликованного результата с тем, что уже показано.
-     * Совпало — тишина. Разошлось — говорим громко: это значит, что правило в
+     * Совпало - тишина. Разошлось - говорим громко: это значит, что правило в
      * браузере и правило в скрипте больше не одно и то же.
      */
     #reconcileLocal(latest) {
@@ -226,7 +226,7 @@ export default class DrawEngine {
             console.error(
                 `[DrawEngine] локальный результат разошёлся с опубликованным для ${latest.key}: ` +
                 `показали ${loc.winner} (index ${loc.index}), в winners.json ${latest.winner} ` +
-                `(index ${latest.winnerIndex}). Победитель — опубликованный.`
+                `(index ${latest.winnerIndex}). Победитель - опубликованный.`
             );
         }
         return same;
@@ -247,7 +247,7 @@ export default class DrawEngine {
         // снимок билетов + модель колеса
         const raw = await this.api.loadSnapshot(latest.key);
 
-        // Пока грузился снимок, вкладку могли переключить — и не один раз.
+        // Пока грузился снимок, вкладку могли переключить - и не один раз.
         // Тогда наш результат устарел: записывать его нельзя, иначе раунд
         // чужого пула ляжет поверх текущего, и отсчёт под колесом начнёт
         // считаться от чужого дедлайна. Ровно так недельный «4d 23:55»
@@ -280,7 +280,7 @@ export default class DrawEngine {
         }
 
         // Уже показали этот раунд из локального расчёта? Тогда крутить второй
-        // раз незачем — если только он не разошёлся с опубликованным.
+        // раз незачем - если только он не разошёлся с опубликованным.
         const agreed = this.#reconcileLocal(latest);
         if (agreed) {
             this.state.markSeen(latest.key);

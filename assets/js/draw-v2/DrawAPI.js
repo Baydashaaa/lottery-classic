@@ -1,5 +1,5 @@
 /**
- * Oracle Draw V2 — DrawAPI
+ * Oracle Draw V2 - DrawAPI
  *
  * Схема winners.json взята из рабочего loadWinners() в app.js:
  *   daily : { date, winner, prize_lunc, entries, block_hash, block_height,
@@ -7,7 +7,7 @@
  *   weekly: { date, winners:[{place, address, amount_lunc, tx}], entries,
  *             block_hash, block_height, tx_treasury, skipped }
  *
- * ВАЖНО: round_id в файле НЕТ — идентификатор раунда собираем как
+ * ВАЖНО: round_id в файле НЕТ - идентификатор раунда собираем как
  * "pool:date". Первая версия этого модуля искала round_id и молча
  * отбросила бы все записи.
  */
@@ -138,7 +138,7 @@ export default class DrawAPI {
     }
 
     /**
-     * Снимок билетов раунда. Возвращает null, если файла нет —
+     * Снимок билетов раунда. Возвращает null, если файла нет -
      * у старых раундов его не будет, это не ошибка.
      */
     async loadSnapshot(roundKey) {
@@ -166,7 +166,7 @@ export default class DrawAPI {
     }
 
     /**
-     * Самый свежий раунд. Сортируем по drawnAt — порядок в файле
+     * Самый свежий раунд. Сортируем по drawnAt - порядок в файле
      * гарантировать нельзя, а даты сравнимы всегда.
      */
     static pickLatest(list) {

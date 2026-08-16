@@ -1,9 +1,9 @@
 /**
- * dev/_preflight.js — предполётная проверка скриптов розыгрыша.
+ * dev/_preflight.js - предполётная проверка скриптов розыгрыша.
  *
  * Зачем: 2 и 3 августа 2026 розыгрыши не состоялись, потому что в
  * lottery-draw.js оказался `require('./round-snapshot')`, а package.json
- * содержит "type": "module". `node --check` такое НЕ ловит — синтаксис
+ * содержит "type": "module". `node --check` такое НЕ ловит - синтаксис
  * валиден, падает только загрузка модуля, то есть в 20:00 на раннере.
  * Узнали об этом через двое суток.
  *
@@ -11,11 +11,11 @@
  *   1. система модулей: при "type":"module" никаких require()/module.exports
  *   2. относительные импорты: файл существует и расширение указано явно
  *   3. РЕАЛЬНАЯ загрузка: модули импортируются по-настоящему. lottery-draw.js
- *      грузится копией, в которой вызов main() вырезан, — так проверяется
+ *      грузится копией, в которой вызов main() вырезан, - так проверяется
  *      весь граф импортов, но розыгрыш не запускается
  *
  * Запуск: node dev/_preflight.js   (из корня репо)
- * Ставится шагом в CI на push — тогда поломка видна при коммите, а не вечером.
+ * Ставится шагом в CI на push - тогда поломка видна при коммите, а не вечером.
  */
 import fs from 'fs';
 import path from 'path';
@@ -40,10 +40,10 @@ const isESM = pkg.type === 'module';
 console.log('package.json: "type": ' + JSON.stringify(pkg.type || 'commonjs') +
             '  → репо ' + (isESM ? 'ESM' : 'CommonJS'));
 
-// Файлы Node в репозитории — ищем сами, а не списком.
+// Файлы Node в репозитории - ищем сами, а не списком.
 // Список был захардкожен, и ровно поэтому проверка прошла мимо dev/_test_*.js
 // с require() внутри: CI упал на них уже ПОСЛЕ зелёного предполёта.
-// Смотрим корень, .github/scripts и dev — три места, где живёт серверный код.
+// Смотрим корень, .github/scripts и dev - три места, где живёт серверный код.
 // Фронт (assets/) сюда не входит: это браузерные скрипты, у них свои правила.
 const SCAN_DIRS = ['.', '.github/scripts', 'dev'];
 
@@ -71,7 +71,7 @@ for (const rel of SCRIPTS) {
   const src = stripComments(fs.readFileSync(path.join(ROOT, rel), 'utf8'));
   const problems = [];
   // Расширение перебивает package.json: .cjs всегда CommonJS, .mjs всегда ESM.
-  // Именно так чинились dev/_test_*.js — переименованием, а не переписыванием.
+  // Именно так чинились dev/_test_*.js - переименованием, а не переписыванием.
   const fileIsESM = rel.endsWith('.mjs') ? true
                   : rel.endsWith('.cjs') ? false
                   : isESM;
@@ -84,7 +84,7 @@ for (const rel of SCRIPTS) {
     if (/^\s*import\s.+\sfrom\s/m.test(src)) problems.push('import ... from');
     if (/^\s*export\s/m.test(src))            problems.push('export');
   }
-  problems.length ? bad(rel + ' — ' + problems.join(', ')) : ok(rel);
+  problems.length ? bad(rel + ' - ' + problems.join(', ')) : ok(rel);
 }
 
 console.log('\n[2] Относительные импорты разрешаются');
@@ -92,13 +92,13 @@ for (const rel of SCRIPTS) {
   const src = stripComments(fs.readFileSync(path.join(ROOT, rel), 'utf8'));
   const dir = path.dirname(path.join(ROOT, rel));
   const specs = [...src.matchAll(/from\s+['"](\.[^'"]+)['"]/g)].map(m => m[1]);
-  if (!specs.length) { ok(rel + ' — относительных импортов нет'); continue; }
+  if (!specs.length) { ok(rel + ' - относительных импортов нет'); continue; }
   for (const spec of specs) {
     const target = path.resolve(dir, spec);
     if (!path.extname(spec) && !rel.endsWith('.cjs')) {
-      bad(rel + ' → ' + spec + ' — в ESM расширение обязательно (.js)');
+      bad(rel + ' → ' + spec + ' - в ESM расширение обязательно (.js)');
     } else if (!fs.existsSync(target)) {
-      bad(rel + ' → ' + spec + ' — файла нет: ' + target);
+      bad(rel + ' → ' + spec + ' - файла нет: ' + target);
     } else {
       ok(rel + ' → ' + spec);
     }
@@ -106,16 +106,16 @@ for (const rel of SCRIPTS) {
 }
 
 console.log('\n[3] Модули реально загружаются');
-// round-snapshot.js без побочных эффектов — грузим как есть
+// round-snapshot.js без побочных эффектов - грузим как есть
 try {
   const mod = await import(pathToFileURL(path.join(ROOT, 'round-snapshot.js')).href);
   if (typeof mod.writeRoundSnapshot !== 'function') {
-    bad('round-snapshot.js — writeRoundSnapshot не экспортирован');
+    bad('round-snapshot.js - writeRoundSnapshot не экспортирован');
   } else {
     ok('round-snapshot.js загружен, writeRoundSnapshot на месте');
   }
 } catch (e) {
-  bad('round-snapshot.js — ' + e.message);
+  bad('round-snapshot.js - ' + e.message);
 }
 
 // lottery-draw.js вызывает main() на верхнем уровне. Грузим копию без вызова:
@@ -127,16 +127,16 @@ if (fs.existsSync(LD)) {
     let src = fs.readFileSync(LD, 'utf8');
     const before = src;
     src = src.replace(/^\s*main\(\)[\s\S]*$/m,
-      '// PREFLIGHT: вызов main() вырезан — проверяем только загрузку модуля\n');
+      '// PREFLIGHT: вызов main() вырезан - проверяем только загрузку модуля\n');
     if (src === before) {
-      bad('lottery-draw.js — не нашёл вызов main(), проверку загрузки пропускаю');
+      bad('lottery-draw.js - не нашёл вызов main(), проверку загрузки пропускаю');
     } else {
       fs.writeFileSync(tmp, src);
       await import(pathToFileURL(tmp).href);
       ok('lottery-draw.js загружается (main() не вызывался)');
     }
   } catch (e) {
-    bad('lottery-draw.js — ' + e.message);
+    bad('lottery-draw.js - ' + e.message);
   } finally {
     if (fs.existsSync(tmp)) fs.unlinkSync(tmp);
   }
@@ -144,5 +144,5 @@ if (fs.existsSync(LD)) {
 
 console.log('\n' + (fails === 0
   ? '=== ПРЕДПОЛЁТНАЯ ПРОВЕРКА ПРОЙДЕНА ==='
-  : '=== ' + fails + ' ПРОБЛЕМ — розыгрыш в таком виде упадёт ==='));
+  : '=== ' + fails + ' ПРОБЛЕМ - розыгрыш в таком виде упадёт ==='));
 process.exit(fails === 0 ? 0 : 1);

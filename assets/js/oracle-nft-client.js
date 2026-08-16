@@ -1,4 +1,4 @@
-/* oracle-nft-client.js — v2.0.0 (contract-only)
+/* oracle-nft-client.js - v2.0.0 (contract-only)
  *
  * Клиент коллекции Oracle Mask на собственном CW721-контракте.
  * My Bag = ОДИН запрос owner_tokens (метаданные уже он-чейн).
@@ -97,7 +97,7 @@
       .then(function (r) { return (r && r.tiers) || []; });
   }
 
-  /** Точная цена минта в uluna — фронт не считает её сам. */
+  /** Точная цена минта в uluna - фронт не считает её сам. */
   function getMintPrice(tierKey) {
     return smartQuery({ extension: { msg: { tier: { key: String(tierKey).toLowerCase() } } } })
       .then(function (r) { return r.tier.price; });
@@ -108,7 +108,7 @@
   }
 
   /**
-   * NFT владельца из НОВОГО контракта. Один запрос — сразу с метаданными.
+   * NFT владельца из НОВОГО контракта. Один запрос - сразу с метаданными.
    * Пагинация прозрачная: тянет все страницы по 100.
    */
   function getContractTokens(owner) {
@@ -179,7 +179,7 @@
 
   /**
    * Готовое тело MsgExecuteContract для существующего роутера подписи.
-   * Оплата и минт — одна транзакция: либо всё, либо ничего.
+   * Оплата и минт - одна транзакция: либо всё, либо ничего.
    *
    *   const msg = OracleNFT.buildMintMsg({ sender, tier:'legendary', pool:'weekly', price });
    *   await walletProvider.signAndBroadcast([msg]);
@@ -240,7 +240,7 @@
       });
   }
 
-  /** Токены контракта сразу в legacy-форме — одним вызовом для app.js. */
+  /** Токены контракта сразу в legacy-форме - одним вызовом для app.js. */
   function getContractTokensLegacy(owner) {
     return getContractTokens(owner).then(toLegacyNfts).catch(function (e) {
       console.error('[oracle-nft] contract query failed:', e.message);

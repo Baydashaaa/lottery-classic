@@ -1,8 +1,8 @@
 /**
- * Oracle Draw — WheelAnimation
+ * Oracle Draw - WheelAnimation
  *
  * Физика, а не CSS-твин. Профиль скорости решается ЗАРАНЕЕ, поэтому
- * посадка на нужный угол точная, а скорость непрерывна во всех стыках —
+ * посадка на нужный угол точная, а скорость непрерывна во всех стыках -
  * включая старт из уже вращающегося колеса (PreDraw).
  *
  * Фазы:  IDLE → PREDRAW → ACCEL → CRUISE → DECEL → LOCK → WINNER → REST
@@ -11,7 +11,7 @@
  *   разгон   tA: v идёт v0→vMax по smootherstep, путь = (v0+vMax)/2 * tA
  *   крейсер  tB: путь = vMax * tB
  *   торможение tC: v = vMax*(1-u)^2, путь = vMax*tC/3
- * Из D находим tB. Если он отрицательный — добавляем полный оборот к D
+ * Из D находим tB. Если он отрицательный - добавляем полный оборот к D
  * и решаем снова. Так «6 оборотов» никогда не превращаются в 15.
  */
 
@@ -56,7 +56,7 @@ export default class WheelAnimation {
                this.mode === MOTION.DECEL || this.mode === MOTION.LOCK;
     }
 
-    /** 0..1 — насколько колесо «горячее». Кристалл берёт отсюда яркость. */
+    /** 0..1 - насколько колесо «горячее». Кристалл берёт отсюда яркость. */
     get intensity() {
         const vMax = rpm(this.cfg.maxRpm);
         if (this.mode === MOTION.WINNER) return 1;
@@ -102,7 +102,7 @@ export default class WheelAnimation {
         let turns = Math.max(c.minTurns, 1);
         let D = back + turns * TAU;
         let tB = (D - dA - dC) / vMax;
-        while (tB < c.minCruiseMs / 1000) {          // не хватает пути — добавляем оборот
+        while (tB < c.minCruiseMs / 1000) {          // не хватает пути - добавляем оборот
             turns += 1;
             D = back + turns * TAU;
             tB = (D - dA - dC) / vMax;
@@ -190,7 +190,7 @@ export default class WheelAnimation {
         return { angle: this.angle, velocity: this.velocity, mode: this.mode };
     }
 
-    /** Прогресс всей анимации 0..1 — для затемнения проигравших */
+    /** Прогресс всей анимации 0..1 - для затемнения проигравших */
     get progress() {
         if (!this.plan || this.plan.skipped) return this.mode === MOTION.REST ? 0 : 1;
         const total = this.plan.tA + this.plan.tB + this.plan.tC;

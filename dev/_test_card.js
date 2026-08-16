@@ -33,7 +33,7 @@ ok(cardCalls === 0, "до тика карточку не трогаем");
 V.bridge.ensureCard();
 ok(cardCalls === 1, "первый тик показал карточку");
 V.bridge.ensureCard(); V.bridge.ensureCard();
-ok(cardCalls === 1, "пока карточка на месте — повторно не рисуем");
+ok(cardCalls === 1, "пока карточка на месте - повторно не рисуем");
 
 cardEl.style.display = "none";           // switchLottery спрятал
 V.bridge.ensureCard();

@@ -52,7 +52,7 @@ function runDaily() {
   const idx = Math.floor(Math.random() * daily.model.total);
   const sector = daily.model.sectorForIndex(idx);
   daily.r.onLanded = () => {
-    document.getElementById("dw-id").textContent = "#" + (sector.meta.tokenId ?? "—");
+    document.getElementById("dw-id").textContent = "#" + (sector.meta.tokenId ?? "-");
     document.getElementById("dw-tier").textContent = (sector.meta.tier || "common").toUpperCase();
     document.getElementById("dw-addr").textContent = short(sector.address);
     document.getElementById("dw-prize").textContent = fmt(PRIZE_DAILY) + " LUNC";
@@ -89,7 +89,7 @@ function runWeekly() {
       row.className = "card";
       row.style.cssText = "margin-top:8px;padding:10px;border-color:rgba(185,140,255,.35)";
       row.innerHTML =
-        '<div class="cap" style="margin:0 0 4px">' + PLACES[p] + " · #" + (sector.meta.tokenId ?? "—") + "</div>" +
+        '<div class="cap" style="margin:0 0 4px">' + PLACES[p] + " · #" + (sector.meta.tokenId ?? "-") + "</div>" +
         '<div class="addr">' + short(sector.address) + "</div>" +
         '<div class="prize" style="font-size:15px">' + fmt(WEEKLY_PRIZES[p]) + " LUNC</div>";
       list.appendChild(row);

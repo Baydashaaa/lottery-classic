@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Explicit fee instead of cosmjs's gasPrice option — structural version.
+"""Explicit fee instead of cosmjs's gasPrice option - structural version.
 
 The first attempt matched exact strings and one of them had drifted. This one
 finds the client.execute(...) calls by their contents, so formatting does not
@@ -76,7 +76,7 @@ for kind, needle in (("open", "open_round"), ("settle", "execute_draw")):
         count += 1
         break
 if count != 2:
-    sys.exit(f"patched {count} call sites, expected 2 — show me the execute() blocks")
+    sys.exit(f"patched {count} call sites, expected 2 - show me the execute() blocks")
 print("ok: both call sites")
 
 if "'auto'" in s:
@@ -93,4 +93,4 @@ s = s.replace(
 )
 
 open(P, "w").write(s)
-print("\nwritten — node --check next")
+print("\nwritten - node --check next")

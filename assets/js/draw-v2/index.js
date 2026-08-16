@@ -1,13 +1,13 @@
 /**
- * Oracle Draw V2 — точка входа.
+ * Oracle Draw V2 - точка входа.
  *
  * Ничего не ломает в старом app.js: только читает winners.json и эмитит
- * события. Пока к ним никто не подписан — система работает вхолостую.
+ * события. Пока к ним никто не подписан - система работает вхолостую.
  *
  * Подключение (index.html, ПОСЛЕ старых скриптов):
  *   <script type="module" src="/assets/js/draw-v2/index.js?v=1"></script>
  *
- * Отладка: открыть страницу с ?draw-v2-debug — в консоли будет весь поток
+ * Отладка: открыть страницу с ?draw-v2-debug - в консоли будет весь поток
  * событий, а window.oracleDrawV2 даст ручной доступ.
  */
 
@@ -31,7 +31,7 @@ const scheduler = new DrawScheduler(engine);
 const bridge = new DrawBridge(engine).attach();
 
 // Пока снимка билетов нет (старые раунды, или lottery-draw.js ещё не
-// обновлён) — колесо остаётся за старым рендером app.js. Как только
+// обновлён) - колесо остаётся за старым рендером app.js. Как только
 // модель построена, канвас переходит к V2.
 engine.on(EVENTS.RESULT_READY, ({ model }) => {
     if (model && model.total > 0 && window.oracleDrawV2) window.oracleDrawV2.ownsWheel = true;

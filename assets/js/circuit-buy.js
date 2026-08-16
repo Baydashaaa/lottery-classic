@@ -1,21 +1,21 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   CIRCUIT — покупка зон
+   CIRCUIT - покупка зон
    ---------------------------------------------------------------------------
    Заменяет заглушку «buying zones opens shortly» внутри #stage-circuit.
 
-   ПОДКЛЮЧЕНИЕ: обычный <script>, ОБЯЗАТЕЛЬНО после app.js —
+   ПОДКЛЮЧЕНИЕ: обычный <script>, ОБЯЗАТЕЛЬНО после app.js -
    отсюда берутся DRAW_WORKER, CHAIN_ID, lotteryAddress и sendLuncDirect.
    Они объявлены через const/let на верхнем уровне, то есть в window их нет;
    ссылки идут по имени, поэтому порядок загрузки важен.
 
-   ЦЕНУ НЕ СЧИТАЕМ. Всё — из GET /circuit/quote: totalUluna, perZone, payTo,
+   ЦЕНУ НЕ СЧИТАЕМ. Всё - из GET /circuit/quote: totalUluna, perZone, payTo,
    остаток потолка, какие зоны достанутся. Иначе формула наценки рано или
    поздно разъедется с воркером.
 
    ЖИВУЧЕСТЬ. Между отправкой LUNC и зачётом в воркере есть окно, в котором
    деньги уже ушли. Хеш кладётся в localStorage ДО первой попытки зачёта и
    стирается только после успеха, поэтому закрытая вкладка или упавшая сеть
-   не теряют покупку — при следующей загрузке зачёт продолжится сам.
+   не теряют покупку - при следующей загрузке зачёт продолжится сам.
    ═══════════════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
@@ -31,7 +31,7 @@
   const base = () => (typeof DRAW_WORKER !== 'undefined' ? DRAW_WORKER : '');
   const chain = () => (typeof CHAIN_ID !== 'undefined' ? CHAIN_ID : 'columbus-5');
   // Кошелёк подключается несколькими путями, и каждый заполняет СВОЮ переменную:
-  // кнопка в шапке пишет connectedWalletAddress, поток Draw — lotteryAddress,
+  // кнопка в шапке пишет connectedWalletAddress, поток Draw - lotteryAddress,
   // и при подключении через шапку вторая остаётся null. Поэтому перебираем
   // источники и проверяем формат, а не полагаемся на одно имя.
   const ADDR_RE = /^terra1[0-9a-z]{38}$/i;
@@ -53,8 +53,8 @@
 
   let count = 1;
   let quote = null;        // последний успешный ответ /circuit/quote
-  let quoteErr = null;     // { error, ... } — причина, по которой купить нельзя
-  let busy = false;        // идёт покупка — блокируем повторные нажатия
+  let quoteErr = null;     // { error, ... } - причина, по которой купить нельзя
+  let busy = false;        // идёт покупка - блокируем повторные нажатия
   let quoteTimer = null;
   let lastWallet = null;
 
@@ -172,7 +172,7 @@
       else      { quote = null; quoteErr = d; }
     } catch (e) {
       quote = null;
-      quoteErr = { error: 'network', reason: 'Price unavailable — check your connection.' };
+      quoteErr = { error: 'network', reason: 'Price unavailable - check your connection.' };
     }
     render();
   }
@@ -209,7 +209,7 @@
       return;
     }
 
-    // Купить нельзя — объясняем почему и что делать.
+    // Купить нельзя - объясняем почему и что делать.
     clearPreview();
     priceEl.innerHTML = '&mdash;<small>LUNC</small>';
     buyEl.disabled = true;
@@ -217,10 +217,10 @@
     const e = quoteErr || {};
     if (e.error === 'no Oracle Mask') {
       buyEl.textContent = 'Oracle Mask required';
-      metaEl.textContent = 'An Oracle Mask is the pass into Circuit. Mint one in the Draw tab — it works in every round.';
+      metaEl.textContent = 'An Oracle Mask is the pass into Circuit. Mint one in the Draw tab - it works in every round.';
     } else if (e.error === 'tier cap exceeded') {
       metaEl.innerHTML = 'Your <b>' + e.tier + '</b> mask allows ' + e.cap +
-        ' zones per round. You hold ' + e.owned + ' — ' + e.allowed + ' left. Lower the count to continue.';
+        ' zones per round. You hold ' + e.owned + ' - ' + e.allowed + ' left. Lower the count to continue.';
       if (e.allowed > 0) { setTimeout(() => setCount(e.allowed), 0); }
     } else if (e.error === 'not enough zones left') {
       metaEl.innerHTML = 'Only <b>' + e.free + '</b> zones left on the board. Lower the count to continue.';
@@ -313,13 +313,13 @@
         const sd = await sr.json();
         roundId = sd.roundId || '';
         if (sd.locked) {
-          note('warn', 'The round is about to start — claiming is closed for a moment. ' +
+          note('warn', 'The round is about to start - claiming is closed for a moment. ' +
                        'Your funds have not moved. Try again when the next round opens.');
           busy = false;
           render();
           return;
         }
-      } catch (e) { /* состояние недоступно — идём дальше, воркер проверит сам */ }
+      } catch (e) { /* состояние недоступно - идём дальше, воркер проверит сам */ }
 
       buyEl.textContent = 'Waiting for wallet...';
       note('warn', 'Approve the transfer in your wallet. Do not close this tab.');
@@ -368,7 +368,7 @@
         r = { status: 0, ok: false };
       }
 
-      // Успех — либо сейчас, либо транзакция уже была зачтена раньше
+      // Успех - либо сейчас, либо транзакция уже была зачтена раньше
       // (её вернёт 409 'tx already used' с тем же блоком зон).
       const already = r.status === 409 && /already used/i.test(d.error || '');
       if ((r.status === 200 && d.ok) || already) {
@@ -376,14 +376,14 @@
         const b = d.block || {};
         note('ok', 'Zones <b>' + b.from + '&ndash;' + b.to + '</b> are yours. ' +
                    finderLink(p.txHash) +
-                   (d.boardFull ? '<br>The board is full — the round starts in a moment.' : ''));
+                   (d.boardFull ? '<br>The board is full - the round starts in a moment.' : ''));
         if (buyEl) buyEl.textContent = 'Claim zones';
         refreshBoard();
         scheduleQuote();
         return true;
       }
 
-      // 202 — оплата ещё не в индексе. Это ожидаемо в первые секунды.
+      // 202 - оплата ещё не в индексе. Это ожидаемо в первые секунды.
       if (r.status === 202 || d.pending) {
         if (buyEl) buyEl.textContent = 'Confirming...';
         note('warn', '<span class="cb-spin"></span>Payment sent, waiting for the chain to confirm it. ' +
@@ -392,13 +392,13 @@
         break;
       }
 
-      // Сеть моргнула — пробуем ещё, оплата уже прошла.
+      // Сеть моргнула - пробуем ещё, оплата уже прошла.
       if (r.status === 0) {
         if (i < RETRY_MS.length) { await sleep(RETRY_MS[i]); continue; }
         break;
       }
 
-      // Настоящий отказ воркера. Деньги ушли, зоны не выданы — говорим прямо.
+      // Настоящий отказ воркера. Деньги ушли, зоны не выданы - говорим прямо.
       stuck(p, d.error || 'Round rejected the payment.');
       return false;
     }
@@ -407,12 +407,12 @@
     return false;
   }
 
-  /** Оплата прошла, зачёт — нет. Хеш остаётся в localStorage, даём кнопку. */
+  /** Оплата прошла, зачёт - нет. Хеш остаётся в localStorage, даём кнопку. */
   function stuck(p, why) {
     note('err',
       '<b>Payment sent, zones not credited yet.</b><br>' + why +
       ' Your transaction ' + finderLink(p.txHash) +
-      ' is saved — retry below, or reopen this page later and it will finish on its own. ' +
+      ' is saved - retry below, or reopen this page later and it will finish on its own. ' +
       'Nothing is lost and you will not be charged twice.' +
       '<br><button type="button" id="cb-retry">Retry now</button>');
     const btn = $('cb-retry');
@@ -434,7 +434,7 @@
       const raw = localStorage.getItem(PENDING_KEY);
       if (!raw) return null;
       const p = JSON.parse(raw);
-      // Защита от повторного зачёта живёт в воркере 7 суток; старше — бесполезно.
+      // Защита от повторного зачёта живёт в воркере 7 суток; старше - бесполезно.
       if (!p || !p.txHash || Date.now() - p.at > 7 * 24 * 3600 * 1000) { clearPending(); return null; }
       return p;
     } catch (e) { return null; }
@@ -466,7 +466,7 @@
   function boot() {
     if (!mount()) return;
 
-    // Кошелёк подключается асинхронно и может смениться — следим и
+    // Кошелёк подключается асинхронно и может смениться - следим и
     // перезапрашиваем цену, отдельного события в app.js нет.
     setInterval(() => {
       const w = myWallet();

@@ -1,23 +1,23 @@
 /**
- * Oracle Draw V2 — TicketModel
+ * Oracle Draw V2 - TicketModel
  *
  * Колесо строится из ТОГО ЖЕ массива билетов, который использовал
  * lottery-draw.js. Снимок пишется в rounds/<pool>-<date>.json в момент
- * розыгрыша — восстановить его из /round-stats после раунда нельзя,
+ * розыгрыша - восстановить его из /round-stats после раунда нельзя,
  * потому что /round-complete уже проставил consumedInRound.
  *
  * Снимок:
  *   { total: 47, tickets: [["terra1abc", 10, 144, "legendary"], ...] }
  * Третий и четвёртый элементы пары необязательны: tokenId и тир нужны
  * колесу для картинки NFT и цвета редкости, механики не касаются.
- * Порядок пар — тот же обход активаций по usedAt, что и в скрипте.
+ * Порядок пар - тот же обход активаций по usedAt, что и в скрипте.
  * Плоский индекс билета = позиция при разворачивании пар слева направо.
  *
  * MAX_SECTORS больше нет. Сектор = кошелёк, площадь пропорциональна числу
  * билетов, то есть площадь = вероятность выигрыша. Один кошелёк с 10
  * билетами занимает ровно столько же, сколько 10 кошельков по одному.
  *
- * Если кошельков всё равно слишком много — самые мелкие сходятся в один
+ * Если кошельков всё равно слишком много - самые мелкие сходятся в один
  * групповой сектор, который раскрывается на остановке (expand()).
  */
 
@@ -51,7 +51,7 @@ export default class TicketModel {
     /* ---------- построение секторов ---------- */
 
     #buildSectors() {
-        // Слияние по кошельку. Порядок — первое появление в снимке,
+        // Слияние по кошельку. Порядок - первое появление в снимке,
         // он детерминирован (usedAt), поэтому колесо у всех одинаковое.
         const order = [];
         const byWallet = new Map();
@@ -61,9 +61,9 @@ export default class TicketModel {
             if (!byWallet.has(address)) {
                 byWallet.set(address, {
                     address, entries: 0, indices: [],
-                    // meta.tier — лучший тир кошелька (им красится сектор),
-                    // meta.tiers — сколько entries дал каждый тир,
-                    // meta.mints — сколько NFT кошелёк сминтил в этом раунде
+                    // meta.tier - лучший тир кошелька (им красится сектор),
+                    // meta.tiers - сколько entries дал каждый тир,
+                    // meta.mints - сколько NFT кошелёк сминтил в этом раунде
                     meta: { tiers: { common: 0, rare: 0, legendary: 0 }, mints: 0 }
                 });
                 order.push(address);
@@ -83,7 +83,7 @@ export default class TicketModel {
             }
         });
 
-        // индексы каждого кошелька — для точного угла конкретного билета
+        // индексы каждого кошелька - для точного угла конкретного билета
         this.indexToAddress.forEach((address, i) => {
             byWallet.get(address).indices.push(i);
         });
@@ -118,7 +118,7 @@ export default class TicketModel {
             const span = this.total > 0 ? (w.entries / this.total) * TAU : 0;
             const sector = {
                 id: i,
-                // Порядковый номер кошелька в раунде — по первому появлению
+                // Порядковый номер кошелька в раунде - по первому появлению
                 // в снимке, то есть по usedAt. Одинаков у всех, кто открыл
                 // страницу: считается из файла, а не из порядка отрисовки.
                 number: i + 1,
@@ -182,8 +182,8 @@ export default class TicketModel {
     }
 
     /**
-     * Предохранитель. Индекс — основа, адрес из winners.json — проверка.
-     * Не сошлось — значит снимок не от этого раунда, крутить нельзя.
+     * Предохранитель. Индекс - основа, адрес из winners.json - проверка.
+     * Не сошлось - значит снимок не от этого раунда, крутить нельзя.
      */
     verify(index, address) {
         if (index === null || index === undefined) return false;
@@ -222,7 +222,7 @@ function normalizePairs(snapshot) {
             .filter(p => p[0] && p[1] > 0);
     }
 
-    // ["addr","addr","addr", ...] — плоский массив, тоже принимаем
+    // ["addr","addr","addr", ...] - плоский массив, тоже принимаем
     if (Array.isArray(snapshot.tickets) && typeof snapshot.tickets[0] === "string") {
         const out = [];
         for (const address of snapshot.tickets) {

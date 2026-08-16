@@ -1,8 +1,8 @@
-name: Lottery Classic — Auto Draw
+name: Lottery Classic - Auto Draw
 
 on:
   schedule:
-    # Every day at 20:00 UTC — script itself decides daily vs weekly based on day of week
+    # Every day at 20:00 UTC - script itself decides daily vs weekly based on day of week
     # 19:30, не 20:00: GitHub стартует джоб с задержкой до 40 минут, а
     # скрипт сам дожидается дедлайна по времени цепи. Так задержка
     # поглощается ожиданием вместо того, чтобы прибавляться к нему.
@@ -23,7 +23,7 @@ on:
           - weekly
 
 # One draw at a time. The file check above cannot catch two runs that start
-# together — both would read winners.json before either writes it.
+# together - both would read winners.json before either writes it.
 concurrency:
   group: lottery-draw
   cancel-in-progress: false
@@ -64,7 +64,7 @@ jobs:
       # Ловит поломки загрузки модулей ДО того, как скрипт тронет деньги.
       # 2-3 августа 2026 розыгрыши не состоялись из-за require() в ESM-репо:
       # `node --check` такое не видит, падает только реальный импорт.
-      - name: Preflight — модули загружаются
+      - name: Preflight - модули загружаются
         run: node dev/_preflight.js
 
       - name: Run draw
@@ -82,11 +82,11 @@ jobs:
         run: |
           git config user.name  "Lottery Bot"
           git config user.email "lottery-bot@oracle-draw.io"
-          # rounds/ — снимок билетов раунда, из него колесо на сайте строит
+          # rounds/ - снимок билетов раунда, из него колесо на сайте строит
           # сектора и находит победителя по winner_index. Без этой строки
           # снимок остаётся в раннере и пропадает вместе с ним.
           # НЕ заменять на `git add -A`: шаг выше делает npm install прямо
           # в корне репо, и node_modules уедет в коммит.
           git add winners.json rounds/
-          git diff --staged --quiet || git commit -m "🎰 ${{ steps.draw_type.outputs.type }} draw — $(date -u +'%Y-%m-%d')"
+          git diff --staged --quiet || git commit -m "🎰 ${{ steps.draw_type.outputs.type }} draw - $(date -u +'%Y-%m-%d')"
           git push

@@ -1,9 +1,9 @@
-name: Preflight — скрипты розыгрыша
+name: Preflight - скрипты розыгрыша
 
 # Смысл шага: 2 и 3 августа 2026 два розыгрыша подряд не состоялись из-за
 # require() в репо с "type": "module". Поломка приехала коммитом, а выяснилась
 # только через двое суток по пустому winners.json. Эта проверка гоняется
-# на каждый push, затрагивающий скрипты, — тогда красный крест виден сразу.
+# на каждый push, затрагивающий скрипты, - тогда красный крест виден сразу.
 
 on:
   push:
@@ -43,7 +43,7 @@ jobs:
           if [ -f dev/_test_rollover.cjs ]; then
             node dev/_test_rollover.cjs
           else
-            echo "dev/_test_rollover.cjs отсутствует — пропускаю"
+            echo "dev/_test_rollover.cjs отсутствует - пропускаю"
           fi
 
       # Расписание: единый источник времени + сверка с DrawClock бандла
@@ -52,5 +52,5 @@ jobs:
           if [ -f dev/_test_schedule.cjs ]; then
             node dev/_test_schedule.cjs
           else
-            echo "dev/_test_schedule.cjs отсутствует — пропускаю"
+            echo "dev/_test_schedule.cjs отсутствует - пропускаю"
           fi

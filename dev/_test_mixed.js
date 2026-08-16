@@ -22,11 +22,11 @@ let fails=0; const ok=(c,x)=>{ if(!c){console.log("❌",x);fails++;} else consol
 const mixed = m.sectors[0];
 ok(m.sectorCount === 3, "три кошелька = три сектора");
 ok(mixed.entries === 16, "смешанный кошелёк: 1+5+10 = 16 entries");
-ok(mixed.meta.tier === "legendary", "цвет сектора — по лучшему NFT (legendary)");
+ok(mixed.meta.tier === "legendary", "цвет сектора - по лучшему NFT (legendary)");
 ok(mixed.meta.mints === 3, "учтено, что сминчено 3 NFT");
 ok(mixed.meta.tiers.legendary === 10 && mixed.meta.tiers.rare === 5 && mixed.meta.tiers.common === 1,
    "состав сохранён: 10 legendary / 5 rare / 1 common");
-ok(mixed.meta.tokenId === 203, "номер токена — от лучшего NFT");
+ok(mixed.meta.tokenId === 203, "номер токена - от лучшего NFT");
 ok(m.sectors[1].meta.mints === 2 && m.sectors[1].meta.tier === "common", "второй кошелёк: 2 common");
 // доля площади = доля entries
 ok(Math.abs(mixed.share - 16/23) < 1e-12, "площадь = 16 из 23 entries (69.6%)");

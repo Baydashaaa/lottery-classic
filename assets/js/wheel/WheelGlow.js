@@ -1,5 +1,5 @@
 /**
- * Oracle Draw — WheelGlow
+ * Oracle Draw - WheelGlow
  * Свет: мягкое сияние, градиенты металла, бархатный фон.
  * Бриф прямо запрещает сильный блюр, поэтому здесь только shadowBlur,
  * радиальные градиенты и аккуратный additive-проход.
@@ -44,7 +44,7 @@ export function ringReflections(ctx, cx, cy, r, width, theme, t, count = 3) {
     ctx.restore();
 }
 
-/** Дыхание обода — один цикл на pulseMs */
+/** Дыхание обода - один цикл на pulseMs */
 export function ringPulse(ctx, cx, cy, r, theme, t, quality) {
     if (!quality.bloom) return;
     const p = 0.5 + 0.5 * Math.sin((t / theme.ring.pulseMs) * TAU);

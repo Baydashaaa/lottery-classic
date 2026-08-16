@@ -23,16 +23,16 @@ const ctx=(offset,result=null,revealing=false)=>derivePhase({
   lastDeadline:offset>=0?deadline:deadline-86400000,
   result, revealing, cfg:CONFIG});
 
-ok(ctx(-3600000)===PHASE.OPEN,      "за час до — OPEN");
-ok(ctx(-10*60000)===PHASE.LOCKED,   "за 10 минут — LOCKED");
-ok(ctx(-20000)===PHASE.PRE_DRAW,    "за 20 секунд — PRE_DRAW");
-ok(ctx(+5000)===PHASE.AWAITING,     "через 5 секунд после — AWAITING");
+ok(ctx(-3600000)===PHASE.OPEN,      "за час до - OPEN");
+ok(ctx(-10*60000)===PHASE.LOCKED,   "за 10 минут - LOCKED");
+ok(ctx(-20000)===PHASE.PRE_DRAW,    "за 20 секунд - PRE_DRAW");
+ok(ctx(+5000)===PHASE.AWAITING,     "через 5 секунд после - AWAITING");
 ok(ctx(+9*60000)===PHASE.AWAITING,  "через 9 минут всё ещё AWAITING");
-ok(ctx(+30*60000)===PHASE.OPEN,     "через полчаса без результата — отпустили в OPEN");
+ok(ctx(+30*60000)===PHASE.OPEN,     "через полчаса без результата - отпустили в OPEN");
 const res={drawnAt:deadline+40000,skipped:false};
-ok(ctx(+60000,res)===PHASE.REVEALED,"результат пришёл — REVEALED");
-ok(ctx(+60000,res,true)===PHASE.REVEALING,"во время анимации — REVEALING");
-ok(ctx(+60000,{drawnAt:deadline+40000,skipped:true})===PHASE.ROLLOVER,"skipped — ROLLOVER");
+ok(ctx(+60000,res)===PHASE.REVEALED,"результат пришёл - REVEALED");
+ok(ctx(+60000,res,true)===PHASE.REVEALING,"во время анимации - REVEALING");
+ok(ctx(+60000,{drawnAt:deadline+40000,skipped:true})===PHASE.ROLLOVER,"skipped - ROLLOVER");
 const stale={drawnAt:deadline-86400000,skipped:false};
 ok(ctx(+60000,stale)===PHASE.AWAITING,"вчерашний результат не закрывает сегодняшний дедлайн");
 

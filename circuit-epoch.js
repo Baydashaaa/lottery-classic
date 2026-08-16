@@ -1,22 +1,22 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// CIRCUIT — эпоха наград TCO
+// CIRCUIT - эпоха наград TCO
 // ═══════════════════════════════════════════════════════════════════════════
 //
 // Раз в неделю: покупает TCO на всё, что накопилось от долей раундов, делит
 // купленное пополам (награды / сжигание), пополняет claim-контракт, пересчитывает
 // накопительное дерево и публикует корень.
 //
-// Почему партией, а не после каждого раунда: доля игрока за раунд — центы,
+// Почему партией, а не после каждого раунда: доля игрока за раунд - центы,
 // и раздача переводами стоила бы дороже самой раздачи. Здесь одна покупка,
 // ноль переводов игрокам, каждый забирает сам когда накопится.
 //
 // ПОЧЕМУ ОДИН КОШЕЛЁК. Обе доли (6% наград + 6% сжигания) стекаются на
 // кошелёк выкупа, и только его ключ нужен этому скрипту. Бёрн-кошелёк лишь
-// принимает готовый TCO — его ключ в CI не попадает никогда, что важно:
+// принимает готовый TCO - его ключ в CI не попадает никогда, что важно:
 // там мешок токенов копится месяцами до вайтлиста.
 //
 // СЖИГАНИЕ НЕ ВЫПОЛНЯЕТСЯ. До попадания в белый список половина просто
-// лежит на бёрн-кошельке. Включать — отдельным решением.
+// лежит на бёрн-кошельке. Включать - отдельным решением.
 //
 // package.json репозитория имеет "type": "module": только import, только с
 // явным расширением .js.
@@ -44,17 +44,17 @@ const BURN_WALLET = process.env.TCO_BURN_WALLET || 'terra10zptfez4jdvakrhu58q4nq
 // мнемоники: несовпадение означает не ту фразу или не тот путь деривации,
 // и продолжать нельзя.
 const BUYBACK_WALLET = process.env.TCO_BUYBACK_WALLET || 'terra1x3axkacpes4d8q2svfeneqdtv8rvcvccrn66j5';
-// Terra Classic — coin type 330. По умолчанию cosmjs берёт 118, и та же
+// Terra Classic - coin type 330. По умолчанию cosmjs берёт 118, и та же
 // мнемоника даёт совершенно другой адрес.
 const HD_PATH = process.env.CIRCUIT_HD_PATH || "m/44'/330'/0'/0/0";
 const REWARDS   = process.env.CIRCUIT_REWARDS_CONTRACT;   // адрес claim-контракта
 
 // Из какой мнемоники ДОЛЖЕН получиться кошелёк выкупа. Сверка обязательна:
 // в секрет один раз уже попала фраза постороннего счёта, и скрипт этого
-// не заметил — просто увидел нулевой баланс и вышел.
+// не заметил - просто увидел нулевой баланс и вышел.
 const EXPECTED_WALLET = process.env.CIRCUIT_BUYBACK_ADDRESS || 'terra1x3axkacpes4d8q2svfeneqdtv8rvcvccrn66j5';
 
-// Порог: покупать на меньшее бессмысленно — комиссия свопа съест больше
+// Порог: покупать на меньшее бессмысленно - комиссия свопа съест больше
 const THRESHOLD_ULUNA = BigInt(process.env.CIRCUIT_EPOCH_THRESHOLD_ULUNA || 50_000_000_000);
 // Оставляем на комиссии следующих транзакций этой же эпохи
 const GAS_RESERVE_ULUNA = BigInt(process.env.CIRCUIT_GAS_RESERVE_ULUNA || 300_000_000);
@@ -111,8 +111,8 @@ const tokenBalance = async (addr) =>
   BigInt((await lcdQuery(TOKEN, { balance: { address: addr } })).balance);
 
 // ── Реестр ─────────────────────────────────────────────────────────────────
-// processedUluna — сколько пожизненных LUNC-начислений кошелька уже
-// пересчитано в TCO. tcoUluna — сколько TCO ему причитается всего.
+// processedUluna - сколько пожизненных LUNC-начислений кошелька уже
+// пересчитано в TCO. tcoUluna - сколько TCO ему причитается всего.
 function loadLedger() {
   if (!fs.existsSync(LEDGER_FILE)) {
     return { epoch: 0, updatedAt: null, dustTco: '0', wallets: {}, history: [] };
@@ -126,7 +126,7 @@ function saveLedger(l) {
 }
 
 // ── Транзакции ─────────────────────────────────────────────────────────────
-// Газ считаем симуляцией с запасом 1.6 — та же настройка, что в deploy-скриптах.
+// Газ считаем симуляцией с запасом 1.6 - та же настройка, что в deploy-скриптах.
 async function exec(client, sender, contract, msg, funds, memo) {
   if (DRY) { console.log('DRY_RUN: не отправляю', JSON.stringify(msg).slice(0, 120)); return null; }
   const gas = await client.simulate(sender, [{
@@ -147,7 +147,7 @@ async function exec(client, sender, contract, msg, funds, memo) {
 // ── Основное ───────────────────────────────────────────────────────────────
 async function main() {
   if (!MNEMONIC) throw new Error('CIRCUIT_BUYBACK_MNEMONIC не задан');
-  if (!REWARDS)  throw new Error('CIRCUIT_REWARDS_CONTRACT не задан — контракт наград ещё не развёрнут');
+  if (!REWARDS)  throw new Error('CIRCUIT_REWARDS_CONTRACT не задан - контракт наград ещё не развёрнут');
 
   const wallet = await DirectSecp256k1HdWallet.fromMnemonic(MNEMONIC, {
     prefix: PREFIX,
@@ -178,7 +178,7 @@ async function main() {
   console.log('баланс: ' + lunc(balance) + ' LUNC');
 
   if (balance <= GAS_RESERVE_ULUNA) {
-    console.log('на кошельке только резерв на комиссии — выходим');
+    console.log('на кошельке только резерв на комиссии - выходим');
     return;
   }
   // Налог на переводы забирается сверх суммы, поэтому оставляем ещё процент.
@@ -186,7 +186,7 @@ async function main() {
 
   if (spend < THRESHOLD_ULUNA) {
     console.log('накоплено ' + lunc(spend) + ' LUNC, порог ' + lunc(THRESHOLD_ULUNA) +
-                ' — покупать рано, ждём следующей эпохи');
+                ' - покупать рано, ждём следующей эпохи');
     return;
   }
 
@@ -207,7 +207,7 @@ async function main() {
   }
 
   if (sumDelta === 0n) {
-    console.log('новых начислений нет — покупку откладываем, LUNC остаётся на кошельке');
+    console.log('новых начислений нет - покупку откладываем, LUNC остаётся на кошельке');
     return;
   }
   console.log('новых начислений: ' + lunc(sumDelta) + ' LUNC у ' +
@@ -226,23 +226,23 @@ async function main() {
   const txSwap = await exec(client, me, BOND,
     { swap_buy: { contract_address: BOND, min_amount_out: String(minOut) } },
     [{ denom: DENOM, amount: String(spend) }],
-    'Circuit epoch ' + (ledger.epoch + 1) + ' — TCO buyback');
+    'Circuit epoch ' + (ledger.epoch + 1) + ' - TCO buyback');
 
   if (DRY) { console.log('DRY_RUN: дальше не идём'); return; }
 
   const after  = await tokenBalance(me);
   const bought = after - before;
-  if (bought <= 0n) throw new Error('после свопа баланс TCO не вырос — покупка не прошла');
+  if (bought <= 0n) throw new Error('после свопа баланс TCO не вырос - покупка не прошла');
   console.log('куплено: ' + lunc(bought) + ' TCO');
 
   // ── 4. Делим пополам ─────────────────────────────────────────────────────
   const toBurn    = bought / 2n;
-  const toRewards = bought - toBurn;   // нечётный остаток — в награды
+  const toRewards = bought - toBurn;   // нечётный остаток - в награды
 
   console.log('на сжигание: ' + lunc(toBurn) + ' TCO → ' + BURN_WALLET);
   const txBurn = await exec(client, me, TOKEN,
     { transfer: { recipient: BURN_WALLET, amount: String(toBurn) } }, [],
-    'Circuit epoch ' + (ledger.epoch + 1) + ' — burn share (burn itself deferred)');
+    'Circuit epoch ' + (ledger.epoch + 1) + ' - burn share (burn itself deferred)');
 
   console.log('в контракт наград: ' + lunc(toRewards) + ' TCO → ' + REWARDS);
   const txFund = await exec(client, me, TOKEN,
@@ -251,7 +251,7 @@ async function main() {
         amount: String(toRewards),
         msg: Buffer.from(JSON.stringify({ fund: {} })).toString('base64'),
     } }, [],
-    'Circuit epoch ' + (ledger.epoch + 1) + ' — fund rewards');
+    'Circuit epoch ' + (ledger.epoch + 1) + ' - fund rewards');
 
   // ── 5. Раскладываем купленное по кошелькам ───────────────────────────────
   // Остаток от округления не теряется: копится в реестре и раздаётся
@@ -281,13 +281,13 @@ async function main() {
 
   const txRoot = await exec(client, me, REWARDS,
     { update_root: { root: tree.root, epoch, total_allocated: tree.total } }, [],
-    'Circuit epoch ' + epoch + ' — publish root');
+    'Circuit epoch ' + epoch + ' - publish root');
 
   // ── 7. Файлы ─────────────────────────────────────────────────────────────
   fs.writeFileSync(PROOFS_FILE, JSON.stringify({
     _verify: [
       'Cumulative TCO allocations for Circuit participants.',
-      'amount is the LIFETIME allocation, not this epoch — the contract pays the',
+      'amount is the LIFETIME allocation, not this epoch - the contract pays the',
       'difference against what the address has already claimed.',
       'leaf = sha256("<address><amount>"), nodes hash the sorted pair, root is hex.',
       'Rebuild it yourself: node merkle.js --self-test pins the format.',

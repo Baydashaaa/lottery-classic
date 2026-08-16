@@ -1,8 +1,8 @@
 /**
- * Oracle Draw V2 — DrawPhase
+ * Oracle Draw V2 - DrawPhase
  *
  * Одна фаза управляет всем. Ни таймер, ни колесо, ни popup не держат
- * собственного состояния — они читают фазу.
+ * собственного состояния - они читают фазу.
  *
  *   OPEN ──T-15м──> LOCKED ──T-30с──> PRE_DRAW ──дедлайн──> AWAITING
  *                                                              │
@@ -13,7 +13,7 @@
  *                                       раунд пропущен ──> ROLLOVER
  *
  * Флаги animation / replay / revealed сюда не нужны: они выводятся из
- * фазы. Два источника правды — это ровно та ошибка, из-за которой
+ * фазы. Два источника правды - это ровно та ошибка, из-за которой
  * currentLottery и selectedPool разъезжались при минте.
  */
 
@@ -39,7 +39,7 @@ export const PHASE_RULES = {
 };
 
 /**
- * Вычисление фазы. Чистая функция — её легко прогнать тестом на любой
+ * Вычисление фазы. Чистая функция - её легко прогнать тестом на любой
  * момент времени, не дожидаясь 20:00.
  *
  * @param {object} ctx
@@ -67,7 +67,7 @@ export function derivePhase(ctx) {
 
     if (lastDeadline !== null) {
         const since = now - lastDeadline;
-        // Результата за прошедший дедлайн ещё нет — ждём, но не вечно
+        // Результата за прошедший дедлайн ещё нет - ждём, но не вечно
         if (since >= 0 && since <= cfg.AWAIT_TIMEOUT_MS) return PHASE.AWAITING;
     }
 
@@ -89,7 +89,7 @@ function resultCovers(result, lastDeadline) {
     return result.drawnAt >= lastDeadline - 5 * 60 * 1000;
 }
 
-/** Человекочитаемая подпись фазы — один словарь вместо строк по всему UI */
+/** Человекочитаемая подпись фазы - один словарь вместо строк по всему UI */
 export const PHASE_TEXT = {
     [PHASE.OPEN]: { title: "Next draw in {t}", sub: "Wheel spins automatically at 20:00 UTC" },
     [PHASE.LOCKED]: { title: "Entries close in {t}", sub: "Last chance to enter this round" },
@@ -97,5 +97,5 @@ export const PHASE_TEXT = {
     [PHASE.AWAITING]: { title: "Oracle is reading the blockchain...", sub: "Waiting for the on-chain result" },
     [PHASE.REVEALING]: { title: "Selecting winner", sub: "Landing on ticket #{i}" },
     [PHASE.REVEALED]: { title: "Winner Selected", sub: "Payout sent automatically" },
-    [PHASE.ROLLOVER]: { title: "Round rolled over", sub: "Not enough entries — tickets stay active" }
+    [PHASE.ROLLOVER]: { title: "Round rolled over", sub: "Not enough entries - tickets stay active" }
 };

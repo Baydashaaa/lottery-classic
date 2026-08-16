@@ -1,8 +1,8 @@
 /**
- * Oracle Draw V2 — DrawBridge
+ * Oracle Draw V2 - DrawBridge
  *
  * Связывает фазы движка с колесом и старым UI. Собственной физики и
- * собственного цикла кадров здесь больше нет — всё это живёт в
+ * собственного цикла кадров здесь больше нет - всё это живёт в
  * assets/js/wheel/. Мост только переводит фазу в команду.
  *
  *   PRE_DRAW / AWAITING → wheel.preDraw()   (холостое вращение, луч Оракула)
@@ -23,7 +23,7 @@ export default class DrawBridge {
         this.engine = engine;
         this.wheel = null;
         // В каком пуле колесо нарисовано СЕЙЧАС. WheelRenderer.setPool() меняет
-        // тему, но сам пул не хранит, а сравнивать надо — иначе на каждом тике
+        // тему, но сам пул не хранит, а сравнивать надо - иначе на каждом тике
         // пересобираются частицы.
         this.wheelPool = null;
         this.queue = [];
@@ -38,7 +38,7 @@ export default class DrawBridge {
     attach() {
         const on = (e, fn) => this.unsubs.push(this.engine.on(e, fn));
 
-        // Поднимаем колесо сразу: пустое, но живое. Ждать данных нельзя —
+        // Поднимаем колесо сразу: пустое, но живое. Ждать данных нельзя -
         // в раунде без минтов их не будет вовсе.
         const boot = () => { this.refreshLive(); this.startIdle(); };
         if (document.readyState === "loading") {
@@ -56,7 +56,7 @@ export default class DrawBridge {
             else if (firstLoad && !round.skipped) this.showStatic(round, null);
         });
         on(EVENTS.DRAW_SKIPPED, ({ round }) => this.showRollover(round));
-        // Переключение пула или страницы прячет карточку средствами app.js —
+        // Переключение пула или страницы прячет карточку средствами app.js -
         // возвращаем её из текущего состояния, а не только на первой загрузке.
         on(EVENTS.DATA_UPDATED, () => this.syncCard());
         on(EVENTS.ROUND_CHANGED, () => {
@@ -76,11 +76,11 @@ export default class DrawBridge {
 
 
     /**
-     * Модель по ЖИВЫМ участникам текущего раунда — чтобы колесо было видно
+     * Модель по ЖИВЫМ участникам текущего раунда - чтобы колесо было видно
      * до розыгрыша, а не только после появления снимка.
      *
      * Снимок остаётся авторитетным: он замораживает порядок билетов в момент
-     * розыгрыша, и только по нему считается winner_index. Этот список —
+     * розыгрыша, и только по нему считается winner_index. Этот список -
      * предварительный показ, verified у него не бывает.
      */
     /**
@@ -118,7 +118,7 @@ export default class DrawBridge {
      *
      * Через события это не решается: DATA_UPDATED движок эмитит ДО того,
      * как подставит раунд в state, а следующий раз он придёт только при
-     * изменении winners.json — раз в сутки.
+     * изменении winners.json - раз в сутки.
      */
     ensureCard() {
         if (this.engine.state.revealing) return;
@@ -137,7 +137,7 @@ export default class DrawBridge {
 
     /**
      * Клик по сектору открывает окно с NFT кошелька.
-     * Во время вращения клики игнорируем — иначе окно перекроет розыгрыш.
+     * Во время вращения клики игнорируем - иначе окно перекроет розыгрыш.
      */
     bindPointer(renderer) {
         const canvas = renderer.canvas;
@@ -176,13 +176,13 @@ export default class DrawBridge {
         const ui = this.ui;
         if (!ui || !ui.participants) return;
 
-        // Пул страницы — источник правды для движка, и сверять его надо ДО
+        // Пул страницы - источник правды для движка, и сверять его надо ДО
         // любых ранних выходов.
         //
         // Здесь был баг: эта сверка стояла НИЖЕ `if (state.model) return`.
         // Пока ни один раунд не имел снимка, state.model всегда был null и
         // сверка отрабатывала. Как только появился первый снимок
-        // (weekly_2026-08-03), метод стал выходить раньше — движок переставал
+        // (weekly_2026-08-03), метод стал выходить раньше - движок переставал
         // узнавать о переключении вкладки, и колесо оставалось в теме
         // прежнего пула: на Weekly крутилось daily-колесо.
         const pagePool = ui.pool ? ui.pool() : this.engine.pool;
@@ -191,18 +191,18 @@ export default class DrawBridge {
             this.lastCard = null;
             // Тему меняем сразу, не дожидаясь загрузки: иначе колесо висит в
             // чужих цветах до прихода ROUND_CHANGED, а если у нового пула
-            // раунда ещё нет — то и вовсе остаётся чужим.
+            // раунда ещё нет - то и вовсе остаётся чужим.
             this.ensure(pagePool);
         }
 
         if (this.engine.state.revealing) return;      // во время анимации не трогаем
 
-        // Снимок главнее — но только пока показываем ТОТ раунд.
+        // Снимок главнее - но только пока показываем ТОТ раунд.
         //
-        // Здесь был баг: выход стоял безусловным. state.model — снимок
+        // Здесь был баг: выход стоял безусловным. state.model - снимок
         // завершённого раунда, поднятый при старте из winners.json; пока он
         // есть, живые участники не рисовались вообще. Колесо показывало
-        // состав прошлого раунда, а счётчики под ним — текущего. Переключение
+        // состав прошлого раунда, а счётчики под ним - текущего. Переключение
         // вкладки звало setPool(), тот сбрасывал модель, и всё «чинилось».
         //
         // В OPEN, LOCKED и ROLLOVER идёт уже НОВЫЙ раунд: снимок устарел,
@@ -212,7 +212,7 @@ export default class DrawBridge {
             _ph !== PHASE.OPEN && _ph !== PHASE.LOCKED && _ph !== PHASE.ROLLOVER;
         if (this.engine.state.model && _stillShowingThatRound) return;
 
-        // Пустой раунд — тоже состояние: колесо крутится вхолостую и пишет
+        // Пустой раунд - тоже состояние: колесо крутится вхолостую и пишет
         // «No entries yet». Раньше здесь стоял return, и канвас оставался
         // чёрным до первого минта.
 
@@ -226,7 +226,7 @@ export default class DrawBridge {
 
     ensure(pool) {
         if (this.wheel) {
-            // Раньше здесь был просто `return this.wheel` — колесо отдавалось
+            // Раньше здесь был просто `return this.wheel` - колесо отдавалось
             // как есть, в теме того пула, с которым его когда-то создали.
             if (pool && pool !== this.wheelPool) {
                 this.wheel.setPool(pool);
@@ -246,7 +246,7 @@ export default class DrawBridge {
     }
 
     mount(model, pool) {
-        // ensure() уже привёл тему к pool (или создал колесо сразу в ней —
+        // ensure() уже привёл тему к pool (или создал колесо сразу в ней -
         // конструктор WheelRenderer берёт тему из opts.pool). Повторный
         // setPool() здесь только зря пересобирал бы частицы.
         const w = this.ensure(pool);
@@ -345,7 +345,7 @@ export default class DrawBridge {
         }
         ui.msg("Winner Selected",
             model ? (round.date ? "Draw of " + round.date : "Payout sent automatically")
-                  : "Result verified on-chain — replay unavailable for this round",
+                  : "Result verified on-chain - replay unavailable for this round",
             "#66ffaa");
         ui.card({ address: w.address, prize: w.prize, tx: w.tx,
                   date: round.date, pool: round.pool, label: null });
@@ -354,7 +354,7 @@ export default class DrawBridge {
     showRollover(round) {
         if (!this.ui) return;
         this.ui.msg("Round rolled over",
-            round.reason || "Not enough entries — tickets stay active", "#ff9944");
+            round.reason || "Not enough entries - tickets stay active", "#ff9944");
     }
 }
 

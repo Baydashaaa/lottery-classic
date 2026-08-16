@@ -82,7 +82,7 @@ else:
     write(LD, src)
     print("ok: blockInfo dedupe")
 
-# 4. daily winners record — FIRST global match, because runDailyDraw comes
+# 4. daily winners record - FIRST global match, because runDailyDraw comes
 #    before runWeeklyDraw. (The skip branch has no `participants:` line at all,
 #    so anchoring on winners.daily.push would land in the wrong record.)
 old = """    entries:     tickets.length,
@@ -117,17 +117,17 @@ added = anchor + """,
             "",
             "Where the entry list itself comes from (daily, ticket_rule chain-v1):",
             "Minting an NFT is entering the draw, so the list follows from the NFT",
-            "contract alone — no server is involved and nothing has to be trusted:",
+            "contract alone - no server is involved and nothing has to be trusted:",
             "  contract: """ + NFT + """",
             "  a. take tokens with extension.pool = 'daily' and minted_at < deadline",
-            "  b. drop those consumed by an earlier draw — a round with fewer than 5",
+            "  b. drop those consumed by an earlier draw - a round with fewer than 5",
             "     entries is skipped and consumes nothing, so its tokens roll over",
             "  c. order by (minted_at, token_id), token_id compared as a string",
             "  d. repeat each token extension.entries times",
             "  e. read the owner at block_height, so transferring an NFT after the",
             "     deadline cannot move the prize",
             "",
-            "Weekly also adds free entries from free-entries.json, earned off-chain —",
+            "Weekly also adds free entries from free-entries.json, earned off-chain -",
             "that part cannot be rebuilt from the chain yet." """.rstrip()
 
 snap = snap.replace(anchor, added, 1)

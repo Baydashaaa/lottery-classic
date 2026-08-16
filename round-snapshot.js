@@ -1,22 +1,22 @@
 /**
- * Oracle Draw — снимок билетов раунда (сторона производителя)
+ * Oracle Draw - снимок билетов раунда (сторона производителя)
  *
  * ES-модуль: package.json репозитория содержит "type": "module".
- * Импорт только через import, экспорт только через export — CommonJS здесь
+ * Импорт только через import, экспорт только через export - CommonJS здесь
  * роняет весь розыгрыш на старте (так пропали 2 и 3 августа 2026).
  *
  * Зачем: колесо на сайте должно быть ТЕМ ЖЕ массивом билетов, по которому
- * считался winner_index. Восстановить его после розыгрыша нельзя —
+ * считался winner_index. Восстановить его после розыгрыша нельзя -
  * /round-complete проставляет consumedInRound, и /round-stats возвращает
  * уже другое. Поэтому массив замораживается в момент розыгрыша.
  *
- * Лежит в КОРНЕ репозитория, рядом с lottery-draw.js — workflow запускает
+ * Лежит в КОРНЕ репозитория, рядом с lottery-draw.js - workflow запускает
  * `node lottery-draw.js` из корня, и WINNERS_PATH там тоже path.resolve
  * от cwd.
  *
  * Файл называется по round_id: rounds/daily_2026-08-01.json. Тот же
  * round_id лежит в winners.json, поэтому клиент никогда не промахнётся
- * мимо снимка — в отличие от поля date, которое берётся в момент записи.
+ * мимо снимка - в отличие от поля date, которое берётся в момент записи.
  *
  * При skipped-раунде снимок не пишется.
  */
@@ -28,11 +28,11 @@ const OUT_DIR = path.join(process.cwd(), "rounds");
 
 /**
  * Плоский массив адресов → пары [адрес, подряд идущих билетов].
- * Повторное появление кошелька позже по списку даёт ОТДЕЛЬНУЮ пару —
+ * Повторное появление кошелька позже по списку даёт ОТДЕЛЬНУЮ пару -
  * так сохраняется исходный порядок usedAt, а значит и индексы.
  */
 function packTickets(tickets, meta) {
-    // meta — необязательная карта address -> {tokenId, tier}; нужна колесу,
+    // meta - необязательная карта address -> {tokenId, tier}; нужна колесу,
     // чтобы показать картинку NFT и редкость. На индексы не влияет.
     const pairs = [];
     for (const address of tickets) {
@@ -55,7 +55,7 @@ function writeRoundSnapshot({ roundId, pool, tickets, blockHash, blockHeight, wi
 
     const payload = {
         // Файл публичный, на него ведёт ссылка со страницы Verify & Proof,
-        // поэтому инструкция на английском — как и весь сайт.
+        // поэтому инструкция на английском - как и весь сайт.
         _verify: [
             "Frozen entry list for this round, in the exact order lottery-draw.js used it.",
             "1. Expand `tickets`: a pair [addr, n] means n consecutive entries for addr.",
@@ -77,10 +77,10 @@ function writeRoundSnapshot({ roundId, pool, tickets, blockHash, blockHeight, wi
             "",
             "Where the entry list itself comes from (daily, ticket_rule chain-v1):",
             "Minting an NFT is entering the draw, so the list follows from the NFT",
-            "contract alone — no server is involved and nothing has to be trusted:",
+            "contract alone - no server is involved and nothing has to be trusted:",
             "  contract: terra1hcsq79vmcqxr97sv720yw6scvyknssx62ufsa4rwlmv02gyft43s46uaqx",
             "  a. take tokens with extension.pool = 'daily' and minted_at < deadline",
-            "  b. drop those consumed by an earlier draw — a round with fewer than 5",
+            "  b. drop those consumed by an earlier draw - a round with fewer than 5",
             "     entries is skipped and consumes nothing, so its tokens roll over",
             "  c. order by (minted_at, token_id), token_id compared as a string",
             "  d. repeat each token extension.entries times",
@@ -101,7 +101,7 @@ function writeRoundSnapshot({ roundId, pool, tickets, blockHash, blockHeight, wi
             "",
             "One more weekly caveat: which NFTs are still unplayed is read from the",
             "previous completed weekly entry in winners.json (boundary_ts / deadline),",
-            "not derived from the chain. It cannot be derived — a weekly round can go",
+            "not derived from the chain. It cannot be derived - a weekly round can go",
             "ahead on free entries alone, or be called off because the pool sat below",
             "its minimum, and neither fact is on-chain. For daily, the same boundary IS",
             "derived from the chain and needs no file at all."
@@ -132,7 +132,7 @@ function writeRoundSnapshot({ roundId, pool, tickets, blockHash, blockHeight, wi
     fs.mkdirSync(OUT_DIR, { recursive: true });
     const file = path.join(OUT_DIR, `${roundId}.json`);
     fs.writeFileSync(file, JSON.stringify(payload, null, 1));
-    console.log(`[snapshot] ${file} — ${tickets.length} билетов, ${wallets} кошельков, ${packed.length} пар`);
+    console.log(`[snapshot] ${file} - ${tickets.length} билетов, ${wallets} кошельков, ${packed.length} пар`);
     return file;
 }
 

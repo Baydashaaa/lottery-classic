@@ -2,7 +2,7 @@
 """Spin the wheel on a locally computed result, then reconcile out loud.
 
 The winner is fixed by the deadline block at 20:00. Everything after that is
-just somebody writing it down — a workflow starting, transactions confirming, a
+just somebody writing it down - a workflow starting, transactions confirming, a
 page rebuilding. The browser needs none of that: it can read the block and the
 NFT contract itself and know the answer within seconds.
 
@@ -10,7 +10,7 @@ Two things this must not do, and both are easy to get wrong:
 
   * It must not replace the round in state. #adoptLatest exits early when the
     incoming key equals state.roundKey, so writing the local result there would
-    make the published snapshot look like a duplicate and silently drop it —
+    make the published snapshot look like a duplicate and silently drop it -
     losing the reconciliation entirely.
   * It must not let the wheel spin twice. When the published file arrives and
     agrees, the result is already on screen: adopt it quietly. Only a
@@ -69,7 +69,7 @@ block = '''    /* ---------- локальный расчёт ---------- */
      *
      * Кладём его в this.local, а НЕ в state: #adoptLatest выходит рано, если
      * ключ совпал с текущим, и опубликованный снимок был бы отброшен молча.
-     * Сверка с ним — единственное, что доказывает, что правило не разъехалось.
+     * Сверка с ним - единственное, что доказывает, что правило не разъехалось.
      */
     async #tryLocalResult(now = Date.now()) {
         if (this.localBusy) return;
@@ -84,7 +84,7 @@ block = '''    /* ---------- локальный расчёт ---------- */
 
         this.localBusy = true;
         try {
-            // Граница «отыграно» — дедлайн последнего состоявшегося раунда,
+            // Граница «отыграно» - дедлайн последнего состоявшегося раунда,
             // ровно как её берёт lottery-draw.js.
             const done = (this.data[pool] || []).filter(r => !r.skipped && r.date);
             const prev = done[done.length - 1] || null;
@@ -123,7 +123,7 @@ block = '''    /* ---------- локальный расчёт ---------- */
 
     /**
      * Сверка опубликованного результата с тем, что уже показано.
-     * Совпало — тишина. Разошлось — говорим громко: это значит, что правило в
+     * Совпало - тишина. Разошлось - говорим громко: это значит, что правило в
      * браузере и правило в скрипте больше не одно и то же.
      */
     #reconcileLocal(latest) {
@@ -134,7 +134,7 @@ block = '''    /* ---------- локальный расчёт ---------- */
             console.error(
                 `[DrawEngine] локальный результат разошёлся с опубликованным для ${latest.key}: ` +
                 `показали ${loc.winner} (index ${loc.index}), в winners.json ${latest.winner} ` +
-                `(index ${latest.winnerIndex}). Победитель — опубликованный.`
+                `(index ${latest.winnerIndex}). Победитель - опубликованный.`
             );
         }
         return same;
@@ -148,7 +148,7 @@ print("ok: local path")
 # ── use it in #adoptLatest ─────────────────────────────────────────────────
 old = """        const seen = this.state.hasSeen(latest.key);"""
 new = """        // Уже показали этот раунд из локального расчёта? Тогда крутить второй
-        // раз незачем — если только он не разошёлся с опубликованным.
+        // раз незачем - если только он не разошёлся с опубликованным.
         const agreed = this.#reconcileLocal(latest);
         if (agreed) {
             this.state.markSeen(latest.key);

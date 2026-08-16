@@ -5,7 +5,7 @@ function escHTML(s) {
 
 // ─── CONSTANTS ──────────────────────────────────────────────────────────────
 
-// Core endpoints + bag-cache config — declared FIRST, before any function
+// Core endpoints + bag-cache config - declared FIRST, before any function
 // that might reference them during early init (setConnectedWallet →
 // renderMyBag can fire before later declarations execute, which threw
 // "Cannot access 'BAG_CACHE_MAX_AGE_MS' before initialization"). Kept here at
@@ -20,7 +20,7 @@ const BAG_CACHE_MAX_AGE_MS = 30 * 60 * 1000;
 // Contract tokens are "common-1" / "rare-7" / "legendary-2" → "Common #1" etc.
 // Legacy Paco ids (Common_092528042026_ETME5) → their trailing code.
 function formatNFTLabel(tokenId) {
-  if (!tokenId) return '—';
+  if (!tokenId) return '-';
   const str = String(tokenId);
   // Contract ids: common-1 → "Common #1"
   const m = str.match(/^(common|rare|legendary)-(\d+)$/i);
@@ -132,7 +132,7 @@ async function loadFreeEntries() {
 }
 
 // Fallback: scrape on-chain if JSON not available
-// Start of the current weekly draw round (Mon 20:00 UTC) — mirrors the worker's
+// Start of the current weekly draw round (Mon 20:00 UTC) - mirrors the worker's
 // getCurrentRoundId('weekly') so free entries reset when the weekly draw rolls over.
 function weeklyRoundStartSec() {
   const now = new Date();
@@ -278,7 +278,7 @@ async function lcdFetch(path) {
 }
 
 // ─── PRICE FETCH ────────────────────────────────────────────────────────────
-// Routed through the Draw Worker proxy — CryptoCompare's public API started
+// Routed through the Draw Worker proxy - CryptoCompare's public API started
 // returning 401/CORS-blocked for direct browser requests from this domain.
 // Cloudflare → CryptoCompare is a server-to-server call (not subject to
 // browser CORS), with CoinGecko as an automatic fallback worker-side.
@@ -565,18 +565,18 @@ function updatePoolDisplay() {
 }
 
 // ─── DRAW SCHEDULE ──────────────────────────────────────────────────────────
-// Расписание и формат отсчёта живут в assets/js/draw-schedule.js — это общий
+// Расписание и формат отсчёта живут в assets/js/draw-schedule.js - это общий
 // файл, побайтово одинаковый в репо terra-oracle и oracle-draw. Он грузится
 // обычным <script> ДО app.js. Здесь только потребление, своей арифметики нет:
 // именно три независимые копии этой логики и разъехались 3 авг 2026.
 if (!window.DRAW_SCHEDULE) {
-  console.error('[schedule] assets/js/draw-schedule.js не загружен — счётчики ' +
+  console.error('[schedule] assets/js/draw-schedule.js не загружен - счётчики ' +
     'розыгрыша считать нечем. Проверь порядок <script> в index.html: ' +
     'draw-schedule.js должен идти ДО app.js.');
 }
 
 // ─── TIMER ──────────────────────────────────────────────────────────────────
-// Имя оставлено прежним — его зовёт startTimer и, возможно, внешний код
+// Имя оставлено прежним - его зовёт startTimer и, возможно, внешний код
 function getNextDrawTime(type) {
   return window.DRAW_SCHEDULE.next(type === 'weekly' ? 'weekly' : 'daily');
 }
@@ -693,7 +693,7 @@ function switchLottery(type) {
 
   startTimer();
   updatePoolDisplay();
-  // Прячем карточку прошлого пула — Draw V2 вернёт её с данными нового,
+  // Прячем карточку прошлого пула - Draw V2 вернёт её с данными нового,
   // либо оставит скрытой, если у пула ещё не было розыгрышей.
   const wwCard = document.getElementById('wheel-winner-card');
   if (wwCard) { wwCard.style.display = 'none'; wwCard.classList.remove('show'); }
@@ -817,7 +817,7 @@ document.body.classList.add('modal-open');
   /* Re-apply selected tier to fix price display after tab switch */
   if (typeof selectTier === 'function') selectTier(selectedTier || 'common');
   /* Пул берём из состояния страницы, а не из прошлого выбора в модалке.
-     Второй аргумент — не транслировать обратно в switchLottery. */
+     Второй аргумент - не транслировать обратно в switchLottery. */
   if (typeof selectPool === 'function') selectPool(window.currentLottery || 'daily', true);
 }
 function closeModal() { const _mo2=document.getElementById('modal');if(_mo2)_mo2.classList.remove('open'); document.body.classList.remove('modal-open'); }
@@ -825,11 +825,11 @@ document.getElementById('modal').addEventListener('click', function(e) { if (e.t
 
 // ── NFT Mint iframe modal ─────────────────────────────────────
 const NFT_MINT_URLS = {
-  // Daily pool — funds go directly to DAILY_WALLET (terra1amp68zg7vph3nq84ummnfma4dz753ezxfqa9px)
+  // Daily pool - funds go directly to DAILY_WALLET (terra1amp68zg7vph3nq84ummnfma4dz753ezxfqa9px)
   common_daily:     'https://nft.lunc.tools/nft/150/mint?embed=1',
   rare_daily:       'https://nft.lunc.tools/nft/151/mint?embed=1',
   legendary_daily:  'https://nft.lunc.tools/nft/152/mint?embed=1',
-  // Weekly pool — funds go directly to WEEKLY_WALLET (terra1p5l6q95kfl3hes7edy76tywav9f79n6xlkz6qz)
+  // Weekly pool - funds go directly to WEEKLY_WALLET (terra1p5l6q95kfl3hes7edy76tywav9f79n6xlkz6qz)
   common_weekly:    'https://nft.lunc.tools/nft/147/mint?embed=1',
   rare_weekly:      'https://nft.lunc.tools/nft/148/mint?embed=1',
   legendary_weekly: 'https://nft.lunc.tools/nft/149/mint?embed=1',
@@ -896,12 +896,12 @@ async function waitForTxConfirm(txHash, timeoutMs = 180000) { // 3 minutes
 
     await new Promise(r => setTimeout(r, 4000));
   }
-  console.warn('[waitForTxConfirm] timeout — TX not confirmed');
+  console.warn('[waitForTxConfirm] timeout - TX not confirmed');
   return false;
 }
 
 // ── NATIVE MINT (replaces iframe) ────────────────────────────────────────────
-// Paco fee wallet — receives 2.5% of mint price (confirmed from TX analysis)
+// Paco fee wallet - receives 2.5% of mint price (confirmed from TX analysis)
 const PACO_FEE_WALLET = 'terra12v5pxjv76hydvlj46kccqe362cky5rps92kqgg';
 
 // NFT tier prices in LUNC
@@ -914,10 +914,10 @@ const NFT_MINT_PRICES = {
 // ── Mint service health check ────────────────────────────────────────────────
 // Probes Paco (nft.lunc.tools) DIRECTLY FROM THE BROWSER. Paco blocks
 // Cloudflare Worker datacenter IPs (the worker times out → "unreachable"),
-// but browsers reach Paco fine — and since the mint itself now also runs from
+// but browsers reach Paco fine - and since the mint itself now also runs from
 // the browser, this checks the exact same path the mint will use.
 async function isMintServiceUp(wallet) {
-  // Contract mint has no external backend to probe — the chain is always the
+  // Contract mint has no external backend to probe - the chain is always the
   // backend. Kept only so any stray caller still resolves. Always true.
   return true;
 }
@@ -949,7 +949,7 @@ async function nativeMint() {
 }
 
 // Sends a single TX with one or more MsgSend messages.
-// sends: [{ to, amount }, ...] — amounts in uluna.
+// sends: [{ to, amount }, ...] - amounts in uluna.
 async function sendMsgSends(fromAddr, sends, memo, chainId) {
   const _keplr = getWalletKeplr(walletProvider);
   const _isWC  = _isWCProvider(walletProvider);
@@ -1112,7 +1112,7 @@ async function sendMsgSends(fromAddr, sends, memo, chainId) {
       break;
     } catch(e) { continue; }
   }
-  if (!broadcastData) throw new Error('Broadcast failed — all LCD nodes unreachable.');
+  if (!broadcastData) throw new Error('Broadcast failed - all LCD nodes unreachable.');
   const txHash = broadcastData.tx_response?.txhash || broadcastData.txhash;
   const code   = broadcastData.tx_response?.code   || broadcastData.code || 0;
   if (code !== 0) throw new Error(`TX rejected (code ${code}): ${broadcastData.tx_response?.raw_log || ''}`);
@@ -1127,7 +1127,7 @@ async function sendTwoMsgSend(fromAddr, toAddr1, amount1, toAddr2, amount2, memo
     memo, chainId);
 }
 
-// Snapshot of NFTs owned BEFORE opening mint iframe — used to detect newly minted NFT
+// Snapshot of NFTs owned BEFORE opening mint iframe - used to detect newly minted NFT
 window._preMintTokenIds = null;
 window._mintSelectedPool = null;
 window._mintSelectedTier = null;
@@ -1156,7 +1156,7 @@ async function openMintIframe() {
       }
     } catch(e) {
       console.warn('[mint] pre-mint snapshot failed:', e.message);
-      window._preMintTokenIds = new Set();   // empty set — we'll still try to detect any new NFT
+      window._preMintTokenIds = new Set();   // empty set - we'll still try to detect any new NFT
     }
   }
 
@@ -1179,8 +1179,8 @@ function closeMintIframe() {
   }
 }
 
-// Poll Paco API after mint iframe closes — detect new NFT, record in Worker, award REP.
-// New architecture: mint goes directly to DAILY/WEEKLY wallet — no enterDraw tx needed.
+// Poll Paco API after mint iframe closes - detect new NFT, record in Worker, award REP.
+// New architecture: mint goes directly to DAILY/WEEKLY wallet - no enterDraw tx needed.
 async function pollForNewMintAndActivate() {
   const wallet = connectedWalletAddress || lotteryAddress;
   if (!wallet) return;
@@ -1241,7 +1241,7 @@ async function pollForNewMintAndActivate() {
         if (typeof loadAllData   === 'function') loadAllData();
         return;
       }
-      console.log(`[mint] poll ${attempt}/${MAX_ATTEMPTS} — no new NFT yet`);
+      console.log(`[mint] poll ${attempt}/${MAX_ATTEMPTS} - no new NFT yet`);
     } catch(e) { console.warn(`[mint] poll ${attempt} error:`, e.message); }
   }
 
@@ -1252,7 +1252,7 @@ async function pollForNewMintAndActivate() {
 }
 
 // Floating toast in bottom-right corner with auto-activation status.
-// Has a close button — clicking it aborts the polling and hides the toast.
+// Has a close button - clicking it aborts the polling and hides the toast.
 function showAutoActivationToast(text, level) {
   let toast = document.getElementById('mint-auto-toast');
   let textEl, closeBtn;
@@ -1346,11 +1346,11 @@ function updateBuyBtn() {
 // Подпись кнопки минта собирается заново из состояния, а не правится через
 // внутренние <span>. Причина: промежуточные статусы ('Waiting for Keplr...',
 // 'Mint NFT') затирают innerHTML кнопки вместе со спанами, после чего старый
-// код молча переставал обновлять подпись — она застывала на прошлом тире.
+// код молча переставал обновлять подпись - она застывала на прошлом тире.
 // Пул выведен в саму кнопку, чтобы перед нажатием не было сомнений.
 function renderBuyBtnLabel(tier, pool, price) {
   const btn = document.getElementById('draw-buy-btn') || document.getElementById('lottery-buy-btn');
-  if (!btn || btn.disabled) return;   // идёт транзакция — не трогаем статус
+  if (!btn || btn.disabled) return;   // идёт транзакция - не трогаем статус
   const tierLabel = tier.charAt(0).toUpperCase() + tier.slice(1);
   const isDaily   = pool !== 'weekly';
   const poolCol   = isDaily ? '#f4d03f' : '#7ec8ff';
@@ -1358,13 +1358,13 @@ function renderBuyBtnLabel(tier, pool, price) {
     'Mint <span id=\"buy-btn-tier\">' + tierLabel + '</span>' +
     ' · <span id=\"buy-btn-pool\" style=\"color:' + poolCol + ';font-weight:800;letter-spacing:.06em;\">' +
       (isDaily ? 'DAILY' : 'WEEKLY') + '</span>' +
-    ' — <span id=\"buy-btn-total\">' + fmt(price) + '</span> LUNC';
+    ' - <span id=\"buy-btn-total\">' + fmt(price) + '</span> LUNC';
 }
 window.renderBuyBtnLabel = renderBuyBtnLabel;
 
 // ─── KEPLR ──────────────────────────────────────────────────────────────────
 // Connect button inside the buy modal. Previously hardcoded window.keplr and
-// did NOT set walletProvider — Galaxy-only users got "No wallet found" and the
+// did NOT set walletProvider - Galaxy-only users got "No wallet found" and the
 // global wallet state stayed out of sync with the modal. Now routes through
 // the shared connectWallet(provider) flow with provider auto-detection.
 async function connectLotteryKeplr() {
@@ -1458,7 +1458,7 @@ function getWalletKeplr(provider) {
   if (provider === 'station') {
     return window.station?.keplr || window.station || window.keplr;
   }
-  // WalletConnect providers use WC session for signing — return null here,
+  // WalletConnect providers use WC session for signing - return null here,
   // sendLuncDirect will handle them separately via _wcSignDirect()
   if (provider === 'keplr-mobile' || provider === 'galaxy-mobile' || provider === 'luncdash-wc') {
     return null; // signals WC path
@@ -1549,7 +1549,7 @@ async function sendLuncDirect(fromAddr, toAddr, amountUluna, memo, chainId) {
   if (!_keplr && !_isWC) throw new Error('No wallet connected. Please connect a wallet first.');
 
   // Keplr по умолчанию подменяет комиссию и memo своими и подписывает уже
-  // изменённый документ. Ниже в TxRaw кладётся НАШ authInfoBytes — с чужой
+  // изменённый документ. Ниже в TxRaw кладётся НАШ authInfoBytes - с чужой
   // подписью он не сходится, и цепь отвечает «signature verification failed»,
   // перечисляя поля signDoc, из-за чего кажется, будто дело в account number.
   //
@@ -1564,13 +1564,13 @@ async function sendLuncDirect(fromAddr, toAddr, amountUluna, memo, chainId) {
           preferNoSetMemo: true,
         }),
       });
-    } catch (e) { /* кошелёк без defaultOptions — не повод падать */ }
+    } catch (e) { /* кошелёк без defaultOptions - не повод падать */ }
   }
 
-  // For WC providers we don't have getOfflineSigner — get pubkey differently
+  // For WC providers we don't have getOfflineSigner - get pubkey differently
   let pubkeyBytes;
   if (_isWC) {
-    // WC doesn't expose pubkey before signing — use a 33-byte placeholder
+    // WC doesn't expose pubkey before signing - use a 33-byte placeholder
     // The wallet will replace authInfoBytes.pubkey in the signed result
     pubkeyBytes = new Uint8Array(33);
   } else {
@@ -1582,7 +1582,7 @@ async function sendLuncDirect(fromAddr, toAddr, amountUluna, memo, chainId) {
   const LCD_BASE = 'https://terra-classic-lcd.publicnode.com';
   // Узлы перебираем и падаем явно. Раньше при ошибке единственного узла
   // accountNumber молча становился нулём, подпись не сходилась, и цепь
-  // отвечала тем же «signature verification failed» — причину приходилось
+  // отвечала тем же «signature verification failed» - причину приходилось
   // искать вслепую.
   const ACC_NODES = [
     LCD_BASE,
@@ -1653,8 +1653,8 @@ async function sendLuncDirect(fromAddr, toAddr, amountUluna, memo, chainId) {
 
   // Gas: здесь ОДНО MsgSend. Комментарий про «two MsgSend, real TX used
   // 467863» и лимит 600000 достались от sendMsgSends, откуда эта функция
-  // копировалась, — и стоили 17 LUNC вместо 8.5 с каждой покупки.
-  // 300000 — столько же, сколько sendMsgSends кладёт на одно сообщение,
+  // копировалась, - и стоили 17 LUNC вместо 8.5 с каждой покупки.
+  // 300000 - столько же, сколько sendMsgSends кладёт на одно сообщение,
   // с запасом больше чем вдвое к реальному расходу перевода.
   const GAS_LIMIT = 300000;
   const gasFee   = Math.ceil(GAS_LIMIT * 28.325);
@@ -1691,7 +1691,7 @@ async function sendLuncDirect(fromAddr, toAddr, amountUluna, memo, chainId) {
 
   let txBase64;
   if (_isWC) {
-    // WalletConnect path — wallet signs remotely on mobile
+    // WalletConnect path - wallet signs remotely on mobile
     txBase64 = await _wcSignAndBroadcast(fromAddr, txBodyBytes, authInfoBytes, accountNumber, chainId);
   } else {
     const directSigner = _keplr.getOfflineSigner(chainId);
@@ -1710,7 +1710,7 @@ async function sendLuncDirect(fromAddr, toAddr, amountUluna, memo, chainId) {
       return new Uint8Array(Object.values(v));
     }
     const finalBody = toUint8(signed.bodyBytes, txBodyBytes);
-    // Use OUR authInfoBytes — Keplr overrides gas in signed.authInfoBytes
+    // Use OUR authInfoBytes - Keplr overrides gas in signed.authInfoBytes
     const sigBytes  = Uint8Array.from(atob(signature.signature), c => c.charCodeAt(0));
 
     txBase64 = btoa(String.fromCharCode(...concat(
@@ -1739,12 +1739,12 @@ async function buyTicketsKeplr() {
   const msgEl = document.getElementById('draw-tx-msg') || document.getElementById('lottery-tx-msg');
   const successEl = document.getElementById('draw-tx-success') || document.getElementById('lottery-tx-success');
 
-  // Health check — don't take funds if the mint backend is down
+  // Health check - don't take funds if the mint backend is down
   if (btn) { btn.disabled = true; btn.innerHTML = '<svg class="oi oi--cyan"><use href="#i-hourglass"/></svg> Checking service...'; }
   if (statusEl) statusEl.style.display = 'block';
   if (!(await isMintServiceUp(lotteryAddress))) {
     if (btn) { btn.disabled = false; btn.innerHTML = 'Mint NFT'; }
-    if (msgEl) msgEl.innerHTML = '<svg class="oi oi--amber"><use href="#i-warning"/></svg> Mint service is temporarily unavailable. Your funds are safe — please try again in a few minutes.';
+    if (msgEl) msgEl.innerHTML = '<svg class="oi oi--amber"><use href="#i-warning"/></svg> Mint service is temporarily unavailable. Your funds are safe - please try again in a few minutes.';
     return;
   }
 
@@ -1777,7 +1777,7 @@ async function buyTicketsKeplr() {
 
     let senderAddress;
     if (_isWC) {
-      // WC — address is already stored from connection
+      // WC - address is already stored from connection
       senderAddress = connectedWalletAddress;
       if (!senderAddress) throw new Error('WalletConnect session lost. Please reconnect.');
     } else {
@@ -1887,12 +1887,12 @@ async function loadAllData() {
         const t = await totalRes.json();
         const total = t.total || 0;
         hNfts.textContent = total;
-        // Tooltip with tier breakdown — shown on hover/tap
+        // Tooltip with tier breakdown - shown on hover/tap
         const tip = `Common: ${t.common || 0} · Rare: ${t.rare || 0} · Legendary: ${t.legendary || 0}`;
         hNfts.title = tip;
         // Visual cue that it's interactive
         hNfts.style.cursor = 'help';
-        // Custom tooltip (mobile-friendly) — replaces parent card content briefly on tap
+        // Custom tooltip (mobile-friendly) - replaces parent card content briefly on tap
         const card = hNfts.parentElement;
         if (card && !card.dataset.tooltipBound) {
           card.dataset.tooltipBound = '1';
@@ -1996,7 +1996,7 @@ let ticksCtx      = null;
 let wheelDrawnOnce = false;
 let adminUnlocked = false;
 
-// Per-participant color palettes — each participant gets unique color
+// Per-participant color palettes - each participant gets unique color
 // Tier icon prefixes for labels
 const TIER_ICONS = { legendary: 'LEG', rare: 'RARE', common: 'COM', free: 'FREE' };
 
@@ -2011,7 +2011,7 @@ const PARTICIPANT_COLORS_DAILY = [
   { fill:'rgba(220,180,20,0.30)', stroke:'#dcb414', text:'#ffee66'  },  // yellow
   { fill:'rgba(220,80,160,0.28)', stroke:'#dc50a0', text:'#ff99dd'  },  // pink
 ];
-// 8 distinct participant colors (weekly palette — cooler tones)
+// 8 distinct participant colors (weekly palette - cooler tones)
 const PARTICIPANT_COLORS_WEEKLY = [
   { fill:'rgba(74,144,217,0.28)',  stroke:'#4a90d9', text:'#99ccff'  },  // blue
   { fill:'rgba(100,200,180,0.25)',stroke:'#64c8b4', text:'#aaffee'  },  // teal
@@ -2047,12 +2047,12 @@ function getNeonColors() {
 
 // ── Build ticket list for wheel ───────────────────────────────────────────────
 
-// ── Wheel legend — shows participants with color, tier, entries ──────────────
+// ── Wheel legend - shows participants with color, tier, entries ──────────────
 
 // ── ДАННЫЕ РАУНДА ДЛЯ КОЛЕСА ────────────────────────────────────────────────
 // Раньше эта функция строила wheelTickets и рисовала канвас вручную.
 // Рисование целиком уехало в assets/js/wheel/. Здесь остались только
-// данные и бейджи — колесо V2 забирает их через OracleDrawUI.participants().
+// данные и бейджи - колесо V2 забирает их через OracleDrawUI.participants().
 let roundParticipants = [];   // [[адрес, билетов, tokenId|null, тир], ...]
 
 function buildRoundParticipants() {
@@ -2060,7 +2060,7 @@ function buildRoundParticipants() {
   const isDaily = currentLottery === 'daily';
   const pairs = [];
 
-  // txhash имеет вид mint:<tokenId>:<i> — по нему группируем билеты
+  // txhash имеет вид mint:<tokenId>:<i> - по нему группируем билеты
   // одного NFT и достаём его номер.
   //
   // Тир берём из самого билета (t.tier), а НЕ из размера группы:
@@ -2081,7 +2081,7 @@ function buildRoundParticipants() {
     }
   }
 
-  // Free entries (только weekly и только при наличии платных участников) —
+  // Free entries (только weekly и только при наличии платных участников) -
   // так же, как их добавляет addFreeEntries в lottery-draw.js
   if (!isDaily && pairs.length) {
     for (const [addr, e] of Object.entries(freeEntriesData)) {
@@ -2173,7 +2173,7 @@ function updateWheelTickets() {
 // победителя из winners.json. Здесь остался только демо-прогон для админа,
 // и он честно помечен как демо.
 
-// ── Winner card — единственный писатель карточки результата ──────────────────
+// ── Winner card - единственный писатель карточки результата ──────────────────
 // Человекочитаемая дата раунда: '2026-07-27' → '27 Jul 2026'
 function drawDateLabel(iso) {
   if (!iso) return null;
@@ -2184,7 +2184,7 @@ function drawDateLabel(iso) {
   return d.getUTCDate() + ' ' + M[d.getUTCMonth()] + ' ' + d.getUTCFullYear();
 }
 
-// Показанный результат — от последнего ожидавшегося розыгрыша, или он старше?
+// Показанный результат - от последнего ожидавшегося розыгрыша, или он старше?
 // Если старше, значит свежий розыгрыш ещё не записан в winners.json (упал,
 // не отработал крон, не доехал коммит). Именно так 3 августа победитель
 // недельной давности читался как свежий.
@@ -2285,7 +2285,7 @@ function updateBurnButtonState(open) {
 
 // Подпись под колесом («Next draw in {t}»). Раньше здесь был свой формат
 // «26h 56m», из-за чего одно и то же время выглядело в Treasury как «1d 02:57»,
-// а под колесом как «26h 56m» — читалось как расхождение. Теперь общий формат.
+// а под колесом как «26h 56m» - читалось как расхождение. Теперь общий формат.
 function formatDiffShort(ms) {
   return window.DRAW_SCHEDULE.format(ms);
 }
@@ -2294,7 +2294,7 @@ function formatDiffShort(ms) {
 // ── BRIDGE FOR DRAW V2 ───────────────────────────────────────────────────────
 // Единственная точка, через которую новое ядро трогает старый UI.
 window.OracleDrawUI = {
-  // Сообщения и карточка — единственное, что колесо просит у страницы
+  // Сообщения и карточка - единственное, что колесо просит у страницы
   msg:            function(m, sub, c) { return setWheelMsg(m, sub, c); },
   card:           function(d) { return showWinnerCard(d); },
   entriesOpen:    function(open) { return updateBurnButtonState(open); },
@@ -2303,7 +2303,7 @@ window.OracleDrawUI = {
 
   // Живые участники текущего раунда: [[адрес, билетов, tokenId, тир], ...]
   // Колесо строит из них сектора ДО розыгрыша. После розыгрыша модель
-  // берётся из снимка rounds/<round_id>.json — он авторитетен для
+  // берётся из снимка rounds/<round_id>.json - он авторитетен для
   // winner_index, а этот список только предварительный показ.
   participants:   function() { return roundParticipants; },
   walletNfts:     function(addr) { return roundNftsFor(addr); },
@@ -2328,7 +2328,7 @@ function verifyKeplrAddress() {
     document.getElementById('verify-input').value = addr;
     verifyTickets();
   } else {
-    // No wallet connected — prompt to connect
+    // No wallet connected - prompt to connect
     alert('Please connect your wallet first.');
   }
 }
@@ -2568,7 +2568,7 @@ function persistWallet(address, provider) {
   try { localStorage.setItem('walletAddress', address); localStorage.setItem('walletProvider', provider); } catch(e) {}
   try { sessionStorage.setItem('walletAddress', address); sessionStorage.setItem('walletProvider', provider); } catch(e) {}
   try {
-    // Cookie fallback — 30 days
+    // Cookie fallback - 30 days
     const exp = new Date(Date.now() + 30 * 86400000).toUTCString();
     document.cookie = `oraclewallet=${encodeURIComponent(address)}; expires=${exp}; path=/; SameSite=Lax`;
     document.cookie = `oracleprovider=${encodeURIComponent(provider)}; expires=${exp}; path=/; SameSite=Lax`;
@@ -2772,7 +2772,7 @@ function promptManualAddress() {
 
 function setConnectedWallet(address, provider) {
   connectedWalletAddress = address;
-  // Refresh My Bag if open — DEFERRED via setTimeout(…,0). setConnectedWallet
+  // Refresh My Bag if open - DEFERRED via setTimeout(…,0). setConnectedWallet
   // can run during early boot (wallet restore) BEFORE the rest of this file
   // has finished parsing, so calling renderMyBag() synchronously here reached
   // const declarations further down the file while they were still in their
@@ -2919,7 +2919,7 @@ function disconnectWallet() {
   // this boot sequence), do one final guaranteed re-render now that the full
   // boot sequence (loadWinners, loadAllData, etc.) has actually finished.
   // This matches exactly what happens when a user manually switches away
-  // from and back to My Bag (which is confirmed to always work correctly) —
+  // from and back to My Bag (which is confirmed to always work correctly) -
   // it just does that same successful pass automatically, without requiring
   // the user to click away first.
   try {
@@ -2931,7 +2931,7 @@ function disconnectWallet() {
 
   // Refresh every 60s
   setInterval(loadAllData, 60000);
-  // Отсчёт, фазы и запуск колеса целиком у Draw V2 — старого таймера
+  // Отсчёт, фазы и запуск колеса целиком у Draw V2 - старого таймера
   // с локальными часами больше нет.
 })();
 
@@ -2945,7 +2945,7 @@ function disconnectWallet() {
 const NFT_ID_TO_TIER = { 134: 'common', 135: 'rare', 136: 'legendary' };
 
 function detectNFTTier(nft) {
-  // Contract tokens carry their tier explicitly in metadata — no guessing.
+  // Contract tokens carry their tier explicitly in metadata - no guessing.
   if (nft.tier && ['common','rare','legendary'].includes(String(nft.tier).toLowerCase())) {
     return String(nft.tier).toLowerCase();
   }
@@ -2965,7 +2965,7 @@ function tierEntries(tier) {
 
 // Convert ipfs:// URL to https gateway
 // Local NFT artwork (in repo /nfts/ folder).
-// Much faster than IPFS gateways — served directly from GitHub Pages / Cloudflare CDN.
+// Much faster than IPFS gateways - served directly from GitHub Pages / Cloudflare CDN.
 // `sm` (256x384, ~5-9KB WebP) used in My Bag cards.
 // `md` (512x768, ~14-28KB WebP) used in modals / detail views.
 const TIER_IMAGES = {
@@ -3000,13 +3000,13 @@ function renderMyBag() {
 
   // ── Instant paint from cache (stale-while-revalidate, client-side) ──
   // If we have ANY cached NFT list for this wallet (even 30 min old), render
-  // it immediately — no blank/"…" wait. loadMyBagNFTs() then refreshes in
+  // it immediately - no blank/"…" wait. loadMyBagNFTs() then refreshes in
   // the background and silently updates once fresh data arrives.
   const cachedNfts = loadBagCache(wallet, BAG_CACHE_MAX_AGE_MS);
   if (cachedNfts) {
     renderBagFromNFTs(wallet, cachedNfts, { fromCache: true });
   } else {
-    // No cache at all — first-ever load for this wallet. Be explicit that
+    // No cache at all - first-ever load for this wallet. Be explicit that
     // this is LOADING, not "no NFTs", so it doesn't look frozen/broken.
     if (el('bag-stat-nfts'))   el('bag-stat-nfts').textContent   = '…';
     if (el('bag-stat-won'))    el('bag-stat-won').textContent    = '-';
@@ -3056,7 +3056,7 @@ async function fetchWithRetry(url, options = {}, maxAttempts = 3, timeoutMs = 80
 function saveBagCache(wallet, nftsRaw) {
   try {
     localStorage.setItem(BAG_CACHE_KEY, JSON.stringify({ wallet, nftsRaw, ts: Date.now() }));
-  } catch(e) { /* storage full or disabled — ignore */ }
+  } catch(e) { /* storage full or disabled - ignore */ }
 }
 
 function loadBagCache(wallet, maxAgeMs = BAG_CACHE_TTL_MS) {
@@ -3139,15 +3139,15 @@ async function loadMyBagNFTs(wallet) {
           </button>`;
       }
       // NB: раньше здесь стоял `return;`, из-за которого падение Paco скрывало
-      // и новую контрактную коллекцию. Вместо выхода — пустой список, чтобы
+      // и новую контрактную коллекцию. Вместо выхода - пустой список, чтобы
       // рендер дошёл и показал контрактные NFT (их подмешиваем ниже).
       allNFTs = [];
     }
   }
 
   // ── Новая коллекция из собственного контракта ──────────────────────────────
-  // Независимо от Paco: если контракт недоступен — вернётся [] и страница
-  // отрисуется старой коллекцией; если Paco упал — отрисуется контрактной.
+  // Независимо от Paco: если контракт недоступен - вернётся [] и страница
+  // отрисуется старой коллекцией; если Paco упал - отрисуется контрактной.
   try {
     if (window.OracleNFT && typeof OracleNFT.getContractTokensLegacy === 'function') {
       const contractNfts = await OracleNFT.getContractTokensLegacy(wallet);
@@ -3171,7 +3171,7 @@ async function renderBagFromNFTs(wallet, allNFTs, meta = {}) {
   const { usedIds = new Set(), pacoError = null, usedCache = false, fromCache = false } = meta;
   const el = id => document.getElementById(id);
 
-  // Filter Oracle Mask only — match all 3 collection slugs (old + new)
+  // Filter Oracle Mask only - match all 3 collection slugs (old + new)
   const masks = allNFTs.filter(n => {
     const slug = (n.slug || '').toLowerCase();
     // New architecture: separate Daily / Weekly collections
@@ -3193,7 +3193,7 @@ async function renderBagFromNFTs(wallet, allNFTs, meta = {}) {
     let pool = null;
     if (slug === 'oracle-mask-daily')  pool = 'daily';
     if (slug === 'oracle-mask-weekly') pool = 'weekly';
-    // New-architecture NFTs are AUTO-ACTIVE — funds went directly to pool wallet at mint time.
+    // New-architecture NFTs are AUTO-ACTIVE - funds went directly to pool wallet at mint time.
     // No "Enter Draw" needed. Status is "Active in DAILY/WEEKLY" until round resets.
     const isNewArch = pool !== null;
     // Active = this specific tokenId is in current round (not consumed)
@@ -3252,7 +3252,7 @@ async function renderBagFromNFTs(wallet, allNFTs, meta = {}) {
   if (el('bag-stat-weekly')) el('bag-stat-weekly').textContent = weeklyEntries;
   if (el('bag-nft-count'))   el('bag-nft-count').textContent   = nfts.length;
 
-  // Fetch wins — count unique rounds won
+  // Fetch wins - count unique rounds won
   try {
     const winsRes = await fetch(`${DRAW_WORKER}/my-wins?wallet=${wallet}`);
     if (winsRes.ok) {
@@ -3288,14 +3288,14 @@ async function renderBagFromNFTs(wallet, allNFTs, meta = {}) {
     }
   }
 
-  // Show a "cached" indicator — instant-paint from cache still refreshing,
+  // Show a "cached" indicator - instant-paint from cache still refreshing,
   // or fallback-to-cache because the live API failed.
   if (usedCache || fromCache) {
     const cnt = el('bag-nft-count');
     if (cnt) cnt.textContent = nfts.length + (fromCache ? ' (refreshing…)' : ' (cached)');
   }
 
-  // History — fetch from Worker /my-history
+  // History - fetch from Worker /my-history
   const histTable = el('bag-history-table');
   const histEmpty = el('bag-history-empty');
   try {
@@ -3331,7 +3331,7 @@ async function renderBagFromNFTs(wallet, allNFTs, meta = {}) {
             const pool    = r.pool === 'weekly' ? 'Weekly' : 'Daily';
             const won     = r.won
               ? `<span style="color:#66ffaa;font-weight:700;">✓ Won</span>`
-              : `<span style="color:var(--muted);">—</span>`;
+              : `<span style="color:var(--muted);">-</span>`;
             return `<tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
               <td style="padding:10px 12px;font-size:12px;color:var(--muted);">${date}</td>
               <td style="padding:10px 12px;font-size:12px;">${pool}</td>
@@ -3447,7 +3447,7 @@ async function enterDraw(nftId, pool, entries) {
       if (!regRes.ok) {
         const errData = await regRes.json().catch(() => ({ error: 'Unknown error' }));
         console.warn(`Worker /use-nft returned ${regRes.status}:`, errData.error);
-        // Still proceed — tx is on-chain, Worker can be replayed later via admin tool
+        // Still proceed - tx is on-chain, Worker can be replayed later via admin tool
       }
     } catch(e) {
       console.warn('Worker registration failed:', e.message);
@@ -3634,12 +3634,12 @@ function renderBagGrid(nfts) {
 // Что чинится помимо вида:
 //   1. У weekly в «Prize» попадало только ПЕРВОЕ место. У раунда #16 стояло
 //      278.0K, хотя выплачено 278.0K + 115.8K = 393.8K. Теперь сумма.
-//   2. У weekly терялся winner_index каждого места — из-за этого раздел
+//   2. У weekly терялся winner_index каждого места - из-за этого раздел
 //      Verify не с чем было сверять. Теперь переносится.
 //   3. Когда у старой записи нет block_height, в «Draw Block» подставлялся
-//      кусок хеша — отсюда строки вида i8OQSVnEah8E… Теперь честное «—».
+//      кусок хеша - отсюда строки вида i8OQSVnEah8E… Теперь честное «-».
 //   4. prize_lunc отсутствует у самых старых раундов → показывалось
-//      «0 LUNC», будто никто ничего не выиграл. Теперь «—» и пометка legacy.
+//      «0 LUNC», будто никто ничего не выиграл. Теперь «-» и пометка legacy.
 
 // ── маппер записи winners.json → строка списка ────────────────────────────
 function mapWinnerEntry(w, type, idx) {
@@ -3658,7 +3658,7 @@ function mapWinnerEntry(w, type, idx) {
     legacy: !w.block_height          // до перехода на блок по дедлайну раунда
   };
 
-  // Daily — один победитель
+  // Daily - один победитель
   if (w.winner) {
     base.places = [{
       place: 1,
@@ -3668,7 +3668,7 @@ function mapWinnerEntry(w, type, idx) {
       tx: w.tx_winner || null
     }];
   }
-  // Weekly — сколько мест реально разыграно. Их до трёх: пул делится
+  // Weekly - сколько мест реально разыграно. Их до трёх: пул делится
   // 48/20/12, но placesCount = min(3, уникальных участников), поэтому
   // при двух участниках мест два. Список строится по факту, без допущений.
   else if (Array.isArray(w.winners) && w.winners.length) {
@@ -3693,7 +3693,7 @@ function mapWinnerEntry(w, type, idx) {
   // 623, 1966), последний победитель daily (811) и раздел Verify (2523, 2554).
   // Все они проверяют `w.winner || w.winners.length` и берут w.tickets,
   // w.drawBlock*, w.winnerIndex. Пока Verify не переписан, старые поля
-  // обязаны остаться — иначе разделы молча опустеют.
+  // обязаны остаться - иначе разделы молча опустеют.
   base.winner          = base.places[0].address;
   base.prize           = base.places[0].amount || 0;
   base.winnerIndex     = base.places[0].index;
@@ -3742,7 +3742,7 @@ function renderWinners() {
   if (winnersFilter === 'daily')  list = list.filter(function (w) { return w.type === 'daily'; });
   if (winnersFilter === 'weekly') list = list.filter(function (w) { return w.type === 'weekly'; });
 
-  // На этом сайте адрес лежит в connectedWalletAddress, фолбэк — lotteryAddress
+  // На этом сайте адрес лежит в connectedWalletAddress, фолбэк - lotteryAddress
   var me = String(
     (typeof connectedWalletAddress !== 'undefined' && connectedWalletAddress) ||
     (typeof lotteryAddress !== 'undefined' && lotteryAddress) || ''
@@ -3772,7 +3772,7 @@ function renderWinners() {
         '<span class="wn-medal p' + p.place + '">' + p.place + '</span>' +
         '<span class="wn-addr" title="' + (p.address || '') + '">' + fmtAddr(p.address) + '</span>' +
         (mine ? '<span class="wn-you">you</span>' : '') +
-        '<span class="wn-amt">' + (p.amount ? fmt(p.amount) + ' LUNC' : '—') + '</span>' +
+        '<span class="wn-amt">' + (p.amount ? fmt(p.amount) + ' LUNC' : '-') + '</span>' +
         '</div>';
     }).join('');
 
@@ -3823,7 +3823,7 @@ window.openVerifyForRound = openVerifyForRound;
 // ═══ VERIFY v2 ═══════════════════════════════════════════════════════════
 // Заменяет расчёт на странице Verify & Proof.
 //
-// Прежний код считал seed как SHA256("<height>:<hash>:<count>") — такой
+// Прежний код считал seed как SHA256("<height>:<hash>:<count>") - такой
 // формулы в lottery-draw.js нет вообще, она была выдумана. На раунде
 // weekly_2026-08-03 она давала индекс 1, тогда как скрипт записал 10 и 12.
 // «Совпадение» проходило только потому, что один кошелёк держал 12 билетов
@@ -3832,12 +3832,12 @@ window.openVerifyForRound = openVerifyForRound;
 // сравнивает число само с собой.
 //
 // Здесь воспроизводится РЕАЛЬНЫЙ алгоритм, оба варианта:
-//   daily  — index = BigInt("0x" + block_hash) % total
-//   weekly — seed<0> = block_hash
+//   daily  - index = BigInt("0x" + block_hash) % total
+//   weekly - seed<0> = block_hash
 //            для каждого места p: seed = sha256(seed + String(p))
 //                                 index = BigInt("0x" + seed) % total
 //                                 пока билет принадлежит уже выигравшему
-//                                 кошельку — index сдвигается на +1 по кругу
+//                                 кошельку - index сдвигается на +1 по кругу
 
 // ── утилиты ───────────────────────────────────────────────────────────────
 async function vfSha256Hex(str) {
@@ -3852,7 +3852,7 @@ function vfExpandTickets(pairs) {
   return flat;
 }
 
-// Диапазоны билетов по кошелькам — для карты и подписей
+// Диапазоны билетов по кошелькам - для карты и подписей
 function vfRanges(pairs) {
   const out = []; let at = 0;
   (pairs || []).forEach(p => {
@@ -3882,7 +3882,7 @@ async function vfReplay(pool, blockHash, tickets) {
               index, shifted: 0, address: tickets[index] }];
   }
 
-  // weekly — цепочка мест, seed каждого следующего считается от предыдущего
+  // weekly - цепочка мест, seed каждого следующего считается от предыдущего
   const placesCount = Math.min(3, new Set(tickets).size);
   const used = new Set();
   const steps = [];
@@ -3919,12 +3919,12 @@ async function renderDrawVerify(idx) {
   const snap = await vfLoadSnapshot(w.roundId);
 
   // Без снимка воспроизвести нечего: список билетов после закрытия раунда
-  // не восстанавливается — /round-complete проставляет consumedInRound.
+  // не восстанавливается - /round-complete проставляет consumedInRound.
   if (!snap || !snap.tickets) {
     host.innerHTML =
       '<div class="vf-verdict vf-na"><b>Cannot be replayed</b>' +
       '<span>No entry snapshot was written for this round. Snapshots start from ' +
-      'the first draw after the 1 Aug 2026 upgrade — earlier rounds only have the ' +
+      'the first draw after the 1 Aug 2026 upgrade - earlier rounds only have the ' +
       'recorded result.</span></div>' + vfInputsHtml(w, null);
     return;
   }
@@ -3968,7 +3968,7 @@ function vfVerdictHtml(ok, anyRecorded, w) {
     ? '<div class="vf-verdict vf-ok"><b>Verified</b><span>Replaying the draw in your ' +
       'browser produces exactly the indices and wallets recorded on chain.</span></div>'
     : '<div class="vf-verdict vf-bad"><b>Mismatch</b><span>The replay does not match the ' +
-      'recorded result. Something is wrong — please report this round.</span></div>';
+      'recorded result. Something is wrong - please report this round.</span></div>';
 }
 
 function vfInputsHtml(w, snap) {
@@ -4028,7 +4028,7 @@ function vfStepsHtml(checks, total, w) {
     '<p class="vf-intro">' + intro + '</p>' + body + '</div>';
 }
 
-// Карта билетов — то, что делает результат наглядным: видно, в чей отрезок попал индекс
+// Карта билетов - то, что делает результат наглядным: видно, в чей отрезок попал индекс
 function vfMapHtml(ranges, total, checks) {
   const winIdx = checks.map(c => c.step.index);
   const bar = ranges.map((r, i) => {
@@ -4075,7 +4075,7 @@ window.renderDrawVerify = renderDrawVerify;
 // ── Выбор раунда ─────────────────────────────────────────────────────────
 // Родной <select> рисуется средствами ОС и в тёмную тему сайта не ложится
 // никак: ни фон, ни шрифт, ни стрелка не поддаются CSS. Поэтому кнопка
-// плюс собственная панель — и заодно в строку помещается больше: чип пула,
+// плюс собственная панель - и заодно в строку помещается больше: чип пула,
 // дата и пометка, воспроизводим ли раунд.
 var vfPickerOpen = false;
 
@@ -4095,7 +4095,7 @@ function vfRowHtml(w, i, active) {
 }
 
 // Наличие снимка НЕ угадывается по данным раунда. Первая попытка помечала
-// строки по наличию block_height — и врала для пяти раундов из восьми:
+// строки по наличию block_height - и врала для пяти раундов из восьми:
 // высота есть, а снимка нет, потому что снимки пишутся только с 3 авг 2026.
 // Раз весь раздел про честность, статус берётся запросом, а не догадкой.
 var vfSnapCache = {};
@@ -4157,7 +4157,7 @@ function vfPick(i) {
   renderDrawVerify(i);
 }
 
-// Закрытие по клику мимо и по Escape — как ведёт себя родной select
+// Закрытие по клику мимо и по Escape - как ведёт себя родной select
 document.addEventListener('click', function (e) {
   if (!vfPickerOpen) return;
   var box = document.getElementById('vf-picker');

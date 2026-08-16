@@ -218,7 +218,7 @@ body > footer {
 <style>@media (max-width: 768px) { .mob-nav-controls { display: flex !important; } }</style>
 </head>
 <body>
-<!-- ===== ORACLE ICONS SPRITE (v1) — не удалять ===== -->
+<!-- ===== ORACLE ICONS SPRITE (v1) - не удалять ===== -->
 <style id="oracle-icons-css">
 .oi{display:inline-block;width:1em;height:1em;vertical-align:-.14em;flex:0 0 auto;
     fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;
@@ -289,7 +289,7 @@ body > footer {
 <!-- ===== /ORACLE ICONS SPRITE ===== -->
 
 <style id="mobile-menu-fix">
-/* Между иконкой и названием раздела не было отступа: .mobile-menu-item —
+/* Между иконкой и названием раздела не было отступа: .mobile-menu-item -
    flex-контейнер, а пробел в разметке между </svg> и текстом схлопывается,
    когда браузер заворачивает текст в анонимный flex-элемент. */
 .mobile-menu .mobile-menu-item .oi { margin-right: 9px; }
@@ -322,7 +322,7 @@ body > footer {
   scrollbar-color:rgba(212,160,23,.4) transparent;
   /* overflow-y:auto заставляет обрезать и по горизонтали.
      Отрицательные margin + равные padding расширяют область отсечения,
-     не сдвигая контент — чтобы scale() и бейдж SELECTED не срезало. */
+     не сдвигая контент - чтобы scale() и бейдж SELECTED не срезало. */
   margin:-12px -12px 0;
   padding:12px 12px 0;
 }
@@ -347,7 +347,7 @@ body.modal-open{overflow:hidden}
   #tier-common,#tier-rare,#tier-legendary{padding:10px 6px!important}
   #pool-daily,#pool-weekly{padding:10px!important}
 }
-/* низкие экраны — жмём ещё */
+/* низкие экраны - жмём ещё */
 @media (max-width:600px) and (max-height:740px){
   #tier-common img,#tier-rare img,#tier-legendary img{width:36px!important;height:36px!important}
   #tier-common,#tier-rare,#tier-legendary{padding:8px 5px!important}
@@ -653,7 +653,7 @@ body.modal-open{overflow:hidden}
      Вертикальный рельс слева, содержимое выбранной игры справа. Рельс живёт
      ТОЛЬКО на игровой странице: на Winners и Verify выбирать нечего, и он
      занимал бы место зря. Winners и Verify остаются в верхней навигации.
-     Ниже 860px рельс превращается в горизонтальную ленту с прокруткой —
+     Ниже 860px рельс превращается в горизонтальную ленту с прокруткой -
      колонка на узком экране съела бы половину ширины. -->
 <style id="game-rail">
 .dg-shell{display:grid;grid-template-columns:236px 1fr;gap:18px;position:relative;
@@ -703,7 +703,7 @@ body.modal-open{overflow:hidden}
   .dg-shell{grid-template-columns:1fr;gap:14px;margin-top:16px;padding:0 14px 30px}
   /* Сетка вместо горизонтальной прокрутки.
      Прокрутка с намеренно скрытым скроллбаром прятала третью игру: три
-     карточки по 172px это 532px, на телефоне 390px помещалось 2.1 — Circuit
+     карточки по 172px это 532px, на телефоне 390px помещалось 2.1 - Circuit
      уезжал за край без единого намёка, что вправо можно листать.
      Сетка показывает все сразу и сама разместит четвёртую игру. */
   .dg-rail{position:static;display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-bottom:0}
@@ -770,8 +770,8 @@ body.modal-open{overflow:hidden}
     <span class="dg-ico"><svg class="oi"><use href="#i-reels"/></svg></span>
     <span><span class="dg-nm">Daily</span><span class="dg-sub">every day but Monday</span></span>
    </span>
-   <span class="dg-stat"><span class="dg-big" id="dg-daily-pool">—</span>
-     <span class="dg-sub">LUNC</span><span class="dg-tick" id="dg-daily-tick">—</span></span>
+   <span class="dg-stat"><span class="dg-big" id="dg-daily-pool">-</span>
+     <span class="dg-sub">LUNC</span><span class="dg-tick" id="dg-daily-tick">-</span></span>
    <span class="dg-bar"><i id="dg-daily-bar" style="width:0%"></i></span>
   </button>
 
@@ -781,8 +781,8 @@ body.modal-open{overflow:hidden}
     <span class="dg-ico"><svg class="oi"><use href="#i-trophy"/></svg></span>
     <span><span class="dg-nm">Weekly</span><span class="dg-sub">3 winners &middot; Monday</span></span>
    </span>
-   <span class="dg-stat"><span class="dg-big" id="dg-weekly-pool">—</span>
-     <span class="dg-sub">LUNC</span><span class="dg-tick" id="dg-weekly-tick">—</span></span>
+   <span class="dg-stat"><span class="dg-big" id="dg-weekly-pool">-</span>
+     <span class="dg-sub">LUNC</span><span class="dg-tick" id="dg-weekly-tick">-</span></span>
    <span class="dg-bar"><i id="dg-weekly-bar" style="width:0%"></i></span>
   </button>
 
@@ -792,8 +792,8 @@ body.modal-open{overflow:hidden}
     <span class="dg-ico"><svg class="oi"><use href="#i-search"/></svg></span>
     <span><span class="dg-nm">Circuit</span><span class="dg-sub">every 3 hours</span></span>
    </span>
-   <span class="dg-stat"><span class="dg-big" id="dg-circuit-zones">—</span>
-     <span class="dg-sub">/ 250 zones</span><span class="dg-tick" id="dg-circuit-tick">—</span></span>
+   <span class="dg-stat"><span class="dg-big" id="dg-circuit-zones">-</span>
+     <span class="dg-sub">/ 250 zones</span><span class="dg-tick" id="dg-circuit-tick">-</span></span>
    <span class="dg-bar"><i id="dg-circuit-bar" style="width:0%"></i></span>
   </button>
  </div>
@@ -1015,12 +1015,12 @@ body.modal-open{overflow:hidden}
     <div class="dg-cir-title">CIRCUIT</div>
     <div class="dg-cir-line"></div>
     <p class="dg-cir-lead">Claim consecutive zones on a 250&#8209;zone board. A marker runs across it
-      and stops on one &mdash; whoever owns that zone takes the round.</p>
+      and stops on one - whoever owns that zone takes the round.</p>
 
     <div class="dg-cir-info" id="cir-info">
      <p><b>How it works.</b> Zones are handed out back to back from the first free one.
         A round draws when the board fills, or every three hours once at least 20 zones
-        are taken. Below that the zones and the pot carry into the next round &mdash;
+        are taken. Below that the zones and the pot carry into the next round -
         nothing is refunded and nothing is lost.</p>
      <p><b>Price.</b> 1,000 LUNC for your first zone, +5% for each one after it. The
         markup is cumulative per wallet per round, so splitting a purchase does not
@@ -1029,7 +1029,7 @@ body.modal-open{overflow:hidden}
      <p><b>The pool splits</b> 80% to the winner, 6% to TCO rewards for everyone who
         took zones, 6% to TCO burn, 8% to the treasury.</p>
      <p><b>Rewards.</b> Your share is fixed in LUNC the moment a round draws, then
-        converted to TCO in one batch once 50,000 LUNC has built up &mdash; buying a few
+        converted to TCO in one batch once 50,000 LUNC has built up - buying a few
         cents' worth per round would be eaten by fees. Claims are cumulative, so many
         epochs come out in a single transaction.</p>
      <p><b>The draw is checkable.</b> The winning zone comes from the Terra Classic
@@ -1039,7 +1039,7 @@ body.modal-open{overflow:hidden}
     <div class="dg-cir-grid">
      <div class="dg-cir-box"><span>Board</span><b id="cir-sold">0</b><i>of 250 zones</i></div>
      <div class="dg-cir-box"><span>Round pool</span><b id="cir-pool">0</b><i>LUNC</i></div>
-     <div class="dg-cir-box"><span>Next round in</span><b id="cir-left">&mdash;</b><i>draws with 20+ zones</i></div>
+     <div class="dg-cir-box"><span>Next round in</span><b id="cir-left">-</b><i>draws with 20+ zones</i></div>
     </div>
 
     <div class="dg-cir-board" id="cir-board"></div>
@@ -1082,7 +1082,7 @@ body.modal-open{overflow:hidden}
   box-shadow:0 6px 20px rgba(0,0,0,.45),0 0 24px rgba(244,208,63,.07)}
 .wn-card.is-weekly{border-color:rgba(90,70,150,.5)}
 .wn-card.is-weekly:hover{border-color:rgba(167,139,250,.5);box-shadow:0 6px 20px rgba(0,0,0,.45),0 0 24px rgba(140,110,255,.1)}
-/* Свой выигрыш — видно сразу, не надо искать себя глазами */
+/* Свой выигрыш - видно сразу, не надо искать себя глазами */
 .wn-card.is-mine{border-color:rgba(0,220,160,.5);background:linear-gradient(140deg,rgba(6,26,20,.75),rgba(8,9,14,.75))}
 
 .wn-round{text-align:center}
@@ -1250,7 +1250,7 @@ body.modal-open{overflow:hidden}
   .vf-calc{font-size:10.5px}
   .vf-calc i{min-width:38px}
   .vf-bar{height:28px}
-  /* На узком экране адрес и диапазон не помещаются в строку — переносим */
+  /* На узком экране адрес и диапазон не помещаются в строку - переносим */
   .vf-row{flex-wrap:wrap;gap:6px 9px}
   .vf-cnt{margin-left:auto}
   .vf-hitmark{width:100%}
@@ -1274,7 +1274,7 @@ body.modal-open{overflow:hidden}
   padding:10px;font-size:11px;line-height:1.7;color:var(--gold-light,#f6dd7a);
   overflow-x:auto;margin:0 0 10px;white-space:pre}
 @media (max-width:640px){
-  /* Две колонки с кодом на телефоне не читаются — ставим друг под друга */
+  /* Две колонки с кодом на телефоне не читаются - ставим друг под друга */
   .hw-split{grid-template-columns:1fr}
   .hw-code{font-size:10.5px}
 }
@@ -1315,7 +1315,7 @@ body.modal-open{overflow:hidden}
 .vf-opt-empty{padding:14px;color:var(--muted,#6b82a8);font-size:12.5px;text-align:center}
 
 @media (max-width:560px){
-  /* Метка «replayable» на своей строке — иначе выталкивает дату */
+  /* Метка «replayable» на своей строке - иначе выталкивает дату */
   .vf-opt{flex-wrap:wrap;gap:7px}
   .vf-opt-tag{margin-left:0}
   .vf-menu{max-height:250px}
@@ -1326,7 +1326,7 @@ body.modal-open{overflow:hidden}
  <div class="section-line"></div>
  <p class="vf-intro" style="text-align:center;max-width:560px;margin:0 auto 22px;">
   Nobody picks the winner. The result comes out of a Terra Classic block that did not
-  exist yet when entries closed &mdash; and anyone can replay it afterwards.
+  exist yet when entries closed - and anyone can replay it afterwards.
  </p>
 
  <div class="vf-card">
@@ -1342,7 +1342,7 @@ body.modal-open{overflow:hidden}
   </div>
   <p class="vf-intro" style="margin:12px 0 0;">
    Free entries earned on Terra Oracle count too. At draw time the whole list is frozen
-   into a public snapshot &mdash; that file is what makes the result checkable later.
+   into a public snapshot - that file is what makes the result checkable later.
   </p>
  </div>
 
@@ -1350,7 +1350,7 @@ body.modal-open{overflow:hidden}
   <div class="vf-h">Step 2 &middot; The block</div>
   <p class="vf-intro" style="margin-bottom:0;">
    The draw uses the <em>first block produced at or after 20:00&nbsp;UTC</em> of the round
-   deadline &mdash; not whichever block happens to be latest when the script runs.
+   deadline - not whichever block happens to be latest when the script runs.
    That block is fixed by the schedule, so re-running the draw later cannot change the
    winner, and nobody can wait for a hash they like.
    Validators produce it independently; no one involved in the draw can influence it.
@@ -1384,7 +1384,7 @@ for place p in 0, 1, 2:
     <p class="vf-intro" style="margin:0;">
      Each place is seeded from the <em>previous</em> one, so the chain must be replayed in
      order. If a place lands on a wallet that already won, the index steps forward until it
-     reaches a new one &mdash; one wallet cannot take two places. With fewer than three
+     reaches a new one - one wallet cannot take two places. With fewer than three
      participants, fewer places are paid and the unclaimed share stays in the pool.
     </p>
    </div>
@@ -1909,14 +1909,14 @@ for place p in 0, 1, 2:
   <script src="assets/js/circuit-claim.js?v=1"></script>
   <script src="assets/js/circuit-board.js?v=2"></script>
 
-  <!-- Oracle Draw V2 — один собранный файл.
+  <!-- Oracle Draw V2 - один собранный файл.
        Раздельные модули кэшируются намертво: у вложенных import нет
        query-строки, поэтому ?v= на входном скрипте их не сбрасывает.
        Здесь импортов нет, и ?v= работает как надо.
        Пересобрать после правок в assets/js/wheel/ или draw-v2/:
            node dev/_build_bundle.js
        и поменять номер ниже на тот, что напечатает сборщик. -->
-  <script type="module" src="assets/js/oracle-draw.bundle.js?v=202608131935"></script>
+  <script type="module" src="assets/js/oracle-draw.bundle.js?v=202608161319"></script>
 
 <script>
 // ── WEEKLY PODIUM FIX ──────────────────────────────────────────
@@ -2007,12 +2007,12 @@ function selectPool(pool, _silent) {
 
   /* ── Синхронизация с состоянием страницы ───────────────────────────────
      Минт (openMintIframe и nativeMintV2 в oracle-mint-v2.js) читает
-     window.currentLottery — переменную вкладок DAILY/WEEKLY, а не выбор
+     window.currentLottery - переменную вкладок DAILY/WEEKLY, а не выбор
      в этой модалке. Из-за этого WEEKLY здесь не доезжал до транзакции:
      LUNC уходил в дневной кошелёк, минтился дневной контракт, NFT
      регистрировался в daily. Держим обе переменные одинаковыми, тогда
      не важно, какую из них читает конкретный участок кода.
-     Флеш перехода гасим — иначе мигает поверх открытой модалки. */
+     Флеш перехода гасим - иначе мигает поверх открытой модалки. */
   if (!_silent && window.currentLottery !== pool && typeof switchLottery === 'function') {
     const ov = document.getElementById('page-transition');
     const prevDisplay = ov ? ov.style.display : null;
@@ -2029,7 +2029,7 @@ function selectTier(tier) {
   selectedTier = tier;
   const t = NFT_TIERS[tier];
 
-  /* На узких экранах не раздуваем выбранную карточку — не хватает места по бокам */
+  /* На узких экранах не раздуваем выбранную карточку - не хватает места по бокам */
   const _narrow = window.matchMedia('(max-width: 600px)').matches;
   const _scaleOn  = _narrow ? 1.02 : 1.08;
   const _scaleOff = _narrow ? 0.96 : 0.93;
@@ -2081,7 +2081,7 @@ function selectTier(tier) {
   const luncStr = t.lunc.toLocaleString();
   document.getElementById('modal-total-val').textContent    = luncStr + ' LUNC';
   document.getElementById('modal-tier-entries').textContent = t.entries + (t.entries === 1 ? ' entry' : ' entries');
-  /* Кнопку минта целиком перерисовывает updateBuyBtn — единственный писатель.
+  /* Кнопку минта целиком перерисовывает updateBuyBtn - единственный писатель.
      Раньше сюда и в updateBuyBtn писали двое, а статусы транзакции затирали
      спаны, из-за чего подпись рассинхронизировалась с выбранным тиром. */
   if (typeof updateBuyBtn === 'function') updateBuyBtn();
@@ -2559,7 +2559,7 @@ setTimeout(function() {
 
   /* Разовая синхронизация с текущим состоянием.
      Хуки выше перехватывают ТОЛЬКО будущие вызовы, а восстановление сессии
-     из localStorage происходит на раннем старте app.js — задолго до этих
+     из localStorage происходит на раннем старте app.js - задолго до этих
      800 мс. MutationObserver тоже не спасал: он реагирует на изменения
      после подписки, а метка была проставлена раньше. Из-за этого при уже
      подключённом кошельке в шапке продолжало висеть «Connect». */
@@ -2672,7 +2672,7 @@ document.getElementById('luncdash-modal').addEventListener('click', function(e) 
   // Живые цифры в рельсе.
   // Пулы daily и weekly берём балансами кошельков напрямую: узел pool-lunc
   // в DOM держит только ВЫБРАННУЮ игру, а рельс должен показывать все три
-  // сразу — иначе теряется весь смысл видеть их рядом.
+  // сразу - иначе теряется весь смысл видеть их рядом.
   const POOL_WALLETS = {
     daily:  'terra1amp68zg7vph3nq84ummnfma4dz753ezxfqa9px',
     weekly: 'terra1p5l6q95kfl3hes7edy76tywav9f79n6xlkz6qz',
@@ -2692,15 +2692,15 @@ document.getElementById('luncdash-modal').addEventListener('click', function(e) 
         const el = document.getElementById('dg-' + game + '-pool');
         if (el) el.textContent = short(lunc);
         const bar = document.getElementById('dg-' + game + '-bar');
-        // Полоска у weekly — прогресс до минимума в 500 000 LUNC,
-        // у daily — до порога в 5 входов, которого в балансе нет,
+        // Полоска у weekly - прогресс до минимума в 500 000 LUNC,
+        // у daily - до порога в 5 входов, которого в балансе нет,
         // поэтому там просто заполненность относительно недельного.
         if (bar) bar.style.width = Math.min(100, lunc / (game === 'weekly' ? 500000 : 200000) * 100) + '%';
       } catch (e) {}
     }
   }
 
-  // Отсчёты — из общего модуля расписания, без единого запроса
+  // Отсчёты - из общего модуля расписания, без единого запроса
   function refreshTicks() {
     if (!window.DRAW_SCHEDULE) return;
     const S = window.DRAW_SCHEDULE;
@@ -2710,7 +2710,7 @@ document.getElementById('luncdash-modal').addEventListener('click', function(e) 
     if (w) w.textContent = S.format(S.msToNext('weekly'));
   }
 
-  // Circuit: доска и отсчёт из воркера. Пока эндпоинт не поднят — молча
+  // Circuit: доска и отсчёт из воркера. Пока эндпоинт не поднят - молча
   // оставляем прочерки, рельс не должен ломаться из-за 404.
   async function refreshCircuit() {
     try {
@@ -2720,13 +2720,13 @@ document.getElementById('luncdash-modal').addEventListener('click', function(e) 
       document.getElementById('dg-circuit-zones').textContent = d.sold;
       document.getElementById('dg-circuit-bar').style.width   = (d.sold / d.maxZones * 100) + '%';
       const m = Math.max(0, Math.round(d.msLeft / 60000));
-      // Дедлайн прошёл, ждём ближайшего запуска circuit-round.yml — GitHub
+      // Дедлайн прошёл, ждём ближайшего запуска circuit-round.yml - GitHub
       // держит крон «примерно раз в час», и честнее сказать это, чем висеть на 0m.
       const tick = d.msLeft <= 0 ? 'closing' :
                    m >= 60 ? Math.floor(m / 60) + 'h ' + (m % 60) + 'm' : m + 'm';
       document.getElementById('dg-circuit-tick').textContent = tick;
 
-      // Та же выборка кормит и сцену Circuit — второй запрос не нужен
+      // Та же выборка кормит и сцену Circuit - второй запрос не нужен
       const set = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
       set('cir-sold', d.sold);
       set('cir-pool', Math.round(d.poolUluna / 1e6).toLocaleString('en-US'));
@@ -2745,7 +2745,7 @@ document.getElementById('luncdash-modal').addEventListener('click', function(e) 
     try { saved = localStorage.getItem('dgGame'); } catch (e) {}
     if (saved === 'circuit') selectGame('circuit');
     refreshTicks(); refreshPools(); refreshCircuit();
-    setInterval(refreshTicks, 1000);      // счётчик — локально, без сети
+    setInterval(refreshTicks, 1000);      // счётчик - локально, без сети
     setInterval(refreshPools, 45000);     // балансы меняются редко
     setInterval(refreshCircuit, 20000);
   });

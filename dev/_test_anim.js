@@ -15,7 +15,7 @@ function run(anim, target, pointer, maxMs = 30000) {
   return samples;
 }
 
-// 1. посадка точная — из состояния покоя
+// 1. посадка точная - из состояния покоя
 {
   const a = new WheelAnimation();
   const target = 1.234, pointer = -Math.PI/2;
@@ -27,7 +27,7 @@ function run(anim, target, pointer, maxMs = 30000) {
   ok(s.length*1000/60 > 5000, `длительность ${(s.length/60).toFixed(1)} с`);
 }
 
-// 2. посадка точная — стартуя из уже вращающегося колеса (PreDraw)
+// 2. посадка точная - стартуя из уже вращающегося колеса (PreDraw)
 {
   const a = new WheelAnimation();
   a.predraw(0);
@@ -55,7 +55,7 @@ function run(anim, target, pointer, maxMs = 30000) {
   ok(maxJump < 0.9, `макс. скачок скорости за кадр ${maxJump.toFixed(3)} рад/с (${jumpAt})`);
 }
 
-// 4. угол монотонен — колесо не дёргается назад до LOCK
+// 4. угол монотонен - колесо не дёргается назад до LOCK
 {
   const a = new WheelAnimation();
   const s = run(a, 0.7, -Math.PI/2);
@@ -91,7 +91,7 @@ function run(anim, target, pointer, maxMs = 30000) {
   ok(bad===0, "40 случайных стартов: путь всегда 5..7 оборотов");
 }
 
-// 7. intensity растёт к концу — кристалл разгорается
+// 7. intensity растёт к концу - кристалл разгорается
 {
   const a = new WheelAnimation();
   const s = run(a, 1.0, -Math.PI/2);
@@ -101,7 +101,7 @@ function run(anim, target, pointer, maxMs = 30000) {
   ok(al.intensity > am.intensity, `яркость кристалла ${am.intensity.toFixed(2)} → ${al.intensity.toFixed(2)}`);
 }
 
-// 8. prefers-reduced-motion — мгновенная посадка без вращения
+// 8. prefers-reduced-motion - мгновенная посадка без вращения
 {
   const a = new WheelAnimation(); a.reducedMotion = true;
   let settled = false;

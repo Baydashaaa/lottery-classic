@@ -3,7 +3,7 @@
 
 `SigningCosmWasmClient` checks `gasPrice instanceof GasPrice`, and that check
 fails whenever the GasPrice class we import is not the exact same class object
-the client holds — which npm's dependency resolution decides for us. Pinning
+the client holds - which npm's dependency resolution decides for us. Pinning
 versions did not settle it.
 
 An explicit StdFee sidesteps the whole question: no class identity, no shared
@@ -78,7 +78,7 @@ s = s.replace(
 )
 
 if "'auto'," in s:
-    sys.exit("a call site still uses 'auto' — check the file")
+    sys.exit("a call site still uses 'auto' - check the file")
 
 # ── log what the gas actually cost, so the limits can be tuned ─────────────
 s = s.replace(

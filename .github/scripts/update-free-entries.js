@@ -11,27 +11,27 @@ const TREASURY_WALLET   = 'terra1549z8zd9hkggzlwf0rcuszhc9rs9fxqfy2kagt';
 const DAILY_WALLET      = 'terra1amp68zg7vph3nq84ummnfma4dz753ezxfqa9px';
 const WEEKLY_WALLET     = 'terra1p5l6q95kfl3hes7edy76tywav9f79n6xlkz6qz';
 
-// Exclude these senders — they send protocol funds, not user payments
+// Exclude these senders - they send protocol funds, not user payments
 const EXCLUDED_SENDERS  = new Set([DAILY_WALLET, WEEKLY_WALLET, TREASURY_WALLET]);
 
 // A chat message is identified by its EXACT amount (±1%), not by a range.
 // The old range [5,000 … 100,000) also swallowed the Treasury leg of questions:
 // 25,000 for Basic, 100,000 for Priority, and less than that whenever a rank
-// discount applied — every such payment was miscounted as a chat message.
+// discount applied - every such payment was miscounted as a chat message.
 const CHAT_ULUNA          = 5_000_000_000;   // exactly 5,000 LUNC
 const CHAT_TOLERANCE      = 0.01;            // ±1%
 const CHAT_ENTRIES_PER_10 = 1;
-const MAX_CHAT_ENTRIES_PER_ROUND = 20;       // cap per round, not per day —
+const MAX_CHAT_ENTRIES_PER_ROUND = 20;       // cap per round, not per day -
                                              // entries reset weekly anyway, so a
                                              // weekly cap keeps the remainder of
                                              // messages from burning every day.
 const QUESTION_ENTRIES_LEGACY    = 2;        // questions with no `entries` field
 const STREAK_14D_ENTRIES  = 2;   // one-time free entries at 14-day streak milestone
 const TRUSTED_ENTRIES     = 1;   // Trusted User (30-day streak): +1 per round, backed from RESERVE
-const WINDOW_DAYS         = 90;  // scan 90 days back — entries accumulate
+const WINDOW_DAYS         = 90;  // scan 90 days back - entries accumulate
 const WINDOW_SEC          = WINDOW_DAYS * 86400;
 
-// Terra Oracle Worker — authoritative source for questions and streak milestones
+// Terra Oracle Worker - authoritative source for questions and streak milestones
 const ORACLE_WORKER   = 'https://terra-oracle-questions.vladislav-baydan.workers.dev';
 const ACTIONS_SECRET  = process.env.ACTIONS_SECRET || '';  // for secret-gated streak endpoint
 
@@ -60,12 +60,12 @@ function weeklyRoundStartSec() {
 // Дедлайн последнего weekly-розыгрыша, который РЕАЛЬНО состоялся.
 //
 // Зачем отдельно от часов: 3 августа 2026 недельный розыгрыш упал (require в
-// ESM-репо), в winners.json не появилось ничего — а генератор всё равно сдвинул
+// ESM-репо), в winners.json не появилось ничего - а генератор всё равно сдвинул
 // границу на понедельник 20:00 и обнулил все входы. Люди потеряли входы за
 // раунд, которого не было. Часы не знают, состоялся розыгрыш или нет; знает
 // только winners.json.
 //
-// skipped-раунды здесь НЕ считаются состоявшимися — при skip билеты переходят
+// skipped-раунды здесь НЕ считаются состоявшимися - при skip билеты переходят
 // дальше, и входы должны вести себя так же.
 function lastCompletedWeeklyDeadlineSec() {
   if (!fs.existsSync(WINNERS_PATH)) return null;
@@ -161,13 +161,13 @@ function chooseCutoff({ clockCutoff, drawnCutoff, histRaw, nowSec, windowSec }) 
   let cutoff, source, missedWeeks = 0;
 
   if (drawnCutoff === null || drawnCutoff === undefined) {
-    // Истории нет вообще — ведём себя как раньше, по часам
+    // Истории нет вообще - ведём себя как раньше, по часам
     cutoff = clockCutoff;
     source = 'clock (в winners.json нет состоявшихся weekly-розыгрышей)';
   } else {
-    // Граница = момент последнего СОСТОЯВШЕГОСЯ розыгрыша. Прошёл в срок —
+    // Граница = момент последнего СОСТОЯВШЕГОСЯ розыгрыша. Прошёл в срок -
     // это ровно та же метка, что даёт weeklyRoundStartSec(). Пропущен или
-    // упал — граница остаётся старой, и входы переносятся дальше вместо того,
+    // упал - граница остаётся старой, и входы переносятся дальше вместо того,
     // чтобы сгореть за раунд, которого не было.
     cutoff = drawnCutoff;
     source = 'last completed weekly draw';
@@ -175,7 +175,7 @@ function chooseCutoff({ clockCutoff, drawnCutoff, histRaw, nowSec, windowSec }) 
   }
 
   // Предохранитель: сканирование ограничено WINDOW_DAYS, бесконечно растить
-  // окно нельзя. Если розыгрышей не было дольше — упираемся в потолок.
+  // окно нельзя. Если розыгрышей не было дольше - упираемся в потолок.
   const floorSec = nowSec - windowSec;
   let clamped = false;
   if (cutoff < floorSec) { cutoff = floorSec; clamped = true; }
@@ -203,12 +203,12 @@ async function main() {
     try { existing = JSON.parse(fs.readFileSync(JSON_PATH, 'utf8')); } catch (e) {}
   }
 
-  // Variant A — weekly reset. Cutoff = start of the CURRENT weekly draw round
+  // Variant A - weekly reset. Cutoff = start of the CURRENT weekly draw round
   // (Mon 20:00 UTC). Entries reset automatically every Monday when the draw rolls
-  // over, so a single question grants entries in ONE weekly draw only — no
+  // over, so a single question grants entries in ONE weekly draw only - no
   // carry-over, no re-counting in later draws. Computing the boundary here means
   // it no longer depends on an external resetFreeEntries() call (which was never
-  // advancing history_from — it was stuck at the very first date, so 90 days of
+  // advancing history_from - it was stuck at the very first date, so 90 days of
   // questions kept counting). A history_from LATER than the weekly boundary is
   // still honored (lets an admin force a mid-week reset); an older/stale one is
   // ignored.
@@ -228,11 +228,11 @@ async function main() {
 
   if (missedWeeks > 0) {
     console.warn('ВНИМАНИЕ: пропущено недельных розыгрышей: ' + missedWeeks +
-      '. Последний состоявшийся — ' + new Date(drawnCutoff * 1000).toISOString() +
+      '. Последний состоявшийся - ' + new Date(drawnCutoff * 1000).toISOString() +
       '. Входы НЕ обнуляются, окно расширено. Разберись, почему не прошёл розыгрыш.');
   }
   if (decision.clamped) {
-    console.warn('Граница старше ' + WINDOW_DAYS + ' дней — обрезана до глубины сканирования');
+    console.warn('Граница старше ' + WINDOW_DAYS + ' дней - обрезана до глубины сканирования');
   }
   if (decision.manual) {
     console.log('Honoring manual history_from (later than computed boundary)');
@@ -270,7 +270,7 @@ async function main() {
   }
 
   // ── Questions: from authoritative questions.json (via Worker /questions) ───
-  // NOT from on-chain payments — NFT mints also pay WEEKLY_WALLET and would be
+  // NOT from on-chain payments - NFT mints also pay WEEKLY_WALLET and would be
   // miscounted. A question only counts if it's actually recorded as a question.
   // Entries come from the question's own `entries` field, which the Worker
   // derives from the VERIFIED on-chain pool leg (Basic +1, Priority +4).
@@ -321,7 +321,7 @@ async function main() {
       console.error('Streak milestone fetch error:', e.message);
     }
   } else {
-    console.warn('ACTIONS_SECRET not set — skipping 14-day streak entries');
+    console.warn('ACTIONS_SECRET not set - skipping 14-day streak entries');
   }
 
   // ── Trusted User (30-day streak): +1 entry per round ──────────────────────
@@ -347,7 +347,7 @@ async function main() {
       console.error('Trusted entries fetch error:', e.message);
     }
   } else {
-    console.warn('ACTIONS_SECRET not set — skipping Trusted User entries');
+    console.warn('ACTIONS_SECRET not set - skipping Trusted User entries');
   }
 
   // ── Calculate entries ─────────────────────────────────────────────────────
@@ -399,7 +399,7 @@ async function main() {
   // ── Write JSON ────────────────────────────────────────────────────────────
   const output = {
     _meta: {
-      description:  'Free Weekly Draw entries — Terra Oracle protocol',
+      description:  'Free Weekly Draw entries - Terra Oracle protocol',
       sources: {
         chat:      '1 entry per 10 messages, max ' + MAX_CHAT_ENTRIES_PER_ROUND + ' per round',
         questions: 'entries per question tariff (Basic +1, Priority +4)',

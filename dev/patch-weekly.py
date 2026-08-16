@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Weekly draw: NFT tickets from the contract + free entries in a published order.
 
-Writes after every step. Re-running is safe — each step checks itself.
+Writes after every step. Re-running is safe - each step checks itself.
 """
 import sys
 
@@ -24,7 +24,7 @@ else:
     if i == -1:
         sys.exit("could not find the build-ticket-array section")
     helper = """// Бесплатные входы как упорядоченный список билетов.
-// Порядок — по адресу кошелька, а не по порядку ключей в JSON: только так
+// Порядок - по адресу кошелька, а не по порядку ключей в JSON: только так
 // проверяющий соберёт тот же массив, что и мы.
 function buildFreeTickets() {
   if (!fs.existsSync(FREE_ENTRIES_PATH)) return [];
@@ -56,9 +56,9 @@ old = """  console.log('Fetching paid participants from Worker /round-stats...')
   const tickets = buildTickets(participants);
   console.log('Participants: ' + Object.keys(participants).length + ', Tickets: ' + tickets.length);"""
 new = """  // Weekly состоит из двух блоков, и порядок между ними зафиксирован:
-  //   1) NFT-билеты из контракта — то же правило, что в daily
+  //   1) NFT-билеты из контракта - то же правило, что в daily
   //   2) бесплатные входы из free-entries.json, по возрастанию адреса
-  // NFT-часть проверяется по цепи целиком; бесплатная — только по истории
+  // NFT-часть проверяется по цепи целиком; бесплатная - только по истории
   // коммитов free-entries.json, и об этом честно сказано на странице проверки.
   const deadlineMs = getDrawDeadlineTs();
   const blockInfo = await getRoundBlockInfo();
@@ -133,4 +133,4 @@ else:
     save(src)
     print(f"ok: weekly dates ({n})")
 
-print("\ndone — the successful-draw record still needs ticket_rule fields, see below")
+print("\ndone - the successful-draw record still needs ticket_rule fields, see below")

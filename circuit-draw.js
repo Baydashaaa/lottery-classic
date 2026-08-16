@@ -1,21 +1,21 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// CIRCUIT — закрытие раунда
+// CIRCUIT - закрытие раунда
 // ═══════════════════════════════════════════════════════════════════════════
 //
 // Запускается по крону часто (раз в 10–15 минут). Сам решает, пора ли
-// закрывать раунд: доска заполнена или истёк дедлайн. Если ни то ни другое —
+// закрывать раунд: доска заполнена или истёк дедлайн. Если ни то ни другое -
 // молча выходит.
 //
 // Порядок ровно тот же, что в lottery-draw.js, и по тем же причинам:
 //   1. Блок берётся ПО ДЕДЛАЙНУ РАУНДА, а не последний на момент запуска.
 //      Иначе результат зависит от того, когда стартовал раннер, и перезапуск
 //      до удачного хеша становится возможен.
-//   2. Фолбэка на sha256(Date.now()) НЕТ. Блок недоступен — раунд не
+//   2. Фолбэка на sha256(Date.now()) НЕТ. Блок недоступен - раунд не
 //      закрывается, зоны и банк остаются на месте до следующего запуска.
 //   3. Победитель считается ЗДЕСЬ, воркер только фиксирует итог.
 //
 // ВАЖНО: package.json репозитория содержит "type": "module". Только import,
-// только с явным расширением .js. require() здесь роняет всё на старте —
+// только с явным расширением .js. require() здесь роняет всё на старте -
 // так пропали daily 2026-08-02 и weekly 2026-08-03.
 
 import { DirectSecp256k1HdWallet } from '@cosmjs/proto-signing';
@@ -171,12 +171,12 @@ async function getClient() {
 }
 
 async function sendLunc(client, from, to, amountUluna, memo) {
-  if (process.env.DRY_RUN === '1') throw new Error('DRY_RUN is set — refusing to send funds');
+  if (process.env.DRY_RUN === '1') throw new Error('DRY_RUN is set - refusing to send funds');
   if (amountUluna < 1_000_000) {
     console.log('too small to send (<1 LUNC), skipped: ' + to);
     return null;
   }
-  console.log('sending ' + fmt(amountUluna / 1e6) + ' LUNC to ' + to + ' — ' + memo);
+  console.log('sending ' + fmt(amountUluna / 1e6) + ' LUNC to ' + to + ' - ' + memo);
   const res = await client.sendTokens(
     from, to,
     [{ denom: DENOM, amount: String(Math.floor(amountUluna)) }],
@@ -232,7 +232,7 @@ async function main() {
   const round = await getState();
   const now = Date.now();
 
-  console.log('round ' + round.roundId + ' — ' + round.sold + '/' + round.maxZones +
+  console.log('round ' + round.roundId + ' - ' + round.sold + '/' + round.maxZones +
               ' zones, pool ' + fmt(round.poolUluna / 1e6) + ' LUNC');
 
   const full    = round.sold >= round.maxZones;
@@ -242,24 +242,24 @@ async function main() {
     return;
   }
 
-  // Недобор — деньги НЕ возвращаются, зоны и банк переносятся вперёд.
+  // Недобор - деньги НЕ возвращаются, зоны и банк переносятся вперёд.
   // Блок здесь не нужен: розыгрыша не будет.
   if (round.sold < round.minZones) {
-    console.log('below the minimum (' + round.sold + ' < ' + round.minZones + ') — merging into the next round');
+    console.log('below the minimum (' + round.sold + ' < ' + round.minZones + ') - merging into the next round');
     const res = await closeRound({});
     console.log('merged, carried ' + fmt((res.carried || 0) / 1e6) + ' LUNC into ' + res.nextRound);
     return;
   }
 
-  // Блок дедлайна. Если ещё не наступил по времени цепи — ждём, но недолго:
+  // Блок дедлайна. Если ещё не наступил по времени цепи - ждём, но недолго:
   // упавший запуск не страшен, следующий крон повторит.
   if (!(await waitForDeadline(round.deadline))) {
-    console.log('deadline block has not appeared within the wait window — leaving the round open');
+    console.log('deadline block has not appeared within the wait window - leaving the round open');
     return;
   }
   const blockInfo = await findBlockAtOrAfter(round.deadline);
   if (!blockInfo) {
-    console.log('could not resolve the deadline block — leaving the round open, will retry');
+    console.log('could not resolve the deadline block - leaving the round open, will retry');
     return;
   }
   console.log('deadline block ' + blockInfo.height + ' at ' + new Date(blockInfo.timeMs).toISOString());
@@ -267,16 +267,16 @@ async function main() {
 
   const zone   = selectZone(blockInfo.hash, round.sold);
   const winner = ownerOfZone(round.blocks, zone);
-  if (!winner) throw new Error('zone ' + zone + ' has no owner — board is inconsistent');
+  if (!winner) throw new Error('zone ' + zone + ' has no owner - board is inconsistent');
   console.log('winning zone ' + zone + ' -> ' + winner.wallet);
 
   const { client, address } = await getClient();
 
   // Кошельки долей TCO. Деньги переводятся туда сразу при закрытии раунда,
   // чтобы обязательство было видно НА ЦЕПОЧКЕ, а не только счётчиком в KV:
-  // пропадёт база — пропадёт и след, а баланс кошелька проверит кто угодно.
+  // пропадёт база - пропадёт и след, а баланс кошелька проверит кто угодно.
   // Сюда стекается вся доля TCO (6% + 6%) и отсюда идёт единственная
-  // покупка в конце эпохи. Ключ этого кошелька — единственный, который
+  // покупка в конце эпохи. Ключ этого кошелька - единственный, который
   // нужен скрипту эпохи.
   const TCO_BUYBACK_WALLET = 'terra1x3axkacpes4d8q2svfeneqdtv8rvcvccrn66j5';
 
@@ -291,33 +291,33 @@ async function main() {
   payouts.winner = {
     wallet: winner.wallet, uluna: toWinner,
     tx: await sendLunc(client, address, winner.wallet, toWinner,
-                       'Circuit ' + round.roundId + ' — zone ' + zone),
+                       'Circuit ' + round.roundId + ' - zone ' + zone),
   };
   for (const n of neigh) {
     payouts.neighbours.push({
       wallet: n.wallet, uluna: perNeigh,
       tx: await sendLunc(client, address, n.wallet, perNeigh,
-                         'Circuit ' + round.roundId + ' — neighbour of zone ' + zone),
+                         'Circuit ' + round.roundId + ' - neighbour of zone ' + zone),
     });
   }
   payouts.treasury = {
     wallet: TREASURY, uluna: round.split.treasury,
     tx: await sendLunc(client, address, TREASURY, round.split.treasury,
-                       'Circuit ' + round.roundId + ' — treasury'),
+                       'Circuit ' + round.roundId + ' - treasury'),
   };
   // Доли TCO уходят на свои кошельки и ЖДУТ там.
   //
-  // Раздача: покупка идёт партией в конце эпохи — покупать по 31 центу за
+  // Раздача: покупка идёт партией в конце эпохи - покупать по 31 центу за
   // раунд бессмысленно, комиссия свопа и проскальзывание съедят больше.
   // Доля каждого участника уже зафиксирована воркером в LUNC.
   //
   // Сжигание: не включается до попадания в белый список. До тех пор доля
-  // просто копится — ни покупки, ни сжигания.
+  // просто копится - ни покупки, ни сжигания.
   //
   // Поле split.tcoDrop появилось вместе с разделением 6/6; пока воркер
   // старой версии, его нет, и переводы молча пропускаются.
   // Обе доли уходят ОДНИМ переводом на кошелёк выкупа. Разделение
-  // произойдёт после покупки: скрипт эпохи поделит купленный TCO пополам —
+  // произойдёт после покупки: скрипт эпохи поделит купленный TCO пополам -
   // половину в claim-контракт, половину на бёрн-кошелёк.
   //
   // Бёрн-кошелёк только принимает, его ключ в CI не нужен.
@@ -327,13 +327,13 @@ async function main() {
 
   if (tcoUluna > 0) {
     const tx = await sendLunc(client, address, TCO_BUYBACK_WALLET, tcoUluna,
-                              'Circuit ' + round.roundId + ' — TCO buyback share');
+                              'Circuit ' + round.roundId + ' - TCO buyback share');
     // Суммы пишем раздельно: пропорция 6/6 должна быть видна в снимке
     // раунда, даже когда перевод один.
     payouts.tcoDrop = { wallet: TCO_BUYBACK_WALLET, uluna: dropUluna, purpose: 'rewards', tx };
     payouts.tcoBurn = { wallet: TCO_BUYBACK_WALLET, uluna: burnUluna, purpose: 'burn', tx };
   } else {
-    console.log('WARNING: split has no tcoDrop/tcoBurn — worker is on the old format, TCO shares stay in the pool wallet');
+    console.log('WARNING: split has no tcoDrop/tcoBurn - worker is on the old format, TCO shares stay in the pool wallet');
   }
 
   writeSnapshot(round, blockInfo, zone, winner, payouts);

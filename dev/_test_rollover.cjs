@@ -1,9 +1,9 @@
 /**
- * dev/_test_rollover.js — две правки от 3 августа 2026.
+ * dev/_test_rollover.js - две правки от 3 августа 2026.
  *
  * [A] Граница free entries привязана к winners.json, а не к часам.
  *     Повод: 3 авг weekly упал, записи не появилось, а генератор всё равно
- *     сдвинул границу на Пн 20:00 и обнулил входы — они сгорели за раунд,
+ *     сдвинул границу на Пн 20:00 и обнулил входы - они сгорели за раунд,
  *     которого не было.
  *
  * [B] Карточка победителя подписывает раунд и помечает несвежий результат.
@@ -108,7 +108,7 @@ else {
                        histRaw: null, nowSec: now, windowSec: WINDOW });
     check('три пропуска подряд', d.missedWeeks, 3);
 
-    // 4. Истории нет — старое поведение по часам
+    // 4. Истории нет - старое поведение по часам
     d = chooseCutoff({ clockCutoff: thisMon, drawnCutoff: null,
                        histRaw: null, nowSec: now, windowSec: WINDOW });
     check('нет истории → по часам', new Date(d.cutoff*1000).toISOString(), '2026-08-03T20:00:00.000Z');
@@ -119,7 +119,7 @@ else {
     check('старше 90 дней → обрезано', d.clamped, 'true');
     check('  граница = ровно 90 дней назад', d.cutoff, now - WINDOW);
 
-    // 6. Ручной mid-week reset позже границы — уважается
+    // 6. Ручной mid-week reset позже границы - уважается
     d = chooseCutoff({ clockCutoff: thisMon, drawnCutoff: prevMon,
                        histRaw: '2026-07-30T12:00:00.000Z', nowSec: now, windowSec: WINDOW });
     check('ручной reset позже → уважается', new Date(d.cutoff*1000).toISOString(), '2026-07-30T12:00:00.000Z');
@@ -131,7 +131,7 @@ else {
     check('устаревший history_from игнорируется', new Date(d.cutoff*1000).toISOString(), '2026-07-27T20:00:00.000Z');
   }
 
-  // lastCompletedWeeklyDeadlineSec — skipped-раунды не считаются состоявшимися
+  // lastCompletedWeeklyDeadlineSec - skipped-раунды не считаются состоявшимися
   console.log('\n[A2] Поиск последнего состоявшегося розыгрыша');
   const lastSrc = extract(genSrc, 'lastCompletedWeeklyDeadlineSec');
   if (!lastSrc) { fails++; console.log('  FAIL lastCompletedWeeklyDeadlineSec не найдена'); }
@@ -140,7 +140,7 @@ else {
       ['последний состоявшийся',
        { weekly: [ {date:'2026-07-20', winners:[{place:1}]}, {date:'2026-07-27', winners:[{place:1}]} ] },
        '2026-07-27T20:00:00.000Z'],
-      ['skipped сверху — берём тот, что ниже',
+      ['skipped сверху - берём тот, что ниже',
        { weekly: [ {date:'2026-07-27', winners:[{place:1}]}, {date:'2026-08-03', skipped:true, reason:'Not enough entries'} ] },
        '2026-07-27T20:00:00.000Z'],
       ['пустой winners[] тоже не считается',
@@ -194,7 +194,7 @@ else {
     check('свежий раунд → свежий',              roundNew < prevW.getTime() - 60000, 'false');
   }
 
-  // Пул должен подписываться в карточке всегда — это и ловит подмену
+  // Пул должен подписываться в карточке всегда - это и ловит подмену
   // daily-результата на вкладке Weekly
   const cardSrc = extract(appSrc, 'showWinnerCard');
   if (!cardSrc) { fails++; console.log('  FAIL showWinnerCard не найдена'); }
@@ -234,7 +234,7 @@ else {
                         .replace(/^\s*\/\/.*$/gm, '');
     const iPool  = code.indexOf('pagePool !== this.engine.pool');
     // Раньше искали дословно `state.model) return`. Коммит 1523a5a сделал
-    // выход условным — `state.model && _stillShowingThatRound` — строка
+    // выход условным - `state.model && _stillShowingThatRound` - строка
     // исчезла, и тест падал на живом и правильном коде.
     //
     // Инвариант не в форме выхода, а в ПОРЯДКЕ: любой выход по снимку обязан

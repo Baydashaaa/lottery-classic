@@ -1,8 +1,8 @@
 /**
- * Oracle Draw — WheelCenter (Oracle Core)
+ * Oracle Draw - WheelCenter (Oracle Core)
  *
  * Центр не пустой. Три независимых кольца: по часовой, против, и медленное.
- * Внутри — эмблема темы (Oracle для daily, кубок для weekly) и пульсы,
+ * Внутри - эмблема темы (Oracle для daily, кубок для weekly) и пульсы,
  * расходящиеся наружу.
  */
 
@@ -61,7 +61,7 @@ export default class WheelCenter {
         ctx.translate(cx, cy);
         const s = R * 0.34;
         ctx.globalAlpha = 0.92;
-        // Если в теме указан файл логотипа и он загрузился — рисуем его,
+        // Если в теме указан файл логотипа и он загрузился - рисуем его,
         // иначе векторную эмблему. Так можно подставить настоящий логотип,
         // не трогая код: theme.core.emblemSrc = "/assets/img/logo.svg"
         const art = this.#emblemImage(th);
@@ -92,7 +92,7 @@ export default class WheelCenter {
     }
 
     /**
-     * Золотое колесо — то же, что в логотипе Oracle Draw.
+     * Золотое колесо - то же, что в логотипе Oracle Draw.
      * Обод, восемь спиц, узлы на концах, ступица с искрой внутри.
      */
     #wheelEmblem(ctx, s, th, t) {
@@ -149,7 +149,7 @@ export default class WheelCenter {
         }
     }
 
-    /** Кольцо с насечками — вращается само по себе */
+    /** Кольцо с насечками - вращается само по себе */
     #ring(ctx, cx, cy, r, rot, color, width, teeth, quality) {
         ctx.save();
         ctx.translate(cx, cy);

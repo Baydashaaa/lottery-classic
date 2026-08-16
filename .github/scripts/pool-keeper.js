@@ -1,22 +1,22 @@
 #!/usr/bin/env node
 /**
- * pool-keeper.js — opens and settles rounds in the oracle-pool contracts.
+ * pool-keeper.js - opens and settles rounds in the oracle-pool contracts.
  *
  * Two jobs, both idempotent and self-healing: every run works out what is
  * actually due from on-chain state rather than assuming the previous run
  * succeeded. A missed run is caught up by the next one.
  *
- *   open   — commit the next round while the current one is still taking
+ *   open   - commit the next round while the current one is still taking
  *            entries. That ordering IS the guarantee: the seed is fixed before
  *            the round's participants exist, so nobody can aim the result.
- *   settle — reveal a closed round. Permissionless on the contract, so this
+ *   settle - reveal a closed round. Permissionless on the contract, so this
  *            needs no privileged key at all; we run it only so it happens
  *            promptly.
  *
  * Secrets are derived, never stored:
  *     secret = HMAC-SHA256(ORACLE_MASTER_SEED, `${pool}:${roundId}`)
  * There is nothing on disk to lose and nothing in the repo to leak. Losing the
- * master seed means no round can ever be revealed again — funds are still
+ * master seed means no round can ever be revealed again - funds are still
  * recoverable through RolloverRound, which anyone may call.
  *
  * Env:
@@ -54,7 +54,7 @@ function feeFor(kind) {
 
 /** Open the next round once the current one is within this of closing. */
 const OPEN_AHEAD_SECS = 6 * 3600;
-/** Never settle more than this in one run — a runaway loop should not drain gas. */
+/** Never settle more than this in one run - a runaway loop should not drain gas. */
 const MAX_SETTLE = 5;
 
 const POOLS = {
@@ -139,7 +139,7 @@ async function openIfDue(pool, addr, ctx) {
 
   if (closeMs - nowMs > OPEN_AHEAD_SECS * 1000) {
     console.log(`[${pool}] round ${cfg.last_round_id} closes in ` +
-      `${Math.round((closeMs - nowMs) / 3600000)}h — nothing to open yet`);
+      `${Math.round((closeMs - nowMs) / 3600000)}h - nothing to open yet`);
     return;
   }
 
@@ -149,7 +149,7 @@ async function openIfDue(pool, addr, ctx) {
 
   console.log(`[${pool}] opening round ${nextId}, closes ${new Date(closeTime).toISOString()}`);
   if (nowMs >= closeMs) {
-    console.warn(`[${pool}] WARNING: round ${cfg.last_round_id} already closed — ` +
+    console.warn(`[${pool}] WARNING: round ${cfg.last_round_id} already closed - ` +
       `entries arriving since then predate this commitment and the contract ` +
       `will flag the round has_late_entries`);
   }
@@ -176,7 +176,7 @@ async function settleDue(pool, addr, ctx) {
     const closeMs = Math.floor(Number(round.close_time) / 1e6);
     const nowMs = await chainNowMs();
     if (nowMs < closeMs) {
-      console.log(`[${pool}] round ${id} closes ${new Date(closeMs).toISOString()} — not yet`);
+      console.log(`[${pool}] round ${id} closes ${new Date(closeMs).toISOString()} - not yet`);
       return;
     }
 
@@ -205,10 +205,10 @@ async function settleDue(pool, addr, ctx) {
 // 14 августа keeper встал молча: кончился газ, расчёт не прошёл, и узнали об
 // этом сутки спустя, случайно. Обе проверки существуют, чтобы такой прогон
 // падал красным, а не заканчивался успехом.
-const MIN_BALANCE_ULUNA = 500_000_000;   // 500 LUNC — примерно десять дней работы
+const MIN_BALANCE_ULUNA = 500_000_000;   // 500 LUNC - примерно десять дней работы
 
 // Очередь разобрана? Раунд, до которого дошёл указатель, либо ещё не закрыт,
-// либо должен быть рассчитан. Всё остальное — незамеченный сбой.
+// либо должен быть рассчитан. Всё остальное - незамеченный сбой.
 async function checkQueue(pool, addr) {
   const cfg = await query(addr, { config: {} });
   const id = Number(cfg.next_unsettled_id);
@@ -217,7 +217,7 @@ async function checkQueue(pool, addr) {
   const closeMs = Math.floor(Number(round.close_time) / 1e6);
   if (await chainNowMs() < closeMs) return true;
   console.error(`[${pool}] round ${id} closed ${new Date(closeMs).toISOString()} ` +
-    `and is still "${round.status}" — settlement did not happen`);
+    `and is still "${round.status}" - settlement did not happen`);
   return false;
 }
 
@@ -226,7 +226,7 @@ async function checkBalance(ctx) {
   const bal = await ctx.client.getBalance(ctx.address, 'uluna');
   console.log(`keeper balance ${(Number(bal.amount) / 1e6).toFixed(0)} LUNC`);
   if (Number(bal.amount) >= MIN_BALANCE_ULUNA) return true;
-  console.error(`keeper balance below ${MIN_BALANCE_ULUNA / 1e6} LUNC — top it up ` +
+  console.error(`keeper balance below ${MIN_BALANCE_ULUNA / 1e6} LUNC - top it up ` +
     `before it runs out mid-round`);
   return false;
 }
@@ -246,7 +246,7 @@ console.log(`keeper ${ctx.address} on ${CHAIN_ID}, action=${action}`);
 let failed = false;
 for (const [pool, addr] of Object.entries(POOLS)) {
   if (!addr) {
-    console.log(`[${pool}] no address configured — skipped`);
+    console.log(`[${pool}] no address configured - skipped`);
     continue;
   }
   try {

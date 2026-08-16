@@ -1,12 +1,12 @@
 /**
- * Oracle Draw V2 — SectorDetails
+ * Oracle Draw V2 - SectorDetails
  *
  * Окно по клику на сектор: чьи NFT участвуют в раунде и сколько entries
- * они дают. Единственное место, где картинки масок уместны — здесь есть
+ * они дают. Единственное место, где картинки масок уместны - здесь есть
  * куда их положить, в отличие от узкого сектора.
  *
  * Модалкасама создаёт свою разметку и берёт цвета из темы колеса, поэтому
- * ни index.html, ни style.css трогать не нужно — всё уезжает в бандл.
+ * ни index.html, ни style.css трогать не нужно - всё уезжает в бандл.
  */
 
 import { rarityOf } from "../wheel/WheelTheme.js";
@@ -64,7 +64,7 @@ export default class SectorDetails {
         const share = total ? (sector.entries / total) * 100 : 0;
         const fmt = ui && ui.fmt ? ui.fmt : (v) => v;
 
-        // Групповой сектор — показываем список кошельков, а не NFT
+        // Групповой сектор - показываем список кошельков, а не NFT
         if (sector.isGroup) {
             const rows = (sector.members || [])
                 .slice()

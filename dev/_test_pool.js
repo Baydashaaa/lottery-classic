@@ -38,8 +38,8 @@ ok(V.engine.pool === "weekly", "страница ушла на weekly → дви
 const now = 1785774195761;                       // понедельник 16:23 UTC
 const { nextDeadline } = await import("../assets/js/draw-v2/DrawClock.js");
 const wk = nextDeadline("weekly", now), dl = nextDeadline("daily", now);
-ok(new Date(wk).toISOString() === "2026-08-03T20:00:00.000Z", "weekly в понедельник — сегодня 20:00");
-ok(new Date(dl).toISOString() === "2026-08-04T20:00:00.000Z", "daily в понедельник — завтра (сегодня weekly)");
+ok(new Date(wk).toISOString() === "2026-08-03T20:00:00.000Z", "weekly в понедельник - сегодня 20:00");
+ok(new Date(dl).toISOString() === "2026-08-04T20:00:00.000Z", "daily в понедельник - завтра (сегодня weekly)");
 
 page = "daily";
 V.refreshLive();

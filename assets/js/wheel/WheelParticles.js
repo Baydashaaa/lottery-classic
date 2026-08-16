@@ -1,5 +1,5 @@
 /**
- * Oracle Draw — WheelParticles
+ * Oracle Draw - WheelParticles
  * Две системы: искры внутри обода и звёздная пыль на фоне.
  * Обе детерминированы по сиду, чтобы кадр можно было воспроизвести.
  */
@@ -59,7 +59,7 @@ export default class WheelParticles {
         ctx.restore();
     }
 
-    /** Искры в обойме — крутятся вместе с колесом, но со своим сносом */
+    /** Искры в обойме - крутятся вместе с колесом, но со своим сносом */
     drawRing(ctx, cx, cy, rOuter, rInner, theme, t, quality, wheelAngle) {
         if (!quality.particles) return;
         const n = Math.round(this.ring.length * quality.particles);

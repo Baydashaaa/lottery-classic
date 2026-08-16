@@ -2,7 +2,7 @@
  * Построение накопительного merkle-дерева наград Circuit.
  *
  * ФОРМАТ ОБЯЗАН СОВПАДАТЬ С src/merkle.rs В КОНТРАКТЕ ДО БАЙТА. Расхождение
- * не падает с ошибкой — оно даёт корректный на вид пруф, который контракт
+ * не падает с ошибкой - оно даёт корректный на вид пруф, который контракт
  * молча отвергает. Поэтому внизу файла есть самопроверка по эталонным
  * значениям, посчитанным независимо; она же продублирована тестами на Rust.
  *
@@ -34,7 +34,7 @@ function nodeHash(a, b) {
  * Строит дерево.
  *
  * @param {Array<{address: string, amount: string|bigint|number}>} entries
- *        Накопительные суммы — «начислено за всё время», не за эпоху.
+ *        Накопительные суммы - «начислено за всё время», не за эпоху.
  * @returns {{root: string, total: string, proofs: Object, leaves: number}}
  *        proofs[address] = { amount, proof: [hex, ...] }
  */
@@ -67,7 +67,7 @@ export function buildTree(entries) {
     const nextIndices = [];
     for (let i = 0; i < level.length; i += 2) {
       if (i + 1 === level.length) {
-        // Нечётный узел поднимается как есть — соседа нет, в пруф ничего
+        // Нечётный узел поднимается как есть - соседа нет, в пруф ничего
         // не добавляется. Ровно то же правило в контракте.
         next.push(level[i]);
         nextIndices.push(indices[i]);
@@ -138,7 +138,7 @@ export function selfTest() {
   check('узел AB', ab.toString('hex'), REFERENCE.nodeAB);
 
   // Порядок сортировки адресов: terra10... < terra15... < terra1x...
-  // поэтому дерево строится как ((B,C),A) — корень отличается от ((A,B),C).
+  // поэтому дерево строится как ((B,C),A) - корень отличается от ((A,B),C).
   // Проверяем оба: сортированный вариант через buildTree и ручной по спеке.
   const manual = nodeHash(ab, leafHash(C, 300));
   check('корень ((A,B),C)', manual.toString('hex'), REFERENCE.root3);
@@ -158,7 +158,7 @@ export function selfTest() {
   // Подделка суммы не должна проходить
   const first = Object.entries(tree.proofs)[0];
   if (verifyProof(tree.root, first[0], BigInt(first[1].amount) + 1n, first[1].proof)) {
-    fail.push('пруф прошёл с изменённой суммой — проверка сломана');
+    fail.push('пруф прошёл с изменённой суммой - проверка сломана');
   }
 
   if (fail.length) {

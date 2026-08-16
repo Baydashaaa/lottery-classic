@@ -1,18 +1,18 @@
 /* Oracle Draw V2 — собранный бандл. НЕ РЕДАКТИРОВАТЬ.
    Источники: assets/js/wheel/ и assets/js/draw-v2/
    Пересобрать: node dev/_build_bundle.js
-   Версия сборки: 202608131935 */
+   Версия сборки: 202608161319 */
 
 /* ── chain-tickets.js ─────────────────────────────────── */
 /**
- * chain-tickets.js — build the draw's ticket list from the NFT contract alone.
+ * chain-tickets.js - build the draw's ticket list from the NFT contract alone.
  *
  * Replaces fetchParticipants() + buildTickets(), which took the participant set
  * from the Worker at the moment the workflow happened to run. Two problems with
  * that: a delayed start changed who was in the round, and the ordering that
  * decides winner_index came from data only the operator could produce.
  *
- * The rule implemented here — publish it, it is the whole point:
+ * The rule implemented here - publish it, it is the whole point:
  *
  *   1. A token enters the first draw of its pool after minted_at.
  *   2. A round with fewer than MIN_ENTRIES tickets is skipped and consumes
@@ -37,7 +37,7 @@ const LCD_NODES = [
   // Список из двух, где второй не существовал, стоил трёх минут ожидания на
   // розыгрыше 12 августа: бинарный поиск блока дедлайна шлёт 9–14 запросов
   // подряд, и при первом же отказе publicnode переходить было некуда.
-  // Правильное имя хексагона — terra-classic-lcd, а не lcd-terra-classic.
+  // Правильное имя хексагона - terra-classic-lcd, а не lcd-terra-classic.
   'https://terra-classic-lcd.publicnode.com',
   'https://rest.cosmos.directory/terraclassic',
   'https://terra-classic-lcd.hexxagon.io',
@@ -49,7 +49,7 @@ const MIN_ENTRIES = 5;
 /**
  * Tokens minted at or after this instant are governed by the rule above.
  * Everything earlier was settled under the old Worker-driven flow and is not
- * replayable — the 2026-07-23 draw ran late and swept in tokens minted after
+ * replayable - the 2026-07-23 draw ran late and swept in tokens minted after
  * its own deadline. History is left alone on purpose.
  */
 const RULE_START_TS = 1784837749; // 2026-07-23 20:15 UTC
@@ -107,7 +107,7 @@ async function allTokenIds() {
   return out;
 }
 
-/** Metadata only — no owner, so this is height-independent and cacheable. */
+/** Metadata only - no owner, so this is height-independent and cacheable. */
 async function loadTokenMeta() {
   const ids = await allTokenIds();
   const rows = [];
@@ -197,7 +197,7 @@ export async function buildTicketsFromChain({
   );
 
   // Граница «отыграно». Для daily она выводится из цепи: источник входов один,
-  // и правило самодостаточно. Для weekly её обязан передать вызывающий — там
+  // и правило самодостаточно. Для weekly её обязан передать вызывающий - там
   // состоялся ли раунд, зависит ещё и от бесплатных входов и от баланса пула,
   // а этого в цепи нет. Молча посчитать её здесь означало бы выдать догадку
   // за проверяемый факт.
@@ -270,7 +270,7 @@ async function blockAt(height) {
 
 /**
  * The first block at or after the deadline. That block decides the winner, and
- * it is the same block whoever looks — which is why re-running the draw cannot
+ * it is the same block whoever looks - which is why re-running the draw cannot
  * change the outcome.
  */
 export async function findDeadlineBlock(deadlineMs) {
@@ -303,7 +303,7 @@ export async function findDeadlineBlock(deadlineMs) {
  *
  * Same rule the draw script applies, because it is the same code. If this ever
  * disagrees with what gets published, the disagreement is a bug worth shouting
- * about — not something to paper over by trusting the published value.
+ * about - not something to paper over by trusting the published value.
  */
 export async function computeWinner({ pool, deadlineMs, boundaryTs, minEntries = MIN_ENTRIES }) {
   const block = await findDeadlineBlock(deadlineMs);
@@ -412,7 +412,7 @@ if (typeof process !== 'undefined' && process.argv && import.meta.url === `file:
 
   console.log(`pool: ${pool}`);
   console.log(`deadline: ${d.toISOString()}`);
-  if (!height) console.log('WARNING: no block height given — owners read at latest state');
+  if (!height) console.log('WARNING: no block height given - owners read at latest state');
 
   buildTicketsFromChain({ pool, deadlineMs: d.getTime(), blockHeight: height })
     .then(({ tickets, tokens, boundaryTs }) => {
@@ -427,7 +427,7 @@ if (typeof process !== 'undefined' && process.argv && import.meta.url === `file:
       console.log(
         tickets.length < MIN_ENTRIES
           ? `\nwould SKIP (${tickets.length} < ${MIN_ENTRIES})`
-          : `\nwould DRAW — winner_index in 0..${tickets.length - 1}`
+          : `\nwould DRAW - winner_index in 0..${tickets.length - 1}`
       );
     })
     .catch((e) => { console.error(e.message); process.exit(1); });
@@ -436,14 +436,14 @@ if (typeof process !== 'undefined' && process.argv && import.meta.url === `file:
 
 /* ── WheelTheme.js ─────────────────────────────────── */
 /**
- * Oracle Draw — WheelTheme
+ * Oracle Draw - WheelTheme
  *
  * Все цвета, толщины и тайминги живут здесь. Ни один другой модуль не
  * содержит хардкодного цвета: тема приходит параметром. Поэтому Daily и
- * Weekly — не два рендерера, а два набора токенов.
+ * Weekly - не два рендерера, а два набора токенов.
  *
- * DAILY  — Ancient Oracle Machine: золото, бронза, тёмно-синий.
- * WEEKLY — Council of Oracles: фиолет, белая энергия, золотые акценты.
+ * DAILY  - Ancient Oracle Machine: золото, бронза, тёмно-синий.
+ * WEEKLY - Council of Oracles: фиолет, белая энергия, золотые акценты.
  */
 
 const RARITY = {
@@ -500,7 +500,7 @@ const WEEKLY = {
 };
 
 /**
- * Уровни качества. Бриф просит частицы, блум и три вращающихся кольца —
+ * Уровни качества. Бриф просит частицы, блум и три вращающихся кольца -
  * на десктопе это дёшево, на среднем Android нет. Плюс в проекте уже
  * ловили просадку отрисовки от полноэкранных композитных слоёв.
  */
@@ -535,7 +535,7 @@ function rarityOf(tier) {
 
 /* ── WheelGlow.js ─────────────────────────────────── */
 /**
- * Oracle Draw — WheelGlow
+ * Oracle Draw - WheelGlow
  * Свет: мягкое сияние, градиенты металла, бархатный фон.
  * Бриф прямо запрещает сильный блюр, поэтому здесь только shadowBlur,
  * радиальные градиенты и аккуратный additive-проход.
@@ -580,7 +580,7 @@ function ringReflections(ctx, cx, cy, r, width, theme, t, count = 3) {
     ctx.restore();
 }
 
-/** Дыхание обода — один цикл на pulseMs */
+/** Дыхание обода - один цикл на pulseMs */
 function ringPulse(ctx, cx, cy, r, theme, t, quality) {
     if (!quality.bloom) return;
     const p = 0.5 + 0.5 * Math.sin((t / theme.ring.pulseMs) * TAU);
@@ -644,7 +644,7 @@ const Glow = { brushedRing, ringReflections, ringPulse, cosmicBackdrop, facePlat
 
 /* ── WheelParticles.js ─────────────────────────────────── */
 /**
- * Oracle Draw — WheelParticles
+ * Oracle Draw - WheelParticles
  * Две системы: искры внутри обода и звёздная пыль на фоне.
  * Обе детерминированы по сиду, чтобы кадр можно было воспроизвести.
  */
@@ -704,7 +704,7 @@ class WheelParticles {
         ctx.restore();
     }
 
-    /** Искры в обойме — крутятся вместе с колесом, но со своим сносом */
+    /** Искры в обойме - крутятся вместе с колесом, но со своим сносом */
     drawRing(ctx, cx, cy, rOuter, rInner, theme, t, quality, wheelAngle) {
         if (!quality.particles) return;
         const n = Math.round(this.ring.length * quality.particles);
@@ -748,24 +748,24 @@ class WheelParticles {
 
 /* ── WheelSector.js ─────────────────────────────────── */
 /**
- * Oracle Draw — WheelSector
+ * Oracle Draw - WheelSector
  *
  * Один сектор = один кошелёк. Угол пропорционален числу билетов, значит
  * видимая площадь равна вероятности выигрыша.
  *
  * ВАЖНОЕ РАСХОЖДЕНИЕ С МАКЕТОМ. На макете у всех секторов одинаковая
- * ширина, хотя подписи разные: 20 билетов, 15, 12, 5. Так нельзя — это
+ * ширина, хотя подписи разные: 20 билетов, 15, 12, 5. Так нельзя - это
  * ровно та подмена, которую мы убрали из старого колеса: глаз читает
  * равные шансы там, где шансы отличаются вчетверо.
  *
  * Поэтому сектора взвешенные, а вместо обрезки контента введены уровни
  * детализации: чем уже сектор, тем меньше в нём помещается. Никакой
- * элемент не рисуется, если под него нет места — вместо мельтешения
+ * элемент не рисуется, если под него нет места - вместо мельтешения
  * остаётся чистая цветная полоса редкости.
  *
- *   FULL    — номер + кошелёк + билеты
- *   COMPACT — номер + билеты
- *   TICK    — только цвет редкости
+ *   FULL    - номер + кошелёк + билеты
+ *   COMPACT - номер + билеты
+ *   TICK    - только цвет редкости
  *
  * Картинок NFT в секторах нет: маски рисуются одинаковыми кружками на
  * любом масштабе, съедают место под подписи и заставляют ждать загрузку
@@ -787,21 +787,21 @@ function detailFor(sector, r) {
 
 /**
  * Что писать крупно в секторе.
- *  "token"   — номер NFT (#144), как на макете
- *  "ordinal" — порядковый номер кошелька в раунде (№7)
+ *  "token"   - номер NFT (#144), как на макете
+ *  "ordinal" - порядковый номер кошелька в раунде (№7)
  * У кошелька с несколькими NFT номер токена один из нескольких, поэтому
  * при спорах о том, «чей это сектор», ordinal однозначнее.
  */
 const LABEL_MODE = { value: "ordinal" };
 
 /**
- * Что стоит в кружке. Без «#» и «№» — символ рядом с цифрой в маленьком
+ * Что стоит в кружке. Без «#» и «№» - символ рядом с цифрой в маленьком
  * круге читается плохо, а смысл цифры понятен из контекста.
  *
- *   "ordinal" — порядковый номер кошелька в раунде: 1, 2, 3…
+ *   "ordinal" - порядковый номер кошелька в раунде: 1, 2, 3…
  *               По умолчанию: он короткий при любом числе участников.
- *   "token"   — номер NFT без тира: common-11 → 11
- *   "raw"     — tokenId как есть (для отладки)
+ *   "token"   - номер NFT без тира: common-11 → 11
+ *   "raw"     - tokenId как есть (для отладки)
  */
 function badgeText(s, meta) {
     if (LABEL_MODE.value === "ordinal") return String(s.number);
@@ -853,7 +853,7 @@ class WheelSector {
         ctx.closePath();
         ctx.fill();
 
-        // активный сектор — «Оракул сканирует участника»
+        // активный сектор - «Оракул сканирует участника»
         if (state.active > 0) {
             ctx.save();
             ctx.globalCompositeOperation = "lighter";
@@ -872,7 +872,7 @@ class WheelSector {
         ctx.stroke();
 
         // Дуга у обода показывает СОСТАВ кошелька: если человек сминтил
-        // и legendary, и rare, и common — дуга делится на части
+        // и legendary, и rare, и common - дуга делится на части
         // пропорционально entries каждого тира. Заливка сектора при этом
         // остаётся по лучшему NFT, иначе смешанные кошельки было бы
         // не отличить от однотонных.
@@ -899,7 +899,7 @@ class WheelSector {
     }
 
     /**
-     * Контент разворачивается К ЦЕНТРУ, без гнутого текста — как в брифе.
+     * Контент разворачивается К ЦЕНТРУ, без гнутого текста - как в брифе.
      * Ось подписи направлена по биссектрисе, текст читается снизу вверх
      * на левой половине и сверху вниз на правой, чтобы не вставать вверх ногами.
      */
@@ -907,13 +907,13 @@ class WheelSector {
         const th = this.theme;
         const unit = R * 0.055;
 
-        // Наклон текста вдоль биссектрисы нужен узким секторам — там иначе
+        // Наклон текста вдоль биссектрисы нужен узким секторам - там иначе
         // не помещается. Широкому он вредит: у одного участника на весь
         // круг биссектриса произвольна, и текст уезжает под случайным углом.
         const wide = s.span > (100 * Math.PI / 180);
 
-        // Кружок с цифрой — у обода, по центру ширины сектора.
-        // Текст — в середине сектора.
+        // Кружок с цифрой - у обода, по центру ширины сектора.
+        // Текст - в середине сектора.
         const R_BADGE = 0.86;
         const R_TEXT = wide ? 0.46 : 0.56;
 
@@ -921,18 +921,18 @@ class WheelSector {
         this.#text(ctx, cx, cy, R, s, rar, mid, unit, state, detail, wide, R_TEXT);
     }
 
-    /** Цифра в кружке у обода. Цифра всегда прямая — так читается лучше. */
+    /** Цифра в кружке у обода. Цифра всегда прямая - так читается лучше. */
     #badge(ctx, cx, cy, R, s, meta, rar, mid, unit, state, quality, place) {
         const th = this.theme;
         const label = s.isGroup ? "+" : badgeText(s, meta);
 
-        // Сколько дуги доступно на этом радиусе — чтобы кружки соседних
+        // Сколько дуги доступно на этом радиусе - чтобы кружки соседних
         // секторов не налезали друг на друга при большом числе участников.
         const rr = R * place;
         const room = s.span * rr;
         let rB = unit * (label.length > 2 ? 1.22 : 1.08);
         if (rB * 2 > room * 0.92) rB = (room * 0.92) / 2;
-        if (rB < unit * 0.62) return;                 // совсем тесно — пропускаем
+        if (rB < unit * 0.62) return;                 // совсем тесно - пропускаем
 
         const x = cx + Math.cos(mid) * rr;
         const y = cy + Math.sin(mid) * rr;
@@ -962,7 +962,7 @@ class WheelSector {
         ctx.restore();
     }
 
-    /** Адрес кошелька и число entries — в середине сектора */
+    /** Адрес кошелька и число entries - в середине сектора */
     #text(ctx, cx, cy, R, s, rar, mid, unit, state, detail, wide, place) {
         const th = this.theme;
         const rr = R * place;
@@ -1076,7 +1076,7 @@ function hexA(hex, alpha) {
 
 /* ── WheelPointer.js ─────────────────────────────────── */
 /**
- * Oracle Draw — WheelPointer (Oracle Crystal)
+ * Oracle Draw - WheelPointer (Oracle Crystal)
  *
  * Треугольника нет. Кристалл-ромб в золотой оправе, внутри живая энергия.
  * Яркость растёт по мере замедления: аргумент `intensity` 0..1 приходит
@@ -1094,12 +1094,12 @@ class WheelPointer {
 
     setTheme(theme) { this.theme = theme; return this; }
 
-    /** Дёрнуть вспышку — зовётся в момент фиксации победителя */
+    /** Дёрнуть вспышку - зовётся в момент фиксации победителя */
     strike() { this.flash = 1; return this; }
 
     /**
-     * @param {number} intensity 0..1 — насколько «горячий» кристалл
-     * @param {number} tick      0..1 — реакция на проезжающий сектор
+     * @param {number} intensity 0..1 - насколько «горячий» кристалл
+     * @param {number} tick      0..1 - реакция на проезжающий сектор
      */
     draw(ctx, cx, cy, r, t, intensity, quality, tick = 0) {
         const th = this.theme;
@@ -1193,10 +1193,10 @@ class WheelPointer {
 
 /* ── WheelCenter.js ─────────────────────────────────── */
 /**
- * Oracle Draw — WheelCenter (Oracle Core)
+ * Oracle Draw - WheelCenter (Oracle Core)
  *
  * Центр не пустой. Три независимых кольца: по часовой, против, и медленное.
- * Внутри — эмблема темы (Oracle для daily, кубок для weekly) и пульсы,
+ * Внутри - эмблема темы (Oracle для daily, кубок для weekly) и пульсы,
  * расходящиеся наружу.
  */
 
@@ -1255,7 +1255,7 @@ class WheelCenter {
         ctx.translate(cx, cy);
         const s = R * 0.34;
         ctx.globalAlpha = 0.92;
-        // Если в теме указан файл логотипа и он загрузился — рисуем его,
+        // Если в теме указан файл логотипа и он загрузился - рисуем его,
         // иначе векторную эмблему. Так можно подставить настоящий логотип,
         // не трогая код: theme.core.emblemSrc = "/assets/img/logo.svg"
         const art = this.#emblemImage(th);
@@ -1286,7 +1286,7 @@ class WheelCenter {
     }
 
     /**
-     * Золотое колесо — то же, что в логотипе Oracle Draw.
+     * Золотое колесо - то же, что в логотипе Oracle Draw.
      * Обод, восемь спиц, узлы на концах, ступица с искрой внутри.
      */
     #wheelEmblem(ctx, s, th, t) {
@@ -1343,7 +1343,7 @@ class WheelCenter {
         }
     }
 
-    /** Кольцо с насечками — вращается само по себе */
+    /** Кольцо с насечками - вращается само по себе */
     #ring(ctx, cx, cy, r, rot, color, width, teeth, quality) {
         ctx.save();
         ctx.translate(cx, cy);
@@ -1393,10 +1393,10 @@ class WheelCenter {
 
 /* ── WheelAnimation.js ─────────────────────────────────── */
 /**
- * Oracle Draw — WheelAnimation
+ * Oracle Draw - WheelAnimation
  *
  * Физика, а не CSS-твин. Профиль скорости решается ЗАРАНЕЕ, поэтому
- * посадка на нужный угол точная, а скорость непрерывна во всех стыках —
+ * посадка на нужный угол точная, а скорость непрерывна во всех стыках -
  * включая старт из уже вращающегося колеса (PreDraw).
  *
  * Фазы:  IDLE → PREDRAW → ACCEL → CRUISE → DECEL → LOCK → WINNER → REST
@@ -1405,7 +1405,7 @@ class WheelCenter {
  *   разгон   tA: v идёт v0→vMax по smootherstep, путь = (v0+vMax)/2 * tA
  *   крейсер  tB: путь = vMax * tB
  *   торможение tC: v = vMax*(1-u)^2, путь = vMax*tC/3
- * Из D находим tB. Если он отрицательный — добавляем полный оборот к D
+ * Из D находим tB. Если он отрицательный - добавляем полный оборот к D
  * и решаем снова. Так «6 оборотов» никогда не превращаются в 15.
  */
 
@@ -1450,7 +1450,7 @@ class WheelAnimation {
                this.mode === MOTION.DECEL || this.mode === MOTION.LOCK;
     }
 
-    /** 0..1 — насколько колесо «горячее». Кристалл берёт отсюда яркость. */
+    /** 0..1 - насколько колесо «горячее». Кристалл берёт отсюда яркость. */
     get intensity() {
         const vMax = rpm(this.cfg.maxRpm);
         if (this.mode === MOTION.WINNER) return 1;
@@ -1496,7 +1496,7 @@ class WheelAnimation {
         let turns = Math.max(c.minTurns, 1);
         let D = back + turns * TAU;
         let tB = (D - dA - dC) / vMax;
-        while (tB < c.minCruiseMs / 1000) {          // не хватает пути — добавляем оборот
+        while (tB < c.minCruiseMs / 1000) {          // не хватает пути - добавляем оборот
             turns += 1;
             D = back + turns * TAU;
             tB = (D - dA - dC) / vMax;
@@ -1584,7 +1584,7 @@ class WheelAnimation {
         return { angle: this.angle, velocity: this.velocity, mode: this.mode };
     }
 
-    /** Прогресс всей анимации 0..1 — для затемнения проигравших */
+    /** Прогресс всей анимации 0..1 - для затемнения проигравших */
     get progress() {
         if (!this.plan || this.plan.skipped) return this.mode === MOTION.REST ? 0 : 1;
         const total = this.plan.tA + this.plan.tB + this.plan.tC;
@@ -1614,25 +1614,25 @@ function integralSmoother(u) {
 
 /* ── TicketModel.js ─────────────────────────────────── */
 /**
- * Oracle Draw V2 — TicketModel
+ * Oracle Draw V2 - TicketModel
  *
  * Колесо строится из ТОГО ЖЕ массива билетов, который использовал
  * lottery-draw.js. Снимок пишется в rounds/<pool>-<date>.json в момент
- * розыгрыша — восстановить его из /round-stats после раунда нельзя,
+ * розыгрыша - восстановить его из /round-stats после раунда нельзя,
  * потому что /round-complete уже проставил consumedInRound.
  *
  * Снимок:
  *   { total: 47, tickets: [["terra1abc", 10, 144, "legendary"], ...] }
  * Третий и четвёртый элементы пары необязательны: tokenId и тир нужны
  * колесу для картинки NFT и цвета редкости, механики не касаются.
- * Порядок пар — тот же обход активаций по usedAt, что и в скрипте.
+ * Порядок пар - тот же обход активаций по usedAt, что и в скрипте.
  * Плоский индекс билета = позиция при разворачивании пар слева направо.
  *
  * MAX_SECTORS больше нет. Сектор = кошелёк, площадь пропорциональна числу
  * билетов, то есть площадь = вероятность выигрыша. Один кошелёк с 10
  * билетами занимает ровно столько же, сколько 10 кошельков по одному.
  *
- * Если кошельков всё равно слишком много — самые мелкие сходятся в один
+ * Если кошельков всё равно слишком много - самые мелкие сходятся в один
  * групповой сектор, который раскрывается на остановке (expand()).
  */
 
@@ -1666,7 +1666,7 @@ class TicketModel {
     /* ---------- построение секторов ---------- */
 
     #buildSectors() {
-        // Слияние по кошельку. Порядок — первое появление в снимке,
+        // Слияние по кошельку. Порядок - первое появление в снимке,
         // он детерминирован (usedAt), поэтому колесо у всех одинаковое.
         const order = [];
         const byWallet = new Map();
@@ -1676,9 +1676,9 @@ class TicketModel {
             if (!byWallet.has(address)) {
                 byWallet.set(address, {
                     address, entries: 0, indices: [],
-                    // meta.tier — лучший тир кошелька (им красится сектор),
-                    // meta.tiers — сколько entries дал каждый тир,
-                    // meta.mints — сколько NFT кошелёк сминтил в этом раунде
+                    // meta.tier - лучший тир кошелька (им красится сектор),
+                    // meta.tiers - сколько entries дал каждый тир,
+                    // meta.mints - сколько NFT кошелёк сминтил в этом раунде
                     meta: { tiers: { common: 0, rare: 0, legendary: 0 }, mints: 0 }
                 });
                 order.push(address);
@@ -1698,7 +1698,7 @@ class TicketModel {
             }
         });
 
-        // индексы каждого кошелька — для точного угла конкретного билета
+        // индексы каждого кошелька - для точного угла конкретного билета
         this.indexToAddress.forEach((address, i) => {
             byWallet.get(address).indices.push(i);
         });
@@ -1733,7 +1733,7 @@ class TicketModel {
             const span = this.total > 0 ? (w.entries / this.total) * TAU : 0;
             const sector = {
                 id: i,
-                // Порядковый номер кошелька в раунде — по первому появлению
+                // Порядковый номер кошелька в раунде - по первому появлению
                 // в снимке, то есть по usedAt. Одинаков у всех, кто открыл
                 // страницу: считается из файла, а не из порядка отрисовки.
                 number: i + 1,
@@ -1797,8 +1797,8 @@ class TicketModel {
     }
 
     /**
-     * Предохранитель. Индекс — основа, адрес из winners.json — проверка.
-     * Не сошлось — значит снимок не от этого раунда, крутить нельзя.
+     * Предохранитель. Индекс - основа, адрес из winners.json - проверка.
+     * Не сошлось - значит снимок не от этого раунда, крутить нельзя.
      */
     verify(index, address) {
         if (index === null || index === undefined) return false;
@@ -1837,7 +1837,7 @@ function normalizePairs(snapshot) {
             .filter(p => p[0] && p[1] > 0);
     }
 
-    // ["addr","addr","addr", ...] — плоский массив, тоже принимаем
+    // ["addr","addr","addr", ...] - плоский массив, тоже принимаем
     if (Array.isArray(snapshot.tickets) && typeof snapshot.tickets[0] === "string") {
         const out = [];
         for (const address of snapshot.tickets) {
@@ -1861,10 +1861,10 @@ function normalizePairs(snapshot) {
 
 /* ── WheelRenderer.js ─────────────────────────────────── */
 /**
- * Oracle Draw — WheelRenderer
+ * Oracle Draw - WheelRenderer
  *
  * Дирижёр. Владеет канвасом и DPR, держит кэш картинок NFT, собирает кадр
- * из остальных модулей. Сам ничего не решает про данные — ему дают
+ * из остальных модулей. Сам ничего не решает про данные - ему дают
  * TicketModel и состояние анимации.
  *
  * Порядок слоёв:
@@ -1874,10 +1874,10 @@ function normalizePairs(snapshot) {
  * Почему canvas, а не SVG, как просил бриф: в том же брифе есть картинки
  * NFT внутри секторов (это PNG-маски) и сотни анимируемых частиц. Сотни
  * SVG-узлов, перерисовываемых каждый кадр, на среднем Android дают
- * заметные просадки — в этом проекте уже ловили ровно такое от
+ * заметные просадки - в этом проекте уже ловили ровно такое от
  * полноэкранных композитных слоёв. Canvas с масштабом по devicePixelRatio
  * даёт ту же резкость на любом экране. Гравировки и статичные детали при
- * желании можно положить сверху отдельным SVG-слоем — рендерер за
+ * желании можно положить сверху отдельным SVG-слоем - рендерер за
  * интерфейсом, замена не заденет остальное.
  */
 
@@ -1897,7 +1897,7 @@ class WheelRenderer {
         this.model = null;
         this.angle = 0;
         this.winner = null;
-        this.revealProgress = 0;      // 0..1 — насколько проигравшие погашены
+        this.revealProgress = 0;      // 0..1 - насколько проигравшие погашены
         this.coreEnergy = 0;
 
         this.sectors = new WheelSector(this.theme);
@@ -1968,10 +1968,10 @@ class WheelRenderer {
     }
 
     /**
-     * Шаг вручную — для превью и тестов без rAF.
+     * Шаг вручную - для превью и тестов без rAF.
      * Часы стартуют от now(), а не от нуля: spinToIndex ставит t0 по
      * performance.now(), и при отсчёте с нуля прошедшее время выходило
-     * отрицательным — анимация не доходила до конца.
+     * отрицательным - анимация не доходила до конца.
      */
     frame(dt = 1 / 60) {
         if (this._t === undefined) this._t = now();
@@ -2004,7 +2004,7 @@ class WheelRenderer {
         return true;
     }
 
-    /** Мгновенно поставить колесо на билет — без анимации */
+    /** Мгновенно поставить колесо на билет - без анимации */
     snapToIndex(index) {
         if (!this.model) return false;
         const target = this.model.angleForIndex(index);
@@ -2124,7 +2124,7 @@ class WheelRenderer {
         this._tick *= 0.86;
     }
 
-    /** Раунд без участников — колесо крутится, но сектора пустые */
+    /** Раунд без участников - колесо крутится, но сектора пустые */
     #emptyFace(ctx, cx, cy, r) {
         const th = this.theme;
         const n = 12;
@@ -2155,7 +2155,7 @@ class WheelRenderer {
             ctx.stroke();
         }
 
-        // тонкая дуга по краю — граница поля секторов
+        // тонкая дуга по краю - граница поля секторов
         ctx.strokeStyle = th.spoke;
         ctx.lineWidth = 1;
         ctx.beginPath();
@@ -2175,7 +2175,7 @@ class WheelRenderer {
         ctx.restore();
     }
 
-    /** Гравировки по ободу — статичны относительно колеса, едут вместе с ним */
+    /** Гравировки по ободу - статичны относительно колеса, едут вместе с ним */
     #engravings(ctx, cx, cy, r, w, t) {
         const n = 24;
         ctx.save();
@@ -2260,7 +2260,7 @@ function now() {
 
 /* ── Config.js ─────────────────────────────────── */
 /**
- * Oracle Draw V2 — Config
+ * Oracle Draw V2 - Config
  * Единственное место, где лежат числа и строки. Ничего не хардкодим в модулях.
  */
 
@@ -2269,10 +2269,10 @@ const CONFIG = {
     /* ---------- источник данных ---------- */
 
     // Абсолютный путь от корня сайта. Относительный "./winners.json" резолвится
-    // от URL СТРАНИЦЫ, а не от модуля — на вложенных страницах это ломается.
+    // от URL СТРАНИЦЫ, а не от модуля - на вложенных страницах это ломается.
     WINNERS_JSON: "/winners.json",
 
-    // Снимок билетов на момент розыгрыша. {round} — это round_id из
+    // Снимок билетов на момент розыгрыша. {round} - это round_id из
     // winners.json (daily_2026-08-01), тот же, с которым его пишет скрипт.
     // Пишется lottery-draw.js; без него колесо работает в legacy-режиме.
     ROUND_SNAPSHOT: "/rounds/{round}.json",
@@ -2285,7 +2285,7 @@ const CONFIG = {
     DAILY: "daily",
     WEEKLY: "weekly",
 
-    /* ---------- расписание (всё в UTC — как cron "0 20 * * *") ---------- */
+    /* ---------- расписание (всё в UTC - как cron "0 20 * * *") ---------- */
 
     DRAW_HOUR_UTC: 20,
     DRAW_MINUTE_UTC: 0,
@@ -2294,7 +2294,7 @@ const CONFIG = {
     WEEKLY_WEEKDAY_UTC: 1,
 
     // В понедельник daily не разыгрывается (тот же cron уходит в weekly).
-    // Если когда-нибудь разведёшь их по разным cron — поставь false.
+    // Если когда-нибудь разведёшь их по разным cron - поставь false.
     DAILY_SKIPS_WEEKLY_DAY: true,
 
     /* ---------- опрос ---------- */
@@ -2329,7 +2329,7 @@ const CONFIG = {
 
     /* ---------- анимация ---------- */
 
-    // Если при первой загрузке результат старше этого — колесо НЕ крутим,
+    // Если при первой загрузке результат старше этого - колесо НЕ крутим,
     // просто рисуем итог. Иначе каждый заход на сайт = анимация вчерашнего раунда.
     FRESH_RESULT_MS: 120 * 60 * 1000,
 
@@ -2348,7 +2348,7 @@ export default CONFIG;
 
 /* ── DrawClock.js ─────────────────────────────────── */
 /**
- * Oracle Draw V2 — DrawClock
+ * Oracle Draw V2 - DrawClock
  * Вся арифметика времени в одном месте, строго в UTC.
  *
  * ВАЖНО: round_id здесь НЕ вычисляется. В winners.json он сдвинут на день
@@ -2413,15 +2413,15 @@ function msToNextDeadline(pool, now = Date.now()) {
 }
 
 /**
- * Отсчёт для UI. Формат ОБЩИЙ с assets/js/draw-schedule.js — тем файлом,
+ * Отсчёт для UI. Формат ОБЩИЙ с assets/js/draw-schedule.js - тем файлом,
  * по которому считают treasury.js и app.js:
  *   больше суток → "1d 02:57"
  *   меньше суток → "02:57:23"
  * Раньше здесь часы не сворачивались в дни и при остатке больше суток
- * выходило "26:57:00" — четвёртый формат одного и того же числа.
- * Арифметика дедлайнов в этом файле своя намеренно: бандл — ES-модуль и
+ * выходило "26:57:00" - четвёртый формат одного и того же числа.
+ * Арифметика дедлайнов в этом файле своя намеренно: бандл - ES-модуль и
  * не должен зависеть от порядка загрузки обычных <script>. Совпадение с
- * draw-schedule.js стережёт dev/_test_schedule.js — он сверяет обе
+ * draw-schedule.js стережёт dev/_test_schedule.js - он сверяет обе
  * реализации почасово на две недели вперёд и падает при расхождении.
  */
 function formatCountdown(ms) {
@@ -2438,10 +2438,10 @@ function formatCountdown(ms) {
 
 /* ── DrawPhase.js ─────────────────────────────────── */
 /**
- * Oracle Draw V2 — DrawPhase
+ * Oracle Draw V2 - DrawPhase
  *
  * Одна фаза управляет всем. Ни таймер, ни колесо, ни popup не держат
- * собственного состояния — они читают фазу.
+ * собственного состояния - они читают фазу.
  *
  *   OPEN ──T-15м──> LOCKED ──T-30с──> PRE_DRAW ──дедлайн──> AWAITING
  *                                                              │
@@ -2452,7 +2452,7 @@ function formatCountdown(ms) {
  *                                       раунд пропущен ──> ROLLOVER
  *
  * Флаги animation / replay / revealed сюда не нужны: они выводятся из
- * фазы. Два источника правды — это ровно та ошибка, из-за которой
+ * фазы. Два источника правды - это ровно та ошибка, из-за которой
  * currentLottery и selectedPool разъезжались при минте.
  */
 
@@ -2478,7 +2478,7 @@ const PHASE_RULES = {
 };
 
 /**
- * Вычисление фазы. Чистая функция — её легко прогнать тестом на любой
+ * Вычисление фазы. Чистая функция - её легко прогнать тестом на любой
  * момент времени, не дожидаясь 20:00.
  *
  * @param {object} ctx
@@ -2506,7 +2506,7 @@ function derivePhase(ctx) {
 
     if (lastDeadline !== null) {
         const since = now - lastDeadline;
-        // Результата за прошедший дедлайн ещё нет — ждём, но не вечно
+        // Результата за прошедший дедлайн ещё нет - ждём, но не вечно
         if (since >= 0 && since <= cfg.AWAIT_TIMEOUT_MS) return PHASE.AWAITING;
     }
 
@@ -2528,7 +2528,7 @@ function resultCovers(result, lastDeadline) {
     return result.drawnAt >= lastDeadline - 5 * 60 * 1000;
 }
 
-/** Человекочитаемая подпись фазы — один словарь вместо строк по всему UI */
+/** Человекочитаемая подпись фазы - один словарь вместо строк по всему UI */
 const PHASE_TEXT = {
     [PHASE.OPEN]: { title: "Next draw in {t}", sub: "Wheel spins automatically at 20:00 UTC" },
     [PHASE.LOCKED]: { title: "Entries close in {t}", sub: "Last chance to enter this round" },
@@ -2536,14 +2536,14 @@ const PHASE_TEXT = {
     [PHASE.AWAITING]: { title: "Oracle is reading the blockchain...", sub: "Waiting for the on-chain result" },
     [PHASE.REVEALING]: { title: "Selecting winner", sub: "Landing on ticket #{i}" },
     [PHASE.REVEALED]: { title: "Winner Selected", sub: "Payout sent automatically" },
-    [PHASE.ROLLOVER]: { title: "Round rolled over", sub: "Not enough entries — tickets stay active" }
+    [PHASE.ROLLOVER]: { title: "Round rolled over", sub: "Not enough entries - tickets stay active" }
 };
 
 
 /* ── DrawState.js ─────────────────────────────────── */
 /**
- * Oracle Draw V2 — DrawState
- * Состояние пула. Фаза здесь одна и единственная — производных флагов
+ * Oracle Draw V2 - DrawState
+ * Состояние пула. Фаза здесь одна и единственная - производных флагов
  * (animation / replay / revealed) нет, они выводятся из неё.
  */
 
@@ -2624,21 +2624,21 @@ class DrawState {
 
 /* ── DrawEvents.js ─────────────────────────────────── */
 /**
- * Oracle Draw V2 — Event Bus
+ * Oracle Draw V2 - Event Bus
  *
  * Отличия от наивной версии:
- *  - off() и once() — иначе при switchLottery подписки копятся и колесо
+ *  - off() и once() - иначе при switchLottery подписки копятся и колесо
  *    крутится по два-три раза на один результат;
- *  - каждый слушатель в своём try/catch — упавшая анимация не должна
+ *  - каждый слушатель в своём try/catch - упавшая анимация не должна
  *    убивать popup, нотификацию и всё, что подписалось после неё;
- *  - "*" — подписка на все события (удобно для отладки).
+ *  - "*" - подписка на все события (удобно для отладки).
  */
 
 const EVENTS = {
     READY: "READY",                   // первый успешный load, базовая линия выставлена
     DATA_UPDATED: "DATA_UPDATED",     // winners.json изменился
     ROUND_CHANGED: "ROUND_CHANGED",   // сменился round_id текущего пула
-    RESULT_READY: "RESULT_READY",     // результат доступен — отрисовать статично
+    RESULT_READY: "RESULT_READY",     // результат доступен - отрисовать статично
     DRAW_FINISHED: "DRAW_FINISHED",   // КРУТИТЬ КОЛЕСО (только когда это уместно)
     DRAW_SKIPPED: "DRAW_SKIPPED",     // раунд не состоялся (мало билетов и т.п.)
     PHASE_CHANGED: "PHASE_CHANGED",   // OPEN → LOCKED → PRE_DRAW → AWAITING → REVEALING → REVEALED
@@ -2699,7 +2699,7 @@ class DrawEvents {
 
 /* ── DrawAPI.js ─────────────────────────────────── */
 /**
- * Oracle Draw V2 — DrawAPI
+ * Oracle Draw V2 - DrawAPI
  *
  * Схема winners.json взята из рабочего loadWinners() в app.js:
  *   daily : { date, winner, prize_lunc, entries, block_hash, block_height,
@@ -2707,7 +2707,7 @@ class DrawEvents {
  *   weekly: { date, winners:[{place, address, amount_lunc, tx}], entries,
  *             block_hash, block_height, tx_treasury, skipped }
  *
- * ВАЖНО: round_id в файле НЕТ — идентификатор раунда собираем как
+ * ВАЖНО: round_id в файле НЕТ - идентификатор раунда собираем как
  * "pool:date". Первая версия этого модуля искала round_id и молча
  * отбросила бы все записи.
  */
@@ -2837,7 +2837,7 @@ class DrawAPI {
     }
 
     /**
-     * Снимок билетов раунда. Возвращает null, если файла нет —
+     * Снимок билетов раунда. Возвращает null, если файла нет -
      * у старых раундов его не будет, это не ошибка.
      */
     async loadSnapshot(roundKey) {
@@ -2865,7 +2865,7 @@ class DrawAPI {
     }
 
     /**
-     * Самый свежий раунд. Сортируем по drawnAt — порядок в файле
+     * Самый свежий раунд. Сортируем по drawnAt - порядок в файле
      * гарантировать нельзя, а даты сравнимы всегда.
      */
     static pickLatest(list) {
@@ -2880,12 +2880,12 @@ class DrawAPI {
 
 /* ── DrawEngine.js ─────────────────────────────────── */
 /**
- * Oracle Draw V2 — DrawEngine
+ * Oracle Draw V2 - DrawEngine
  *
  * Читает winners.json, подтягивает снимок билетов раунда, строит
  * TicketModel и держит фазу. DOM не трогает.
  *
- * Правило про winner_index: индекс — основа, адрес — предохранитель.
+ * Правило про winner_index: индекс - основа, адрес - предохранитель.
  * Если tickets[winner_index] !== winner из winners.json, снимок не от
  * этого раунда → verified=false, колесо не крутим.
  */
@@ -2935,7 +2935,7 @@ class DrawEngine {
         return true;
     }
 
-    /** Мост сообщает, что анимация началась/кончилась — фаза REVEALING */
+    /** Мост сообщает, что анимация началась/кончилась - фаза REVEALING */
     beginReveal() { this.state.revealing = true; this.syncPhase(); }
     endReveal() { this.state.revealing = false; this.syncPhase(); }
 
@@ -3027,7 +3027,7 @@ class DrawEngine {
      *
      * Кладём его в this.local, а НЕ в state: #adoptLatest выходит рано, если
      * ключ совпал с текущим, и опубликованный снимок был бы отброшен молча.
-     * Сверка с ним — единственное, что доказывает, что правило не разъехалось.
+     * Сверка с ним - единственное, что доказывает, что правило не разъехалось.
      */
     async #tryLocalResult(now = Date.now()) {
         if (this.localBusy) return;
@@ -3041,7 +3041,7 @@ class DrawEngine {
         if (this.state.roundKey === key) return;   // опубликованный уже пришёл
 
         // Дедлайн-блок рождается на несколько секунд позже дедлайна, а тик
-        // приходит раз в секунду — без паузы и троттлинга мы бомбим LCD
+        // приходит раз в секунду - без паузы и троттлинга мы бомбим LCD
         // бинарным поиском по блокам ежесекундно, пока не приедет публикация.
         if (now - deadline < 15000) return;
         if (this.localNextTry && now < this.localNextTry) return;
@@ -3049,7 +3049,7 @@ class DrawEngine {
 
         this.localBusy = true;
         try {
-            // Граница «отыграно» — дедлайн последнего состоявшегося раунда,
+            // Граница «отыграно» - дедлайн последнего состоявшегося раунда,
             // ровно как её берёт lottery-draw.js.
             const done = (this.data[pool] || []).filter(r => !r.skipped && r.date);
             const prev = done[done.length - 1] || null;
@@ -3088,7 +3088,7 @@ class DrawEngine {
 
     /**
      * Сверка опубликованного результата с тем, что уже показано.
-     * Совпало — тишина. Разошлось — говорим громко: это значит, что правило в
+     * Совпало - тишина. Разошлось - говорим громко: это значит, что правило в
      * браузере и правило в скрипте больше не одно и то же.
      */
     #reconcileLocal(latest) {
@@ -3099,7 +3099,7 @@ class DrawEngine {
             console.error(
                 `[DrawEngine] локальный результат разошёлся с опубликованным для ${latest.key}: ` +
                 `показали ${loc.winner} (index ${loc.index}), в winners.json ${latest.winner} ` +
-                `(index ${latest.winnerIndex}). Победитель — опубликованный.`
+                `(index ${latest.winnerIndex}). Победитель - опубликованный.`
             );
         }
         return same;
@@ -3120,7 +3120,7 @@ class DrawEngine {
         // снимок билетов + модель колеса
         const raw = await this.api.loadSnapshot(latest.key);
 
-        // Пока грузился снимок, вкладку могли переключить — и не один раз.
+        // Пока грузился снимок, вкладку могли переключить - и не один раз.
         // Тогда наш результат устарел: записывать его нельзя, иначе раунд
         // чужого пула ляжет поверх текущего, и отсчёт под колесом начнёт
         // считаться от чужого дедлайна. Ровно так недельный «4d 23:55»
@@ -3153,7 +3153,7 @@ class DrawEngine {
         }
 
         // Уже показали этот раунд из локального расчёта? Тогда крутить второй
-        // раз незачем — если только он не разошёлся с опубликованным.
+        // раз незачем - если только он не разошёлся с опубликованным.
         const agreed = this.#reconcileLocal(latest);
         if (agreed) {
             this.state.markSeen(latest.key);
@@ -3181,15 +3181,15 @@ class DrawEngine {
 
 /* ── DrawScheduler.js ─────────────────────────────────── */
 /**
- * Oracle Draw V2 — DrawScheduler
+ * Oracle Draw V2 - DrawScheduler
  *
  * Один секундный таймер вместо частокола setInterval.
- * Каждую секунду: tick() для обратного отсчёта, и решение — пора ли в сеть.
+ * Каждую секунду: tick() для обратного отсчёта, и решение - пора ли в сеть.
  *
  * Почему не setInterval(update, 5000):
  *  - 17 280 запросов в сутки с каждой открытой вкладки, притом что файл
  *    меняется раз в день;
- *  - вкладка в фоне на мобиле всё равно тротлится браузером — лучше явно
+ *  - вкладка в фоне на мобиле всё равно тротлится браузером - лучше явно
  *    уйти в редкий режим и сделать мгновенную проверку при возврате;
  *  - двойной start() давал два независимых таймера.
  */
@@ -3246,14 +3246,14 @@ class DrawScheduler {
 
 /* ── SectorDetails.js ─────────────────────────────────── */
 /**
- * Oracle Draw V2 — SectorDetails
+ * Oracle Draw V2 - SectorDetails
  *
  * Окно по клику на сектор: чьи NFT участвуют в раунде и сколько entries
- * они дают. Единственное место, где картинки масок уместны — здесь есть
+ * они дают. Единственное место, где картинки масок уместны - здесь есть
  * куда их положить, в отличие от узкого сектора.
  *
  * Модалкасама создаёт свою разметку и берёт цвета из темы колеса, поэтому
- * ни index.html, ни style.css трогать не нужно — всё уезжает в бандл.
+ * ни index.html, ни style.css трогать не нужно - всё уезжает в бандл.
  */
 
 
@@ -3310,7 +3310,7 @@ class SectorDetails {
         const share = total ? (sector.entries / total) * 100 : 0;
         const fmt = ui && ui.fmt ? ui.fmt : (v) => v;
 
-        // Групповой сектор — показываем список кошельков, а не NFT
+        // Групповой сектор - показываем список кошельков, а не NFT
         if (sector.isGroup) {
             const rows = (sector.members || [])
                 .slice()
@@ -3427,10 +3427,10 @@ function withAlpha(hex, alpha) {
 
 /* ── DrawBridge.js ─────────────────────────────────── */
 /**
- * Oracle Draw V2 — DrawBridge
+ * Oracle Draw V2 - DrawBridge
  *
  * Связывает фазы движка с колесом и старым UI. Собственной физики и
- * собственного цикла кадров здесь больше нет — всё это живёт в
+ * собственного цикла кадров здесь больше нет - всё это живёт в
  * assets/js/wheel/. Мост только переводит фазу в команду.
  *
  *   PRE_DRAW / AWAITING → wheel.preDraw()   (холостое вращение, луч Оракула)
@@ -3445,7 +3445,7 @@ class DrawBridge {
         this.engine = engine;
         this.wheel = null;
         // В каком пуле колесо нарисовано СЕЙЧАС. WheelRenderer.setPool() меняет
-        // тему, но сам пул не хранит, а сравнивать надо — иначе на каждом тике
+        // тему, но сам пул не хранит, а сравнивать надо - иначе на каждом тике
         // пересобираются частицы.
         this.wheelPool = null;
         this.queue = [];
@@ -3460,7 +3460,7 @@ class DrawBridge {
     attach() {
         const on = (e, fn) => this.unsubs.push(this.engine.on(e, fn));
 
-        // Поднимаем колесо сразу: пустое, но живое. Ждать данных нельзя —
+        // Поднимаем колесо сразу: пустое, но живое. Ждать данных нельзя -
         // в раунде без минтов их не будет вовсе.
         const boot = () => { this.refreshLive(); this.startIdle(); };
         if (document.readyState === "loading") {
@@ -3478,7 +3478,7 @@ class DrawBridge {
             else if (firstLoad && !round.skipped) this.showStatic(round, null);
         });
         on(EVENTS.DRAW_SKIPPED, ({ round }) => this.showRollover(round));
-        // Переключение пула или страницы прячет карточку средствами app.js —
+        // Переключение пула или страницы прячет карточку средствами app.js -
         // возвращаем её из текущего состояния, а не только на первой загрузке.
         on(EVENTS.DATA_UPDATED, () => this.syncCard());
         on(EVENTS.ROUND_CHANGED, () => {
@@ -3498,11 +3498,11 @@ class DrawBridge {
 
 
     /**
-     * Модель по ЖИВЫМ участникам текущего раунда — чтобы колесо было видно
+     * Модель по ЖИВЫМ участникам текущего раунда - чтобы колесо было видно
      * до розыгрыша, а не только после появления снимка.
      *
      * Снимок остаётся авторитетным: он замораживает порядок билетов в момент
-     * розыгрыша, и только по нему считается winner_index. Этот список —
+     * розыгрыша, и только по нему считается winner_index. Этот список -
      * предварительный показ, verified у него не бывает.
      */
     /**
@@ -3540,7 +3540,7 @@ class DrawBridge {
      *
      * Через события это не решается: DATA_UPDATED движок эмитит ДО того,
      * как подставит раунд в state, а следующий раз он придёт только при
-     * изменении winners.json — раз в сутки.
+     * изменении winners.json - раз в сутки.
      */
     ensureCard() {
         if (this.engine.state.revealing) return;
@@ -3559,7 +3559,7 @@ class DrawBridge {
 
     /**
      * Клик по сектору открывает окно с NFT кошелька.
-     * Во время вращения клики игнорируем — иначе окно перекроет розыгрыш.
+     * Во время вращения клики игнорируем - иначе окно перекроет розыгрыш.
      */
     bindPointer(renderer) {
         const canvas = renderer.canvas;
@@ -3598,13 +3598,13 @@ class DrawBridge {
         const ui = this.ui;
         if (!ui || !ui.participants) return;
 
-        // Пул страницы — источник правды для движка, и сверять его надо ДО
+        // Пул страницы - источник правды для движка, и сверять его надо ДО
         // любых ранних выходов.
         //
         // Здесь был баг: эта сверка стояла НИЖЕ `if (state.model) return`.
         // Пока ни один раунд не имел снимка, state.model всегда был null и
         // сверка отрабатывала. Как только появился первый снимок
-        // (weekly_2026-08-03), метод стал выходить раньше — движок переставал
+        // (weekly_2026-08-03), метод стал выходить раньше - движок переставал
         // узнавать о переключении вкладки, и колесо оставалось в теме
         // прежнего пула: на Weekly крутилось daily-колесо.
         const pagePool = ui.pool ? ui.pool() : this.engine.pool;
@@ -3613,18 +3613,18 @@ class DrawBridge {
             this.lastCard = null;
             // Тему меняем сразу, не дожидаясь загрузки: иначе колесо висит в
             // чужих цветах до прихода ROUND_CHANGED, а если у нового пула
-            // раунда ещё нет — то и вовсе остаётся чужим.
+            // раунда ещё нет - то и вовсе остаётся чужим.
             this.ensure(pagePool);
         }
 
         if (this.engine.state.revealing) return;      // во время анимации не трогаем
 
-        // Снимок главнее — но только пока показываем ТОТ раунд.
+        // Снимок главнее - но только пока показываем ТОТ раунд.
         //
-        // Здесь был баг: выход стоял безусловным. state.model — снимок
+        // Здесь был баг: выход стоял безусловным. state.model - снимок
         // завершённого раунда, поднятый при старте из winners.json; пока он
         // есть, живые участники не рисовались вообще. Колесо показывало
-        // состав прошлого раунда, а счётчики под ним — текущего. Переключение
+        // состав прошлого раунда, а счётчики под ним - текущего. Переключение
         // вкладки звало setPool(), тот сбрасывал модель, и всё «чинилось».
         //
         // В OPEN, LOCKED и ROLLOVER идёт уже НОВЫЙ раунд: снимок устарел,
@@ -3634,7 +3634,7 @@ class DrawBridge {
             _ph !== PHASE.OPEN && _ph !== PHASE.LOCKED && _ph !== PHASE.ROLLOVER;
         if (this.engine.state.model && _stillShowingThatRound) return;
 
-        // Пустой раунд — тоже состояние: колесо крутится вхолостую и пишет
+        // Пустой раунд - тоже состояние: колесо крутится вхолостую и пишет
         // «No entries yet». Раньше здесь стоял return, и канвас оставался
         // чёрным до первого минта.
 
@@ -3648,7 +3648,7 @@ class DrawBridge {
 
     ensure(pool) {
         if (this.wheel) {
-            // Раньше здесь был просто `return this.wheel` — колесо отдавалось
+            // Раньше здесь был просто `return this.wheel` - колесо отдавалось
             // как есть, в теме того пула, с которым его когда-то создали.
             if (pool && pool !== this.wheelPool) {
                 this.wheel.setPool(pool);
@@ -3668,7 +3668,7 @@ class DrawBridge {
     }
 
     mount(model, pool) {
-        // ensure() уже привёл тему к pool (или создал колесо сразу в ней —
+        // ensure() уже привёл тему к pool (или создал колесо сразу в ней -
         // конструктор WheelRenderer берёт тему из opts.pool). Повторный
         // setPool() здесь только зря пересобирал бы частицы.
         const w = this.ensure(pool);
@@ -3767,7 +3767,7 @@ class DrawBridge {
         }
         ui.msg("Winner Selected",
             model ? (round.date ? "Draw of " + round.date : "Payout sent automatically")
-                  : "Result verified on-chain — replay unavailable for this round",
+                  : "Result verified on-chain - replay unavailable for this round",
             "#66ffaa");
         ui.card({ address: w.address, prize: w.prize, tx: w.tx,
                   date: round.date, pool: round.pool, label: null });
@@ -3776,7 +3776,7 @@ class DrawBridge {
     showRollover(round) {
         if (!this.ui) return;
         this.ui.msg("Round rolled over",
-            round.reason || "Not enough entries — tickets stay active", "#ff9944");
+            round.reason || "Not enough entries - tickets stay active", "#ff9944");
     }
 }
 
@@ -3795,15 +3795,15 @@ function phaseColor(phase) {
 
 /* ── index.js ─────────────────────────────────── */
 /**
- * Oracle Draw V2 — точка входа.
+ * Oracle Draw V2 - точка входа.
  *
  * Ничего не ломает в старом app.js: только читает winners.json и эмитит
- * события. Пока к ним никто не подписан — система работает вхолостую.
+ * события. Пока к ним никто не подписан - система работает вхолостую.
  *
  * Подключение (index.html, ПОСЛЕ старых скриптов):
  *   <script type="module" src="/assets/js/draw-v2/index.js?v=1"></script>
  *
- * Отладка: открыть страницу с ?draw-v2-debug — в консоли будет весь поток
+ * Отладка: открыть страницу с ?draw-v2-debug - в консоли будет весь поток
  * событий, а window.oracleDrawV2 даст ручной доступ.
  */
 
@@ -3820,7 +3820,7 @@ const scheduler = new DrawScheduler(engine);
 const bridge = new DrawBridge(engine).attach();
 
 // Пока снимка билетов нет (старые раунды, или lottery-draw.js ещё не
-// обновлён) — колесо остаётся за старым рендером app.js. Как только
+// обновлён) - колесо остаётся за старым рендером app.js. Как только
 // модель построена, канвас переходит к V2.
 engine.on(EVENTS.RESULT_READY, ({ model }) => {
     if (model && model.total > 0 && window.oracleDrawV2) window.oracleDrawV2.ownsWheel = true;

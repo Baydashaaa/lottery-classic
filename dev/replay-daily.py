@@ -28,7 +28,7 @@ LCDS = [
     "https://lcd-terra-classic.hexxagon.io",
 ]
 MIN_ENTRIES = 5
-CONSUMED_BEFORE = 1784837749  # 2026-07-23 20:15 UTC — everything up to here went into the 07-23 draw
+CONSUMED_BEFORE = 1784837749  # 2026-07-23 20:15 UTC - everything up to here went into the 07-23 draw
 POOL = "daily"
 
 
@@ -102,7 +102,7 @@ def main():
     try:
         winners = json.load(open("winners.json"))[POOL]
     except Exception as e:  # noqa: BLE001
-        print(f"(winners.json unavailable: {e}) — replaying without comparison")
+        print(f"(winners.json unavailable: {e}) - replaying without comparison")
         winners = []
     by_date = {w.get("date"): w for w in winners}
 

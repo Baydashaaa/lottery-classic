@@ -8,7 +8,7 @@ import sys
 S = "round-snapshot.js"
 snap = open(S).read()
 
-old = '''            "Weekly also adds free entries from free-entries.json, earned off-chain —",
+old = '''            "Weekly also adds free entries from free-entries.json, earned off-chain -",
             "that part cannot be rebuilt from the chain yet."'''
 new = '''            "",
             "Weekly (ticket_rule chain-v1+free) is built from two blocks, in this order:",

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Cut the hour between the deadline and the published result.
 
-Measured gap: 56-73 minutes, and almost none of it is the draw itself — it is
+Measured gap: 56-73 minutes, and almost none of it is the draw itself - it is
 GitHub deciding when to start the job. A cron at 20:00 routinely fires at 20:40.
 
 So start the job at 19:30 and let it wait for the deadline on chain. Whatever
@@ -28,7 +28,7 @@ else:
 // Ждём дедлайн, а не отказываемся из-за него.
 //
 // Джоб запускается заранее (cron 19:30), потому что GitHub стартует когда
-// захочет — наблюдались задержки до 40 минут. Раньше эта задержка целиком
+// захочет - наблюдались задержки до 40 минут. Раньше эта задержка целиком
 // прибавлялась к времени публикации результата; теперь она съедается
 // ожиданием, и розыгрыш происходит через секунды после 20:00.
 //
@@ -43,7 +43,7 @@ async function waitForDeadline(deadlineMs, maxWaitMs) {
       return true;
     }
     if (Date.now() - started > maxWaitMs) {
-      console.warn('Waited ' + Math.round(maxWaitMs / 60000) + 'm and the deadline is still ahead — giving up');
+      console.warn('Waited ' + Math.round(maxWaitMs / 60000) + 'm and the deadline is still ahead - giving up');
       return false;
     }
     const left = latest ? Math.round((deadlineMs - latest.timeMs) / 1000) : '?';
@@ -65,7 +65,7 @@ else:
   console.log('Round deadline (UTC): ' + new Date(deadline).toISOString());"""
     new = """  const deadline = getDrawDeadlineTs();
   console.log('Round deadline (UTC): ' + new Date(deadline).toISOString());
-  // До 45 минут — с запасом на самый поздний старт, что мы видели.
+  // До 45 минут - с запасом на самый поздний старт, что мы видели.
   await waitForDeadline(deadline, 45 * 60 * 1000);"""
     if s.count(old) != 1:
         sys.exit(f"deadline log anchor: {s.count(old)} matches")

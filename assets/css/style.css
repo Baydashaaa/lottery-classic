@@ -1,5 +1,5 @@
 :root {
-  /* BACKGROUNDS — 3 levels */
+  /* BACKGROUNDS - 3 levels */
   --bg:        #0B0F1A;
   --bg2:       #0F1730;
   --surface:   #12182A;
@@ -12,7 +12,7 @@
   --text-weak: #6B7AA6;
   --white:     #ffffff;
 
-  /* ACCENT — violet primary */
+  /* ACCENT - violet primary */
   --accent:        #7C5CFF;
   --accent-2:      #5B8CFF;
   --accent-glow:   rgba(124,92,255,0.5);
@@ -138,9 +138,9 @@ pointer-events:none}.particles{position:fixed;inset:0;z-index:0;pointer-events:n
 .wheel-switch { animation: scaleIn 0.5s cubic-bezier(0.22,1,0.36,1) 0.1s both; }
 
 /* ══════════════════════════════════════════════════════════════
-   WEEKLY MODE — FULL DESIGN SYSTEM
-   Primary: #7C5CFF (violet) — buttons, accents, titles
-   Secondary: #00D4FF (cyan) — glow, lines, effects
+   WEEKLY MODE - FULL DESIGN SYSTEM
+   Primary: #7C5CFF (violet) - buttons, accents, titles
+   Secondary: #00D4FF (cyan) - glow, lines, effects
    3 levels: bg #0B0F1A → cards #12182A → active #1A2240
 ══════════════════════════════════════════════════════════════ */
 
@@ -175,7 +175,7 @@ body.weekly-mode .wheel-panel-label { color: rgba(0,212,255,0.7); letter-spacing
 body.weekly-mode .wheel-panel-label::before { background: linear-gradient(90deg,transparent,rgba(0,212,255,0.35)); }
 body.weekly-mode .wheel-panel-label::after  { background: linear-gradient(270deg,transparent,rgba(0,212,255,0.35)); }
 
-/* ── BIG NUMBERS — most visible ─────────────────────────────── */
+/* ── BIG NUMBERS - most visible ─────────────────────────────── */
 body.weekly-mode .pool-amount.blue    { color: #FFFFFF; font-weight: 700; letter-spacing: 1px; text-shadow: 0 0 12px rgba(124,92,255,0.35); }
 body.weekly-mode #weekly-pool-total   { color: #FFFFFF !important; font-weight: 700; letter-spacing: 1px; text-shadow: 0 0 12px rgba(124,92,255,0.35); }
 body.weekly-mode .stat-val            { color: #FFFFFF; font-weight: 700; text-shadow: 0 0 8px rgba(124,92,255,0.3); }
@@ -183,7 +183,7 @@ body.weekly-mode .stat-lbl            { color: #6B7AA6; }
 body.weekly-mode .timer-num           { color: #FFFFFF; font-weight: 700; letter-spacing: 1px; background: rgba(26,34,64,0.9); border-color: rgba(124,92,255,0.3); text-shadow: 0 0 12px rgba(124,92,255,0.4); }
 body.weekly-mode .timer-sep           { color: rgba(124,92,255,0.5); }
 
-/* ── PODIUM — 3 distinct colors ─────────────────────────────── */
+/* ── PODIUM - 3 distinct colors ─────────────────────────────── */
 body.weekly-mode .podium-card {
   background: #12182A;
   border-color: rgba(30,45,80,0.8);
@@ -191,7 +191,7 @@ body.weekly-mode .podium-card {
 }
 body.weekly-mode .podium-card:hover { transform: translateY(-3px); }
 
-/* 1st — gold */
+/* 1st - gold */
 body.weekly-mode .podium-card:nth-child(1) {
   background: linear-gradient(160deg,#1A1200,#120D00);
   border-color: rgba(251,191,36,0.4);
@@ -202,7 +202,7 @@ body.weekly-mode .podium-card:nth-child(1) .podium-pct   { color: #FDE68A; text-
 body.weekly-mode .podium-card:nth-child(1) .podium-prize { color: #FBBF24; font-weight: 700; }
 body.weekly-mode .podium-card:nth-child(1) .podium-label { color: rgba(253,230,138,0.7); }
 
-/* 2nd — cyan/blue */
+/* 2nd - cyan/blue */
 body.weekly-mode .podium-card:nth-child(2) {
   background: linear-gradient(160deg,#001A2A,#001220);
   border-color: rgba(0,212,255,0.35);
@@ -213,7 +213,7 @@ body.weekly-mode .podium-card:nth-child(2) .podium-pct   { color: #00D4FF; text-
 body.weekly-mode .podium-card:nth-child(2) .podium-prize { color: #38BDF8; font-weight: 700; }
 body.weekly-mode .podium-card:nth-child(2) .podium-label { color: rgba(0,212,255,0.7); }
 
-/* 3rd — violet */
+/* 3rd - violet */
 body.weekly-mode .podium-card:nth-child(3) {
   background: linear-gradient(160deg,#0D0520,#070315);
   border-color: rgba(124,92,255,0.35);
@@ -224,7 +224,7 @@ body.weekly-mode .podium-card:nth-child(3) .podium-pct   { color: #9D80FF; text-
 body.weekly-mode .podium-card:nth-child(3) .podium-prize { color: #A78BFA; font-weight: 700; }
 body.weekly-mode .podium-card:nth-child(3) .podium-label { color: rgba(157,128,255,0.7); }
 
-/* ── BUTTON — violet gradient, strong glow ──────────────────── */
+/* ── BUTTON - violet gradient, strong glow ──────────────────── */
 body.weekly-mode .btn-buy.weekly {
   background: linear-gradient(135deg, #7C5CFF, #5B8CFF);
   border: 1px solid rgba(124,92,255,0.5);
@@ -243,7 +243,7 @@ body.weekly-mode .btn-confirm.weekly {
   box-shadow: 0 0 16px rgba(124,92,255,0.35);
 }
 
-/* ── WHEEL — violet/cyan glow, deeper segments ──────────────── */
+/* ── WHEEL - violet/cyan glow, deeper segments ──────────────── */
 
 body.weekly-mode .wheel-panel {
   background: #0B0F1A;
@@ -270,7 +270,7 @@ body.weekly-mode .stats-bar {
 }
 body.weekly-mode .stat-item { background: #12182A; }
 
-/* ── CARDS — 3-level depth ──────────────────────────────────── */
+/* ── CARDS - 3-level depth ──────────────────────────────────── */
 body.weekly-mode .step {
   background: #12182A;
   border-color: rgba(30,45,80,0.8);
@@ -313,10 +313,10 @@ body.weekly-mode footer               { border-top-color: rgba(124,92,255,0.15);
 body.weekly-mode .rolled-over         { color: #9D80FF; }
 
 /* ═══════════════════════════════════════════════════════════════
-   MOBILE RESPONSIVE — oracle-draw
+   MOBILE RESPONSIVE - oracle-draw
    ═══════════════════════════════════════════════════════════════ */
 
-/* ── 900px — tablet ─────────────────────────────────────────── */
+/* ── 900px - tablet ─────────────────────────────────────────── */
 @media (max-width: 900px) {
   .draw-tabs { max-width: 100% !important; padding: 0 16px !important; }
   .hero-split { grid-template-columns: 1fr !important; gap: 32px; padding: 24px 16px 40px; min-height: unset; }
@@ -325,7 +325,7 @@ body.weekly-mode .rolled-over         { color: #9D80FF; }
   .wheel-panel { width: 100%; max-width: 480px; margin: 0 auto; padding: 24px 16px; }
 }
 
-/* ── 600px — mobile ─────────────────────────────────────────── */
+/* ── 600px - mobile ─────────────────────────────────────────── */
 @media (max-width: 600px) {
 
   /* NAV */
@@ -435,7 +435,7 @@ body.weekly-mode .rolled-over         { color: #9D80FF; }
   .footer-logo { font-size: 13px; }
 }
 
-/* ── 380px — very small phones ──────────────────────────────── */
+/* ── 380px - very small phones ──────────────────────────────── */
 @media (max-width: 380px) {
   .nav-logo-text { font-size: 11px; }
   .nav-link      { display: none; }
@@ -445,7 +445,7 @@ body.weekly-mode .rolled-over         { color: #9D80FF; }
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   HAMBURGER MENU — mobile nav
+   HAMBURGER MENU - mobile nav
    ═══════════════════════════════════════════════════════════════ */
 .hamburger {
   display: none;
@@ -551,7 +551,7 @@ body.weekly-mode .rolled-over         { color: #9D80FF; }
   }
 }
 
-/* ── HOME PAGE GRIDS — mobile fix ───────────────────────────── */
+/* ── HOME PAGE GRIDS - mobile fix ───────────────────────────── */
 @media (max-width: 600px) {
   .home-steps-grid {
     grid-template-columns: repeat(2, 1fr) !important;
@@ -575,7 +575,7 @@ body.weekly-mode .rolled-over         { color: #9D80FF; }
   }
 }
 
-/* ── WHEEL MOBILE — single canvas, responsive ── */
+/* ── WHEEL MOBILE - single canvas, responsive ── */
 @media (max-width: 768px) {
   #wheel-panel-hero {
     width: 100% !important;
@@ -740,7 +740,7 @@ body.weekly-mode .rolled-over         { color: #9D80FF; }
 /* ── Колесо V2 ───────────────────────────────────────────────────────────
    Рендерер сам рисует обод, свечение и частицы внутри канваса, поэтому
    снаружи ему нужен только размер. Никаких filter и border-radius:
-   drop-shadow на каждый кадр — это композитный слой на весь канвас,
+   drop-shadow на каждый кадр - это композитный слой на весь канвас,
    на среднем Android заметно роняет частоту кадров. */
 #wheel-canvas-wrap {
   position: relative;
@@ -762,18 +762,18 @@ body.oracle-predraw #wheel-canvas-wrap::after {
   body.oracle-predraw #wheel-canvas-wrap::after { animation: none; }
 }
 
-/* размеры канваса — единственное правило, всё остальное внутри рендерера */
+/* размеры канваса - единственное правило, всё остальное внутри рендерера */
 #wheel-canvas { display:block; width:100%; height:auto; aspect-ratio:1/1; }
 
 
 /* ── РАЗМЕР КОЛЕСА ───────────────────────────────────────────────────────
-   Колонка колеса была 420px при контейнере 1100px — на канвас оставалось
+   Колонка колеса была 420px при контейнере 1100px - на канвас оставалось
    ~370px. При такой ширине полные подписи помещаются только у 11 кошельков,
    дальше сектора схлопываются в «номер + билеты», а после 23 остаётся один
    цвет. Для колеса, которое должно быть центральным элементом сайта, мало.
 
    Колонка растягивается до 620px, контейнер до 1360px: полные подписи
-   держатся до 20 кошельков, читаемые — до 41. Левая колонка при этом
+   держатся до 20 кошельков, читаемые - до 41. Левая колонка при этом
    не страдает, ей остаётся ~630px на широком экране. */
 .hero-split {
   grid-template-columns: minmax(0, 1fr) minmax(400px, 620px);

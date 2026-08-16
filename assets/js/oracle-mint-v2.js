@@ -1,9 +1,9 @@
-/* oracle-mint-v2.js — v1.0.0
+/* oracle-mint-v2.js - v1.0.0
  *
  * Минт Oracle Mask через собственный CW721-контракт.
  * Заменяет старую схему «два MsgSend + memo-триггер + опрос Paco API».
  *
- * Подключать ПОСЛЕ app.js — использует его глобальные хелперы:
+ * Подключать ПОСЛЕ app.js - использует его глобальные хелперы:
  *   walletProvider, getWalletKeplr(), _isWCProvider(), _wcSignAndBroadcast(),
  *   TERRA_CHAIN_CONFIG, CHAIN_ID, connectedWalletAddress, lotteryAddress
  *
@@ -55,7 +55,7 @@
   /**
    * /cosmwasm.wasm.v1.MsgExecuteContract
    *   1 sender (string), 2 contract (string), 3 msg (bytes JSON), 5 funds (repeated Coin)
-   * Внимание: funds — поле 5, а не 4 (поле 4 в wasmd устарело).
+   * Внимание: funds - поле 5, а не 4 (поле 4 в wasmd устарело).
    */
   function encodeMsgExecuteContract(sender, contract, msgJson, funds) {
     var parts = [
@@ -169,7 +169,7 @@
       });
       var finalBody = toUint8(res.signed.bodyBytes, txBodyBytes);
       var sigBytes  = Uint8Array.from(atob(res.signature.signature), function (c) { return c.charCodeAt(0); });
-      // ВАЖНО: берём СВОЙ authInfoBytes — Keplr переписывает gas limit на 300k,
+      // ВАЖНО: берём СВОЙ authInfoBytes - Keplr переписывает gas limit на 300k,
       // а минту нужно больше. Та же причина, что в sendTwoMsgSend.
       txBase64 = btoa(String.fromCharCode.apply(null, concat(
         encodeField(1, 2, finalBody),
@@ -191,7 +191,7 @@
         break;
       } catch (e) { /* следующая нода */ }
     }
-    if (!broadcastData) throw new Error('Broadcast failed — all LCD nodes unreachable.');
+    if (!broadcastData) throw new Error('Broadcast failed - all LCD nodes unreachable.');
 
     var resp   = broadcastData.tx_response || broadcastData;
     var code   = resp.code || 0;
@@ -255,7 +255,7 @@
 
   async function nativeMintV2() {
     var tier   = window.selectedTier   || 'common';
-    // Пул выбирается в модалке минта; window.currentLottery — состояние вкладок
+    // Пул выбирается в модалке минта; window.currentLottery - состояние вкладок
     // страницы. selectPool() держит их синхронными, но читаем в приоритетном
     // порядке, чтобы выбор пользователя не мог потеряться ни при каком раскладе.
     var pool   = window.selectedPool || window.currentLottery || 'daily';
@@ -273,7 +273,7 @@
     var successEl = document.getElementById('draw-tx-success');
     var tierLabel = tier.charAt(0).toUpperCase() + tier.slice(1);
 
-    // Раньше здесь стоял btn.textContent — он уничтожал вложенные
+    // Раньше здесь стоял btn.textContent - он уничтожал вложенные
     // <span id="buy-btn-tier"> / <span id="buy-btn-total">, после чего
     // selectTier() и updateBuyBtn() молча переставали находить их и подпись
     // навсегда застывала на только что сминченном тире. renderBuyBtnLabel()
@@ -290,7 +290,7 @@
         return;
       }
       btn.textContent = 'Mint ' + tierLabel.toUpperCase() +
-        (priceLunc ? ' — ' + priceLunc.toLocaleString() + ' LUNC' : '');
+        (priceLunc ? ' - ' + priceLunc.toLocaleString() + ' LUNC' : '');
     }
     function say(text) {
       if (statusEl) statusEl.style.display = 'block';
@@ -304,7 +304,7 @@
 
     var priceLunc = 0;
     try {
-      // Цену берём из контракта, а не из локальной константы — рассинхрон исключён.
+      // Цену берём из контракта, а не из локальной константы - рассинхрон исключён.
       var price = await OracleNFT.getMintPrice(tier);
       priceLunc = Math.round(Number(price) / 1e6);
 
@@ -317,7 +317,7 @@
         { extension: { msg: { mint: {
           tier: tier,
           pool: pool,
-          // см. OracleNFT.freshEntropy — один генератор на обе ветки минта
+          // см. OracleNFT.freshEntropy - один генератор на обе ветки минта
           entropy: OracleNFT.freshEntropy(),
         } } } },
         [{ denom: 'uluna', amount: String(price) }],
@@ -332,10 +332,10 @@
         throw new Error(result.rawLog || 'Transaction failed on-chain.');
       }
 
-      // Регистрация в раунде. Оплата и NFT уже неотменяемо прошли —
+      // Регистрация в раунде. Оплата и NFT уже неотменяемо прошли -
       // если воркер не ответит, NFT всё равно у пользователя.
       // Ответ воркера раньше игнорировался целиком: если регистрация падала,
-      // NFT не попадал в раунд и REP не начислялся — молча, без следа в консоли.
+      // NFT не попадал в раунд и REP не начислялся - молча, без следа в консоли.
       var reg = null;
       try {
         var regRes = await fetch(DRAW_WORKER + '/register-mint', {
@@ -367,7 +367,7 @@
       if (successEl) {
         successEl.style.display = 'block';
         successEl.textContent = '✅ Minted ' + (result.tokenId || tierLabel) +
-                                ' — active in ' + String(result.pool || pool).toUpperCase();
+                                ' - active in ' + String(result.pool || pool).toUpperCase();
       }
       resetBtn(priceLunc);
 

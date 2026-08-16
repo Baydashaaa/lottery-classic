@@ -4,8 +4,8 @@
 Two things came together here.
 
 The page loads assets/js/oracle-draw.bundle.js, and that file was last built on
-3 August. Everything changed in draw-v2 since then — the wait windows, the idle
-spin speed, the local result — sits in the sources and never reaches a browser.
+3 August. Everything changed in draw-v2 since then - the wait windows, the idle
+spin speed, the local result - sits in the sources and never reaches a browser.
 That is why the wheel still gave up after 12 minutes yesterday: the fix was
 real, the bundle was not rebuilt. Checking the served draw-v2/Config.js proved
 nothing, because nothing loads it.
@@ -31,7 +31,7 @@ old = """const files = [
   ...WHEEL.map(f => ["assets/js/wheel/" + f, f]),"""
 new = """const files = [
   // Правило построения билетов. Лежит в корне, потому что им пользуется и
-  // lottery-draw.js — один экземпляр на скрипт и на браузер. Идёт первым:
+  // lottery-draw.js - один экземпляр на скрипт и на браузер. Идёт первым:
   // на него ссылается DrawEngine, а ему самому ничего отсюда не нужно.
   ["chain-tickets.js", "chain-tickets.js"],
   ...WHEEL.map(f => ["assets/js/wheel/" + f, f]),"""
@@ -42,4 +42,4 @@ if s.count(old) != 1:
 open(P, "w").write(s.replace(old, new, 1))
 print("ok: chain-tickets.js added to the bundle")
 print("\nRebuild next: node dev/_build_bundle.js")
-print("It will refuse to build on a name clash — that check is the point.")
+print("It will refuse to build on a name clash - that check is the point.")

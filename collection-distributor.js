@@ -103,7 +103,7 @@ async function markSkipped(tokenId, reason) {
 async function sendLunc(client, from, to, amountUluna, memo) {
   console.log('  Sending ' + fmt(amountUluna / 1e6) + ' LUNC → ' + to);
   // Gas: 300k is safe (200k was occasionally hitting out-of-gas).
-  // Fee on Terra Classic: gas × ~28.3 uluna (rate at columbus-5) — use 8.5M uluna for headroom.
+  // Fee on Terra Classic: gas × ~28.3 uluna (rate at columbus-5) - use 8.5M uluna for headroom.
   const result = await client.sendTokens(
     from, to,
     [{ denom: DENOM, amount: String(amountUluna) }],
@@ -120,7 +120,7 @@ async function main() {
   if (!MNEMONIC) throw new Error('OPERATOR_MNEMONIC_COLLECTION not set');
   if (!DISTRIBUTION_SECRET) throw new Error('DISTRIBUTION_SECRET not set');
 
-  // Fetch pending first — if empty, don't even connect to RPC
+  // Fetch pending first - if empty, don't even connect to RPC
   console.log('Fetching pending distributions...');
   const pending = await fetchPending();
   if (!pending.length) {
@@ -166,7 +166,7 @@ async function main() {
     const tier       = p.tier || tierFromEntries(p.entries || 1);
     const luncAmount = TIER_TRANSFER_LUNC[tier];
     if (!luncAmount) {
-      console.warn('Unknown tier "' + tier + '" for ' + p.tokenId + ' — skipping');
+      console.warn('Unknown tier "' + tier + '" for ' + p.tokenId + ' - skipping');
       await markSkipped(p.tokenId, 'unknown tier: ' + tier);
       skipCount++;
       continue;
@@ -183,7 +183,7 @@ async function main() {
     } catch(e) {
       console.error('  FAILED: ' + e.message);
       failCount++;
-      // Don't mark as skipped — leave as pending for next run. If error is persistent
+      // Don't mark as skipped - leave as pending for next run. If error is persistent
       // (e.g. insufficient balance), it will keep retrying. Manual intervention may
       // be needed to skip permanently failed items.
     }

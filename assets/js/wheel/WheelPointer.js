@@ -1,5 +1,5 @@
 /**
- * Oracle Draw — WheelPointer (Oracle Crystal)
+ * Oracle Draw - WheelPointer (Oracle Crystal)
  *
  * Треугольника нет. Кристалл-ромб в золотой оправе, внутри живая энергия.
  * Яркость растёт по мере замедления: аргумент `intensity` 0..1 приходит
@@ -17,12 +17,12 @@ export default class WheelPointer {
 
     setTheme(theme) { this.theme = theme; return this; }
 
-    /** Дёрнуть вспышку — зовётся в момент фиксации победителя */
+    /** Дёрнуть вспышку - зовётся в момент фиксации победителя */
     strike() { this.flash = 1; return this; }
 
     /**
-     * @param {number} intensity 0..1 — насколько «горячий» кристалл
-     * @param {number} tick      0..1 — реакция на проезжающий сектор
+     * @param {number} intensity 0..1 - насколько «горячий» кристалл
+     * @param {number} tick      0..1 - реакция на проезжающий сектор
      */
     draw(ctx, cx, cy, r, t, intensity, quality, tick = 0) {
         const th = this.theme;

@@ -1,16 +1,16 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   CIRCUIT — получение наград TCO
+   CIRCUIT - получение наград TCO
    ---------------------------------------------------------------------------
    Панель «Your TCO rewards» с кнопкой Claim внутри #stage-circuit.
 
-   ПОДКЛЮЧЕНИЕ: обычный <script>, ПОСЛЕ app.js и oracle-mint-v2.js —
+   ПОДКЛЮЧЕНИЕ: обычный <script>, ПОСЛЕ app.js и oracle-mint-v2.js -
    отсюда берутся CHAIN_ID, адрес кошелька и window.sendExecuteContract.
 
    Как это работает. Скрипт эпохи публикует в контракт корень НАКОПИТЕЛЬНОГО
    дерева и кладёт рядом с сайтом rewards-proofs.json с пруфами. В листе
    лежит «начислено за всё время», контракт помнит забранное и выдаёт
    разницу. Поэтому забирать можно когда угодно и за сколько угодно эпох
-   сразу — ничего не сгорает.
+   сразу - ничего не сгорает.
 
    Отсюда же главное правило интерфейса: если доступная сумма меньше
    комиссии, честнее сказать «подожди», чем дать человеку потратить больше,
@@ -147,7 +147,7 @@
   async function loadProofs() {
     try {
       const r = await fetch(PROOFS + '?t=' + Date.now(), { signal: AbortSignal.timeout(10000) });
-      if (!r.ok) return null;          // файла ещё нет — эпоха не запускалась
+      if (!r.ok) return null;          // файла ещё нет - эпоха не запускалась
       return await r.json();
     } catch (e) { return null; }
   }
@@ -180,7 +180,7 @@
     myEntry = (proofsFile.proofs || {})[wallet] || null;
 
     if (!myEntry) {
-      // Начислений нет — но, может, кошелёк уже всё забрал раньше
+      // Начислений нет - но, может, кошелёк уже всё забрал раньше
       let claimed = '0';
       try { claimed = (await smartQuery(CONTRACT, { claimed: { address: wallet } })).claimed; }
       catch (e) {}
@@ -188,7 +188,7 @@
       btnEl.disabled = true;
       metaEl.innerHTML = Number(claimed) > 0
         ? 'Nothing new to claim. You have taken <b>' + tco(claimed) + ' TCO</b> so far.'
-        : 'No rewards yet — take zones in a round that actually draws, and your share appears here.';
+        : 'No rewards yet - take zones in a round that actually draws, and your share appears here.';
       return;
     }
 
@@ -204,12 +204,12 @@
       return;
     }
 
-    // Пруф не сошёлся с опубликованным корнем — файл устарел относительно
+    // Пруф не сошёлся с опубликованным корнем - файл устарел относительно
     // контракта. Молчать нельзя: человек видит цифру и не может её забрать.
     if (!res.proof_valid) {
       amtEl.innerHTML = '&mdash;<small>TCO</small>';
       btnEl.disabled = true;
-      metaEl.innerHTML = 'The proof file is out of step with the contract — this usually ' +
+      metaEl.innerHTML = 'The proof file is out of step with the contract - this usually ' +
                          'clears within a few minutes of a new epoch. Nothing is lost.';
       return;
     }
@@ -232,7 +232,7 @@
     btnEl.disabled = false;
     btnEl.textContent = 'Claim ' + tco(claimable) + ' TCO';
 
-    // Стоит ли забирать прямо сейчас. Цену берём у кривой — та же, по которой
+    // Стоит ли забирать прямо сейчас. Цену берём у кривой - та же, по которой
     // протокол выкупает TCO.
     if (!price) {
       try {
@@ -244,7 +244,7 @@
       const worthLunc = (Number(claimable) / 1e6) * price;
       if (worthLunc < CLAIM_FEE_LUNC) {
         note('warn', 'This is worth about <b>' + Math.round(worthLunc) + ' LUNC</b> right now, ' +
-                     'and the transaction costs around ' + CLAIM_FEE_LUNC + ' LUNC. Nothing expires — ' +
+                     'and the transaction costs around ' + CLAIM_FEE_LUNC + ' LUNC. Nothing expires - ' +
                      'letting it build up over a few epochs and claiming once is cheaper.');
       } else {
         clearNote();
@@ -301,7 +301,7 @@
       const w = myWallet();
       if (w !== lastWallet) { lastWallet = w; refresh(); }
     }, 1000);
-    // Файл пруфов меняется раз в эпоху — перечитывать часто незачем.
+    // Файл пруфов меняется раз в эпоху - перечитывать часто незачем.
     setInterval(() => { proofsFile = null; refresh(); }, 10 * 60 * 1000);
   }
 

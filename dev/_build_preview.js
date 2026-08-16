@@ -12,7 +12,7 @@ const parts = ORDER.map(f => {
        .replace(/^export default function/gm, "function")
        .replace(/^export default \{[\s\S]*?\};\s*$/gm, "")
        .replace(/^export (const|let|function|class)/gm, "$1");
-  // TAU объявлен в каждом модуле одинаково — оставляем первый
+  // TAU объявлен в каждом модуле одинаково - оставляем первый
   s = s.replace(/^const TAU = Math\.PI \* 2;$/gm, () => {
     if (seenTAU) return "";
     seenTAU = true; return "const TAU = Math.PI * 2;";

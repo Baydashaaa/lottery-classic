@@ -3,7 +3,7 @@
 
 Why: whether a weekly round happened depends on NFT entries PLUS free entries
 PLUS the pool balance. Free entries are off-chain, so the boundary simply is not
-derivable from the chain — pretending otherwise would silently mis-assign tokens
+derivable from the chain - pretending otherwise would silently mis-assign tokens
 the first time a round passes on free entries alone.
 
 Daily keeps the chain replay: one source, self-contained rule, nothing to trust.
@@ -39,7 +39,7 @@ else:
 
     old2 = "  const boundaryTs = lastConsumedTs(meta, pool, deadlineMs, minEntries);"
     new2 = """  // Граница «отыграно». Для daily она выводится из цепи: источник входов один,
-  // и правило самодостаточно. Для weekly её обязан передать вызывающий — там
+  // и правило самодостаточно. Для weekly её обязан передать вызывающий - там
   // состоялся ли раунд, зависит ещё и от бесплатных входов и от баланса пула,
   // а этого в цепи нет. Молча посчитать её здесь означало бы выдать догадку
   // за проверяемый факт.
@@ -65,13 +65,13 @@ else:
     helper = """// Граница «отыграно» для weekly.
 //
 // Берётся из последней НЕпропущенной weekly-записи: её дедлайн и есть момент,
-// до которого все NFT этого пула уже сыграли. Вычислить её из цепи нельзя —
+// до которого все NFT этого пула уже сыграли. Вычислить её из цепи нельзя -
 // раунд мог состояться за счёт бесплатных входов, которых в цепи нет, или
 // сорваться из-за баланса пула ниже WEEKLY_MIN_LUNC.
 //
 // Значит weekly проверяем не полностью: NFT-часть списка любой пересоберёт по
 // цепи, а вот эта граница берётся из winners.json, то есть из файла, который
-// ведём мы. Проверить его можно по истории коммитов — слабее цепи, но это
+// ведём мы. Проверить его можно по истории коммитов - слабее цепи, но это
 // настоящий предел, а не наша небрежность.
 function lastWeeklyBoundaryTs() {
   const winners = loadWinners();
@@ -79,7 +79,7 @@ function lastWeeklyBoundaryTs() {
   if (done.length === 0) return null;
 
   const last = done[done.length - 1];
-  // Новые записи несут deadline явно; старые — только дату, а weekly всегда
+  // Новые записи несут deadline явно; старые - только дату, а weekly всегда
   // закрывается в понедельник в 20:00 UTC.
   const iso = last.deadline ||
     ((last.date || String(last.round_id || '').replace('weekly_', '')) + 'T20:00:00Z');
@@ -106,7 +106,7 @@ old = """  const { tickets: nftTickets, tokens, boundaryTs } = await buildTicket
 new = """  const weeklyBoundary = lastWeeklyBoundaryTs();
   console.log(weeklyBoundary
     ? 'Boundary from winners.json: ' + new Date(weeklyBoundary * 1000).toISOString()
-    : 'No completed weekly on record — falling back to the chain replay');
+    : 'No completed weekly on record - falling back to the chain replay');
 
   const { tickets: nftTickets, tokens, boundaryTs } = await buildTicketsFromChain({
     pool: 'weekly',
@@ -131,7 +131,7 @@ new = '''            "than let it hide inside one undifferentiated list.",
             "",
             "One more weekly caveat: which NFTs are still unplayed is read from the",
             "previous completed weekly entry in winners.json (boundary_ts / deadline),",
-            "not derived from the chain. It cannot be derived — a weekly round can go",
+            "not derived from the chain. It cannot be derived - a weekly round can go",
             "ahead on free entries alone, or be called off because the pool sat below",
             "its minimum, and neither fact is on-chain. For daily, the same boundary IS",
             "derived from the chain and needs no file at all."'''

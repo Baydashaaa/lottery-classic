@@ -1,19 +1,19 @@
 /**
- * Oracle Draw V2 — Event Bus
+ * Oracle Draw V2 - Event Bus
  *
  * Отличия от наивной версии:
- *  - off() и once() — иначе при switchLottery подписки копятся и колесо
+ *  - off() и once() - иначе при switchLottery подписки копятся и колесо
  *    крутится по два-три раза на один результат;
- *  - каждый слушатель в своём try/catch — упавшая анимация не должна
+ *  - каждый слушатель в своём try/catch - упавшая анимация не должна
  *    убивать popup, нотификацию и всё, что подписалось после неё;
- *  - "*" — подписка на все события (удобно для отладки).
+ *  - "*" - подписка на все события (удобно для отладки).
  */
 
 export const EVENTS = {
     READY: "READY",                   // первый успешный load, базовая линия выставлена
     DATA_UPDATED: "DATA_UPDATED",     // winners.json изменился
     ROUND_CHANGED: "ROUND_CHANGED",   // сменился round_id текущего пула
-    RESULT_READY: "RESULT_READY",     // результат доступен — отрисовать статично
+    RESULT_READY: "RESULT_READY",     // результат доступен - отрисовать статично
     DRAW_FINISHED: "DRAW_FINISHED",   // КРУТИТЬ КОЛЕСО (только когда это уместно)
     DRAW_SKIPPED: "DRAW_SKIPPED",     // раунд не состоялся (мало билетов и т.п.)
     PHASE_CHANGED: "PHASE_CHANGED",   // OPEN → LOCKED → PRE_DRAW → AWAITING → REVEALING → REVEALED

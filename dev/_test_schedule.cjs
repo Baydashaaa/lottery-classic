@@ -1,9 +1,9 @@
 /**
- * dev/_test_schedule.js — сторож расписания розыгрышей.
+ * dev/_test_schedule.js - сторож расписания розыгрышей.
  *
  * Проверяет:
  *   1. draw-schedule.js отвечает правильно в каждый день недели и на границах
- *   2. DrawClock.js (внутри бандла V2) считает ТО ЖЕ САМОЕ — почасово на 2 недели.
+ *   2. DrawClock.js (внутри бандла V2) считает ТО ЖЕ САМОЕ - почасово на 2 недели.
  *      Единственная защита от того, что две реализации разъедутся молча
  *   3. app.js и treasury.js не завели себе новых копий той же арифметики
  *
@@ -54,7 +54,7 @@ for (let day = 3; day <= 9; day++) {            // 2026-08-03 = понедель
   }
 }
 
-console.log('\n[2] Момент со скриншотов — пн 2026-08-03 17:03 UTC');
+console.log('\n[2] Момент со скриншотов - пн 2026-08-03 17:03 UTC');
 const shot = new Date(Date.UTC(2026, 7, 3, 17, 3, 0));
 check('daily  → вт 20:00Z', S.next('daily',  shot).toISOString(), '2026-08-04T20:00:00.000Z');
 check('weekly → пн 20:00Z', S.next('weekly', shot).toISOString(), '2026-08-03T20:00:00.000Z');
@@ -84,7 +84,7 @@ check('ровно сутки', S.format(86400 * 1000), '1d 00:00');
 check('ноль',        S.format(0), '00:00:00');
 check('минус',       S.format(-5000), '00:00:00');
 
-console.log('\n[5] draw-schedule.js vs DrawClock.js — почасово, 2 недели');
+console.log('\n[5] draw-schedule.js vs DrawClock.js - почасово, 2 недели');
 const clockSrc = read('DrawClock.js', ['assets/js/draw-v2/DrawClock.js']);
 if (!clockSrc) {
   console.log('  ПРОПУЩЕНО: DrawClock.js не найден рядом');
@@ -143,7 +143,7 @@ for (const [name, alts] of [['app.js', ['assets/js/app.js']],
   const ok = bad.length === 0;
   if (!ok) fails++;
   console.log('  ' + (ok ? 'ok   ' : 'FAIL ') + name +
-    (ok ? '  — считает только через DRAW_SCHEDULE' : '  — найдено: ' + bad.join(', ')));
+    (ok ? '  - считает только через DRAW_SCHEDULE' : '  - найдено: ' + bad.join(', ')));
 }
 
 console.log('\n' + (fails === 0 ? '=== ВСЁ ЗЕЛЁНОЕ ===' : '=== ' + fails + ' ПРОВАЛОВ ==='));
