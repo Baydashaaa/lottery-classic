@@ -201,6 +201,36 @@ async function settleDue(pool, addr, ctx) {
   console.warn(`[${pool}] stopped after ${MAX_SETTLE} settlements in one run`);
 }
 
+// ── Health checks ───────────────────────────────────────────────────────────
+// 14 августа keeper встал молча: кончился газ, расчёт не прошёл, и узнали об
+// этом сутки спустя, случайно. Обе проверки существуют, чтобы такой прогон
+// падал красным, а не заканчивался успехом.
+const MIN_BALANCE_ULUNA = 500_000_000;   // 500 LUNC — примерно десять дней работы
+
+// Очередь разобрана? Раунд, до которого дошёл указатель, либо ещё не закрыт,
+// либо должен быть рассчитан. Всё остальное — незамеченный сбой.
+async function checkQueue(pool, addr) {
+  const cfg = await query(addr, { config: {} });
+  const id = Number(cfg.next_unsettled_id);
+  if (id > Number(cfg.last_round_id)) return true;
+  const round = await query(addr, { round: { round_id: id } });
+  const closeMs = Math.floor(Number(round.close_time) / 1e6);
+  if (await chainNowMs() < closeMs) return true;
+  console.error(`[${pool}] round ${id} closed ${new Date(closeMs).toISOString()} ` +
+    `and is still "${round.status}" — settlement did not happen`);
+  return false;
+}
+
+// Баланс ловит причину ДО того, как она остановит расчёт.
+async function checkBalance(ctx) {
+  const bal = await ctx.client.getBalance(ctx.address, 'uluna');
+  console.log(`keeper balance ${(Number(bal.amount) / 1e6).toFixed(0)} LUNC`);
+  if (Number(bal.amount) >= MIN_BALANCE_ULUNA) return true;
+  console.error(`keeper balance below ${MIN_BALANCE_ULUNA / 1e6} LUNC — top it up ` +
+    `before it runs out mid-round`);
+  return false;
+}
+
 // ── main ────────────────────────────────────────────────────────────────────
 
 const action = process.argv[2];
@@ -229,4 +259,20 @@ for (const [pool, addr] of Object.entries(POOLS)) {
     failed = true;
   }
 }
+try {
+  if (!(await checkBalance(ctx))) failed = true;
+} catch (e) {
+  console.error(`balance check failed: ${e.message}`);
+  failed = true;
+}
+for (const [pool, addr] of Object.entries(POOLS)) {
+  if (!addr) continue;
+  try {
+    if (!(await checkQueue(pool, addr))) failed = true;
+  } catch (e) {
+    console.error(`[${pool}] queue check failed: ${e.message}`);
+    failed = true;
+  }
+}
+
 process.exit(failed ? 1 : 0);
