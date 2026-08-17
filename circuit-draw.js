@@ -170,6 +170,32 @@ async function getClient() {
   return { client, address: account.address };
 }
 
+// ── Отметки об уже отправленных переводах ──────────────────────────────────
+// Скрипт падал на середине выплат дважды: 15 августа не доплатил долю выкупа,
+// 17-го чуть не отправил приз второй раз. Воркер хранит отметку по каждому
+// переводу раунда, и повтор продолжает с места, а не начинает сначала.
+async function fetchPayoutMarks(roundId) {
+  const r = await fetch(WORKER + '/circuit/payouts?roundId=' + encodeURIComponent(roundId),
+                        { headers: { Authorization: 'Bearer ' + SECRET } });
+  // Не знаем, что уже ушло - платить вслепую нельзя.
+  if (!r.ok) throw new Error('cannot read payout marks: HTTP ' + r.status);
+  return (await r.json()).marks || {};
+}
+
+async function markPayout(roundId, leg, txHash) {
+  const r = await fetch(WORKER + '/circuit/payouts', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + SECRET, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ roundId, leg, txHash }),
+  });
+  // Деньги ушли, а отметка не легла - самое опасное состояние: повтор заплатит
+  // второй раз. Останавливаемся и говорим громко, с хешем в тексте.
+  if (!r.ok) {
+    throw new Error('SENT BUT NOT RECORDED - leg ' + leg + ', tx ' + txHash +
+                    ' - record it manually before re-running');
+  }
+}
+
 async function sendLunc(client, from, to, amountUluna, memo) {
   if (process.env.DRY_RUN === '1') throw new Error('DRY_RUN is set - refusing to send funds');
   if (amountUluna < 1_000_000) {
@@ -286,24 +312,39 @@ async function main() {
   const perNeigh   = neigh.length ? Math.floor(prizeTotal * NEIGHBOUR_SHARE / neigh.length) : 0;
   const toWinner   = prizeTotal - perNeigh * neigh.length;
 
+  const marks = await fetchPayoutMarks(round.roundId);
+  const done = Object.keys(marks);
+  if (done.length) console.log('already paid in an earlier run: ' + done.join(', '));
+
+  // Каждый перевод отмечается сразу после отправки, до следующего.
+  const payOnce = async (leg, to, uluna, memo) => {
+    if (marks[leg]) {
+      console.log('skip ' + leg + ' - already sent, tx ' + marks[leg]);
+      return marks[leg];
+    }
+    const tx = await sendLunc(client, address, to, uluna, memo);
+    if (tx) await markPayout(round.roundId, leg, tx);
+    return tx;
+  };
+
   const payouts = { winner: null, neighbours: [], treasury: null,
                     tcoDrop: null, tcoBurn: null };
   payouts.winner = {
     wallet: winner.wallet, uluna: toWinner,
-    tx: await sendLunc(client, address, winner.wallet, toWinner,
-                       'Circuit ' + round.roundId + ' - zone ' + zone),
+    tx: await payOnce('winner', winner.wallet, toWinner,
+                      'Circuit ' + round.roundId + ' - zone ' + zone),
   };
   for (const n of neigh) {
     payouts.neighbours.push({
       wallet: n.wallet, uluna: perNeigh,
-      tx: await sendLunc(client, address, n.wallet, perNeigh,
-                         'Circuit ' + round.roundId + ' - neighbour of zone ' + zone),
+      tx: await payOnce('neighbour:' + n.wallet, n.wallet, perNeigh,
+                        'Circuit ' + round.roundId + ' - neighbour of zone ' + zone),
     });
   }
   payouts.treasury = {
     wallet: TREASURY, uluna: round.split.treasury,
-    tx: await sendLunc(client, address, TREASURY, round.split.treasury,
-                       'Circuit ' + round.roundId + ' - treasury'),
+    tx: await payOnce('treasury', TREASURY, round.split.treasury,
+                      'Circuit ' + round.roundId + ' - treasury'),
   };
   // Доли TCO уходят на свои кошельки и ЖДУТ там.
   //
@@ -326,8 +367,8 @@ async function main() {
   const tcoUluna  = dropUluna + burnUluna;
 
   if (tcoUluna > 0) {
-    const tx = await sendLunc(client, address, TCO_BUYBACK_WALLET, tcoUluna,
-                              'Circuit ' + round.roundId + ' - TCO buyback share');
+    const tx = await payOnce('tco', TCO_BUYBACK_WALLET, tcoUluna,
+                             'Circuit ' + round.roundId + ' - TCO buyback share');
     // Суммы пишем раздельно: пропорция 6/6 должна быть видна в снимке
     // раунда, даже когда перевод один.
     payouts.tcoDrop = { wallet: TCO_BUYBACK_WALLET, uluna: dropUluna, purpose: 'rewards', tx };
