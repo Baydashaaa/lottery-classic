@@ -315,8 +315,47 @@
     if (round) await play(round);
   }
 
+  /* ── проверка без ожидания раунда ──────────────────────────────────────── */
+  // Раунд закрывается раз в три часа, и ловить показ вживую - это караулить
+  // экран полдня. С ?revealtest=1 в адресе последний закрытый раунд
+  // проигрывается сразу и столько раз, сколько перезагрузишь страницу:
+  // отметка «уже показывали» в тестовом режиме не ставится и не читается.
+  //
+  // Ключ ничего не меняет на цепи и никому, кроме открывшего эту ссылку, не
+  // виден - розыгрыш давно состоялся, мы лишь перерисовываем его результат.
+  async function selfTest() {
+    const rounds = await history(5);
+    const last = rounds.filter((r) => r && r.status === 'closed')[0];
+    if (!last) {
+      caption('<b>Nothing to replay</b><span class="cr-sub">' +
+              '/circuit/history has no closed rounds yet</span>');
+      return;
+    }
+    const keep = (() => { try { return localStorage.getItem(LS_KEY); } catch (e) { return null; } })();
+    await play(last);
+    // Возвращаем отметку как была, чтобы проверка не съела показ настоящего
+    // раунда у того, кто потом откроет страницу обычной ссылкой.
+    try {
+      if (keep === null) localStorage.removeItem(LS_KEY);
+      else localStorage.setItem(LS_KEY, keep);
+    } catch (e) {}
+  }
+
   function boot() {
     if (!$('stage-circuit')) return;
+
+    if (/[?&]revealtest=1/.test(location.search)) {
+      // Доску строит refreshCircuit() из index.html; до этого клеток нет и
+      // красить нечего. Ждём её появления, но не бесконечно.
+      let waited = 0;
+      const wait = setInterval(() => {
+        const bd = $('cir-board');
+        if (bd && bd.children.length) { clearInterval(wait); selfTest(); }
+        else if (++waited > 40) clearInterval(wait);
+      }, 400);
+      return;
+    }
+
     tick();
     setInterval(tick, POLL_MS);
   }
