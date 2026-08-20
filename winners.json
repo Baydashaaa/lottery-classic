@@ -835,6 +835,26 @@
       "winner_index": 4,
       "tx_winner": "2A1972051EA53F3DE3E064D94E33CCED6F6E9640343FE5CA189E6DC5418DFAAB",
       "tx_treasury": "7298C0AF190F85F62044C464AF67657DD21EA832EE432A6F5F4877DF79067F4B"
+    },
+    {
+      "date": "2026-08-20",
+      "round_id": "daily_2026-08-20",
+      "winner": "terra1jhtmkmakjvvtwur05klc7fd72e5n39m4x75c2l",
+      "prize_lunc": 11936,
+      "entries": 6,
+      "participants": 4,
+      "ticket_rule": "chain-v1",
+      "nft_contract": "terra1hcsq79vmcqxr97sv720yw6scvyknssx62ufsa4rwlmv02gyft43s46uaqx",
+      "deadline": "2026-08-20T20:00:00.000Z",
+      "boundary_ts": 1787083200,
+      "block_hash": "3498957A96A5DFDB57E2FAFC106E9D1C65CDC913D960393F84332C49ADA6CFB6",
+      "block_height": 30036889,
+      "block_time": "2026-08-20T20:00:02.810Z",
+      "randomness": "terra-classic-block-hash-at-round-deadline",
+      "winner_index": 4,
+      "tx_winner": "2B9B367451D9A907FB8EBF37E0EBEF89FC7C18751AB0700238B1897FF1116143",
+      "tx_treasury": "4FD7AE3F1441AA5463EDE2C2DDABCBD8B555FDD2E2C39849806753F8F2564E85",
+      "recovered": "запись восстановлена вручную: выплата прошла в прогоне #195 20 августа, коммит не сохранился из-за гонки за ветку"
     }
   ],
   "weekly": [
