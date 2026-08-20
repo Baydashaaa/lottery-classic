@@ -65,9 +65,12 @@ function showTab(tab, skipHistory) {
     });
   }
 
-  // Push to browser history so Back button works
+  // Push to browser history so Back button works.
+  // location.search сохраняется намеренно: без него переключение вкладки
+  // стирало любые параметры из адреса, и глубокие ссылки с ключами
+  // (например ?revealtest=1) переставали работать сразу после загрузки.
   if (!skipHistory && history.pushState) {
-    history.pushState({ tab }, '', '/' + tab);
+    history.pushState({ tab }, '', '/' + tab + location.search);
   }
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -2877,7 +2880,10 @@ function disconnectWallet() {
     const startTab = validTabs.includes(pathTab) ? pathTab
                    : validTabs.includes(hashTab) ? hashTab
                    : 'home';
-    if (history.replaceState) history.replaceState({ tab: startTab }, '', '/' + startTab);
+    // Параметры адреса переживают нормализацию пути - см. пояснение в showTab.
+    if (history.replaceState) {
+      history.replaceState({ tab: startTab }, '', '/' + startTab + location.search);
+    }
     showTab(startTab, true);
   } catch(e) { showTab('home', true); }
 
