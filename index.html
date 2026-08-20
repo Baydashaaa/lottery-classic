@@ -1904,11 +1904,12 @@ for place p in 0, 1, 2:
   <script src="assets/js/draw-schedule.js?v=202608040710"></script>
   <script src="assets/js/oracle-nft-client.js?v=3"></script>
   <script src="assets/js/app.js?v=202608202300"></script>
+  <script src="assets/js/circuit-state.js?v=1"></script>
   <script src="assets/js/circuit-buy.js?v=5"></script>
   <script src="assets/js/oracle-mint-v2.js?v=3"></script>
   <script src="assets/js/circuit-claim.js?v=1"></script>
-  <script src="assets/js/circuit-board.js?v=3"></script>
-  <script src="assets/js/circuit-reveal.js?v=3"></script>
+  <script src="assets/js/circuit-board.js?v=4"></script>
+  <script src="assets/js/circuit-reveal.js?v=4"></script>
 
   <!-- Oracle Draw V2 - один собранный файл.
        Раздельные модули кэшируются намертво: у вложенных import нет
@@ -2683,6 +2684,8 @@ document.getElementById('luncdash-modal').addEventListener('click', function(e) 
                : n >= 1e3 ? (n/1e3).toFixed(1) + 'K' : Math.round(n);
 
   async function refreshPools() {
+    // Свёрнутая вкладка балансы не обновляет - смотреть в неё некому.
+    if (document.visibilityState === 'hidden') return;
     for (const [game, addr] of Object.entries(POOL_WALLETS)) {
       try {
         const r = await fetch(LCD + '/cosmos/bank/v1beta1/balances/' + addr + '/by_denom?denom=uluna',
@@ -2713,15 +2716,13 @@ document.getElementById('luncdash-modal').addEventListener('click', function(e) 
 
   // Circuit: доска и отсчёт из воркера. Пока эндпоинт не поднят - молча
   // оставляем прочерки, рельс не должен ломаться из-за 404.
-  let circuitFastPoll = null;
-
-  async function refreshCircuit() {
+  // Своего запроса тут больше нет: состояние раздаёт circuit-state.js,
+  // единственный опросчик на всю страницу. Здесь только отрисовка.
+  function renderCircuit(d) {
     // См. circuit-reveal.js: во время показа розыгрыша доска не наша.
     if (window.__circuitRevealBusy) return;
+    if (!d) return;
     try {
-      const r = await fetch(DRAW_WORKER + '/circuit/state', { signal: AbortSignal.timeout(8000) });
-      if (!r.ok) return;
-      const d = await r.json();
       document.getElementById('dg-circuit-zones').textContent = d.sold;
       document.getElementById('dg-circuit-bar').style.width   = (d.sold / d.maxZones * 100) + '%';
       const m = Math.max(0, Math.round(d.msLeft / 60000));
@@ -2744,14 +2745,9 @@ document.getElementById('luncdash-modal').addEventListener('click', function(e) 
         ? 'zones are locked, picking the winner - usually a few minutes'
         : 'draws with ' + d.minZones + '+ zones');
 
-      // Пока идёт розыгрыш, опрашиваем чаще обычных 20 секунд: доска должна
-      // сама перекинуться на новый раунд, без обновления страницы руками.
-      if (drawing && !circuitFastPoll) {
-        circuitFastPoll = setInterval(refreshCircuit, 5000);
-      } else if (!drawing && circuitFastPoll) {
-        clearInterval(circuitFastPoll);
-        circuitFastPoll = null;
-      }
+      // Учащение такта на время розыгрыша делает circuit-state.js: при
+      // msLeft <= 0 он сам переходит с 20 секунд на 5. Второго параллельного
+      // таймера, который раньше жил рядом с двадцатисекундным, больше нет.
       const bd = document.getElementById('cir-board');
       if (bd && bd.children.length !== d.maxZones) {
         bd.innerHTML = Array.from({ length: d.maxZones }, () => '<i></i>').join('');
@@ -2765,10 +2761,13 @@ document.getElementById('luncdash-modal').addEventListener('click', function(e) 
     let saved = null;
     try { saved = localStorage.getItem('dgGame'); } catch (e) {}
     if (saved === 'circuit') selectGame('circuit');
-    refreshTicks(); refreshPools(); refreshCircuit();
+    refreshTicks(); refreshPools();
+    // Состояние раунда приходит от circuit-state.js по подписке: свой
+    // двадцатисекундный таймер убран, запрос теперь один на всех.
+    if (window.CircuitState) window.CircuitState.subscribe(renderCircuit);
+    else console.warn('[circuit] circuit-state.js не подключён');
     setInterval(refreshTicks, 1000);      // счётчик - локально, без сети
     setInterval(refreshPools, 45000);     // балансы меняются редко
-    setInterval(refreshCircuit, 20000);
   });
 })();
 </script>

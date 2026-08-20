@@ -15,8 +15,9 @@
    состоявшегося результата, повлиять на деньги он не может по построению.
 
    Как ловим момент: сравниваем roundId из /circuit/state с прошлым. Сменился -
-   значит предыдущий только что разыгран, и его надо показать. Опрос свой, раз
-   в 5 секунд, чтобы не зависеть от двадцатисекундного круга доски.
+   значит предыдущий только что разыгран, и его надо показать. Состояние даёт
+   circuit-state.js - он же сам учащает такт до 5 секунд, когда дедлайн прошёл,
+   так что показ не опаздывает и без собственного опроса.
 
    Пока идёт показ, поднят флаг window.__circuitRevealBusy: circuit-board.js и
    refreshCircuit() в index.html на нём выходят сразу, иначе они затёрли бы
@@ -25,7 +26,6 @@
 (function () {
   'use strict';
 
-  const POLL_MS = 5000;
   const SPIN_MS = 9000;    // сам пробег
   const HOLD_MS = 9000;    // сколько держим итог перед возвратом к доске
   const MAX_AGE_MS = 5 * 60 * 1000;  // раунд старше пяти минут не показываем
@@ -277,16 +277,12 @@
 
   let lastRoundId = null;
 
-  async function tick() {
+  async function tick(st) {
     if (window.__circuitRevealBusy) return;
     if (!$('cir-board')) return;
 
-    let st;
-    try {
-      const r = await fetch(base() + '/circuit/state', { signal: AbortSignal.timeout(8000) });
-      if (!r.ok) return;
-      st = await r.json();
-    } catch (e) { return; }
+    // Состояние приходит от circuit-state.js; свой пятисекундный опрос убран.
+    if (!st) st = window.CircuitState && window.CircuitState.get();
     if (!st || !st.roundId) return;
 
     // Первый заход: показываем только совсем свежий розыгрыш. Иначе человек,
@@ -360,8 +356,8 @@
       return;
     }
 
-    tick();
-    setInterval(tick, POLL_MS);
+    if (window.CircuitState) window.CircuitState.subscribe(tick);
+    else console.warn('[circuit-reveal] circuit-state.js не подключён');
   }
 
   if (document.readyState === 'loading') {

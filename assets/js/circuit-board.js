@@ -22,7 +22,6 @@
 (function () {
   'use strict';
 
-  const POLL_MS = 20000;
   const GOLD = '#f4d03f';
 
   // Десять различимых оттенков. Золотой не входит - он зарезервирован за
@@ -172,17 +171,16 @@
 
   /* ── опрос ─────────────────────────────────────────────────────────────── */
 
-  async function refresh() {
+  function refresh(state) {
     // Пока circuit-reveal.js показывает розыгрыш, доска принадлежит ему:
     // закрытый раунд держится на экране, и перекрашивать его под новый
     // (пустой) нельзя - пробег бегунка оборвётся на полуслове.
     if (window.__circuitRevealBusy) return;
-    let state;
-    try {
-      const r = await fetch(base() + '/circuit/state', { signal: AbortSignal.timeout(8000) });
-      if (!r.ok) return;
-      state = await r.json();
-    } catch (e) { return; }
+    // Состояние приходит аргументом от circuit-state.js. Своего fetch тут
+    // больше нет - три опросчика на одной странице выбирали дневной лимит
+    // воркера с двух-трёх открытых вкладок.
+    if (!state) state = window.CircuitState && window.CircuitState.get();
+    if (!state) return;
 
     const holders = holdersOf(state, myWallet());
 
@@ -196,15 +194,15 @@
     } else if (waitingForBoard < 40) {          // доска ещё не построена
       waitingForBoard++;
       setTimeout(() => { paintBoard(holders); }, 400);
-      setTimeout(refresh, 400);
+      setTimeout(() => refresh(state), 400);   // тем же состоянием, без запроса
     }
     renderLegend(state, holders);
   }
 
   function boot() {
     if (!$('stage-circuit')) return;
-    refresh();
-    setInterval(refresh, POLL_MS);
+    if (window.CircuitState) window.CircuitState.subscribe(refresh);
+    else console.warn('[circuit-board] circuit-state.js не подключён');
   }
 
   if (document.readyState === 'loading') {
