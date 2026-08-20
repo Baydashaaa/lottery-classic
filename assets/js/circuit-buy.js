@@ -95,6 +95,16 @@
     border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%;
     animation: cb-rot .7s linear infinite; vertical-align: -1px; }
   @keyframes cb-rot { to { transform: rotate(360deg); } }
+  /* Подсветка выбираемых зон. Красится инлайном (см. paintPreview), но сама
+     пульсация живёт классом-независимо: анимация по имени, keyframes здесь.
+     Анимируемые свойства перебивают инлайновые значения, поэтому инлайн
+     остаётся статическим запасным видом для reduced-motion. */
+  @keyframes cb-zone-pulse {
+    0%, 100% { background: rgba(255,255,255,.28); box-shadow: 0 0 4px rgba(255,255,255,.30);
+               outline-color: rgba(255,255,255,.55); }
+    50%      { background: rgba(255,255,255,.85); box-shadow: 0 0 12px rgba(255,255,255,.85);
+               outline-color: rgba(255,255,255,1); }
+  }
   @media (prefers-reduced-motion: reduce) { .cb-spin { animation: none; } }
   @media (max-width: 560px) { .cb-buy { flex-basis: 100%; } }
   `;
@@ -234,8 +244,16 @@
   // Красим ИНЛАЙНОВЫМ стилем, а не классом: refreshCircuit() в index.html
   // каждые 20 секунд переписывает className у всех клеток и стёр бы подсветку.
   // Инлайн переживает это, и чужой код трогать не нужно.
+  //
+  // Цвет нейтральный белый, а не бирюзовый: бирюза совпадала с цветом одного
+  // из кошельков в палитре доски, и выбор было не отличить от чужого владения.
+  // Белого в палитре нет, поэтому он читается однозначно как «сейчас выбираю».
 
   let painted = [];
+
+  // Пульсацию отключаем тем, кто просил меньше движения в системе.
+  const REDUCED = typeof matchMedia === 'function' &&
+                  matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   function clearPreview() {
     painted.forEach((c) => {
@@ -243,6 +261,7 @@
       c.style.boxShadow = '';
       c.style.outline = '';
       c.style.opacity = '';
+      c.style.animation = '';
     });
     painted = [];
   }
@@ -254,10 +273,11 @@
     for (let k = from; k <= to && k < bd.children.length; k++) {
       const c = bd.children[k];
       if (!c) continue;
-      c.style.background = 'rgba(56,217,208,.55)';
-      c.style.boxShadow = '0 0 6px rgba(56,217,208,.75)';
-      c.style.outline = '1px solid #38d9d0';
+      c.style.background = 'rgba(255,255,255,.55)';
+      c.style.boxShadow = '0 0 8px rgba(255,255,255,.55)';
+      c.style.outline = '1px solid rgba(255,255,255,.9)';
       c.style.opacity = '1';
+      if (!REDUCED) c.style.animation = 'cb-zone-pulse 2.4s ease-in-out infinite';
       painted.push(c);
     }
   }
