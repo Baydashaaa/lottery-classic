@@ -17,6 +17,23 @@
 // ВАЖНО: package.json репозитория содержит "type": "module". Только import,
 // только с явным расширением .js. require() здесь роняет всё на старте -
 // так пропали daily 2026-08-02 и weekly 2026-08-03.
+//
+// ── НАЛОГ ЦЕПИ, 20 августа 2026 ────────────────────────────────────────────
+// Предложение #12223 подняло налог с 0.5% до 1.5% со 2 августа 2026.
+// Проверено на упавшем раунде circuit_2026-08-20-05-44-17 до единицы uluna:
+// налог вычитается ИЗ СУММЫ ПЕРЕВОДА - получателю приходит amount*(1-tax),
+// с отправителя списывается amount + газ. Комиссия налог НЕ включает
+// (перевод 23 404 LUNC прошёл с комиссией 8.5 LUNC).
+//
+// Следствие: воркер засчитывает в пул ВАЛОВУЮ сумму платежа игрока, а на
+// кошелёк ложится 98.5% от неё. Раздать 100% пула физически невозможно -
+// последний перевод всегда упирается в insufficient funds. Поэтому суммы
+// выплат масштабируются под то, что реально может лежать на кошельке.
+//
+// Второе изменение: все переводы уходят ОДНОЙ транзакцией. Раньше их было
+// три-четыре подряд, и падение на середине оставляло раунд полуоплаченным и
+// незакрытым (15 и 17 августа, потом 20-го). Теперь состояние двоичное:
+// либо ушли все, либо ни один.
 
 import { DirectSecp256k1HdWallet } from '@cosmjs/proto-signing';
 import { stringToPath }            from '@cosmjs/crypto';
@@ -47,7 +64,23 @@ const NEIGHBOUR_SHARE = Number(process.env.CIRCUIT_NEIGHBOUR_SHARE ?? '0.05');
 const MAX_WAIT_MS   = 10 * 60 * 1000;   // сколько ждать появления блока дедлайна
 const SNAPSHOT_DIR  = 'rounds';
 
+// Цена газа на цепи и неснижаемый остаток на кошельке. Резерв нужен, чтобы
+// кошелёк не уходил в ноль: следующему раунду нужен газ ещё до того, как на
+// него придут первые платежи.
+const GAS_PRICE     = 28.325;
+const FLOAT_RESERVE = 25_000_000;
+
+// Налог, если LCD не ответил. Занижать нельзя: заниженный налог = недостаток
+// средств на последнем переводе, то есть ровно та поломка, от которой уходим.
+const TAX_FALLBACK = Number(process.env.CHAIN_TAX_RATE ?? '0.015');
+
+// Ниже этого масштаба выплата не идёт вообще. 0.9 - это тревожный порог:
+// налог 1.5% даёт масштаб ~0.985, и если вдруг вышло сильно меньше, значит
+// дело не в налоге, а в чём-то ещё, и платить вслепую нельзя.
+const MIN_SCALE = 0.9;
+
 const fmt = n => Math.floor(n).toLocaleString('en-US');
+const lunc = u => fmt(u / 1e6) + ' LUNC';
 
 // ── Воркер ─────────────────────────────────────────────────────────────────
 async function getState() {
@@ -66,6 +99,27 @@ async function closeRound(body) {
   const d = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error('circuit/close failed: ' + r.status + ' ' + JSON.stringify(d));
   return d;
+}
+
+// ── Налог цепи ─────────────────────────────────────────────────────────────
+// Ставка задана governance и уже менялась (0.2 → 0.5 → 1.5). Хардкодить её
+// нельзя: следующее предложение снова уронит выплаты. Читаем с цепи.
+async function fetchTaxRate() {
+  for (const base of LCD_NODES) {
+    try {
+      const r = await fetch(base + '/terra/treasury/v1beta1/tax_rate', {
+        headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(10000),
+      });
+      if (!r.ok) continue;
+      const d = await r.json();
+      const v = Number(d?.tax_rate);
+      if (Number.isFinite(v) && v >= 0 && v < 0.2) return v;
+    } catch (e) {
+      console.warn('tax rate fetch failed from ' + base + ': ' + e.message);
+    }
+  }
+  console.warn('WARNING: tax rate unavailable on all LCD nodes, using fallback ' + TAX_FALLBACK);
+  return TAX_FALLBACK;
 }
 
 // ── Блоки ──────────────────────────────────────────────────────────────────
@@ -171,9 +225,13 @@ async function getClient() {
 }
 
 // ── Отметки об уже отправленных переводах ──────────────────────────────────
-// Скрипт падал на середине выплат дважды: 15 августа не доплатил долю выкупа,
+// Скрипт падал на середине выплат: 15 августа не доплатил долю выкупа,
 // 17-го чуть не отправил приз второй раз. Воркер хранит отметку по каждому
 // переводу раунда, и повтор продолжает с места, а не начинает сначала.
+//
+// С переходом на одну транзакцию отметки стали страховкой второго уровня:
+// сама выплата теперь атомарна, но отметки защищают от повтора, если
+// транзакция прошла, а закрытие раунда не легло.
 async function fetchPayoutMarks(roundId) {
   const r = await fetch(WORKER + '/circuit/payouts?roundId=' + encodeURIComponent(roundId),
                         { headers: { Authorization: 'Bearer ' + SECRET } });
@@ -183,32 +241,47 @@ async function fetchPayoutMarks(roundId) {
 }
 
 async function markPayout(roundId, leg, txHash) {
-  const r = await fetch(WORKER + '/circuit/payouts', {
-    method: 'POST',
-    headers: { Authorization: 'Bearer ' + SECRET, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ roundId, leg, txHash }),
-  });
-  // Деньги ушли, а отметка не легла - самое опасное состояние: повтор заплатит
-  // второй раз. Останавливаемся и говорим громко, с хешем в тексте.
-  if (!r.ok) {
-    throw new Error('SENT BUT NOT RECORDED - leg ' + leg + ', tx ' + txHash +
-                    ' - record it manually before re-running');
+  // Деньги ушли одной транзакцией, отметок нужно несколько. Каждая - с
+  // повторами: сеть моргнула, а мы бы оставили раунд в самом опасном
+  // состоянии «заплачено, но не записано».
+  let lastErr = null;
+  for (let attempt = 1; attempt <= 4; attempt++) {
+    try {
+      const r = await fetch(WORKER + '/circuit/payouts', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + SECRET, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roundId, leg, txHash }),
+      });
+      if (r.ok) return;
+      lastErr = 'HTTP ' + r.status;
+    } catch (e) {
+      lastErr = e.message;
+    }
+    await new Promise(r => setTimeout(r, attempt * 3000));
   }
+  throw new Error('SENT BUT NOT RECORDED - leg ' + leg + ', tx ' + txHash +
+                  ' (' + lastErr + ') - record it manually before re-running');
 }
 
-async function sendLunc(client, from, to, amountUluna, memo) {
-  if (process.env.DRY_RUN === '1') throw new Error('DRY_RUN is set - refusing to send funds');
-  if (amountUluna < 1_000_000) {
-    console.log('too small to send (<1 LUNC), skipped: ' + to);
-    return null;
-  }
-  console.log('sending ' + fmt(amountUluna / 1e6) + ' LUNC to ' + to + ' - ' + memo);
-  const res = await client.sendTokens(
-    from, to,
-    [{ denom: DENOM, amount: String(Math.floor(amountUluna)) }],
-    { amount: [{ denom: DENOM, amount: '8500000' }], gas: '300000' },
-    memo
-  );
+// ── Отправка ───────────────────────────────────────────────────────────────
+// Одна транзакция, сколько угодно получателей. Комиссия покрывает ТОЛЬКО газ:
+// налог цепи вычитается из суммы перевода, а не добавляется к комиссии -
+// проверено на живых транзакциях раунда 20 августа.
+async function sendMany(client, from, legs, memo) {
+  const msgs = legs.map(l => ({
+    typeUrl: '/cosmos.bank.v1beta1.MsgSend',
+    value: {
+      fromAddress: from,
+      toAddress:   l.to,
+      amount:      [{ denom: DENOM, amount: String(Math.floor(l.uluna)) }],
+    },
+  }));
+  const gas = 200000 + 100000 * msgs.length;
+  const fee = {
+    amount: [{ denom: DENOM, amount: String(Math.ceil(gas * GAS_PRICE)) }],
+    gas: String(gas),
+  };
+  const res = await client.signAndBroadcast(from, msgs, fee, memo);
   if (res.code !== 0) throw new Error('tx failed: ' + res.rawLog);
   console.log('tx: ' + res.transactionHash);
   return res.transactionHash;
@@ -217,7 +290,7 @@ async function sendLunc(client, from, to, amountUluna, memo) {
 // ── Снимок раунда ──────────────────────────────────────────────────────────
 // Пишется ПОСЛЕ выплат, но ДО вызова /circuit/close: если close не пройдёт,
 // снимок останется и раунд можно будет разобрать вручную.
-function writeSnapshot(round, blockInfo, zone, winner, payouts) {
+function writeSnapshot(round, blockInfo, zone, winner, payouts, money) {
   if (!fs.existsSync(SNAPSHOT_DIR)) fs.mkdirSync(SNAPSHOT_DIR, { recursive: true });
   const file = path.join(SNAPSHOT_DIR, round.roundId + '.json');
   const data = {
@@ -231,6 +304,11 @@ function writeSnapshot(round, blockInfo, zone, winner, payouts) {
       'The block is not the latest one at run time: it is the first block with a',
       'timestamp at or after the round deadline, found by binary search. That makes',
       'the result independent of when the script actually ran.',
+      '',
+      'payouts are the amounts put on the wire. Terra Classic deducts the chain tax',
+      'from the transferred amount, so each recipient credits amount * (1 - tax_rate).',
+      'payout_scale is the factor applied to the worker split so that the pool wallet,',
+      'which itself received only (1 - tax_rate) of every player payment, can cover it.',
     ],
     round_id:    round.roundId,
     opened_at:   new Date(round.openedAt).toISOString(),
@@ -239,6 +317,8 @@ function writeSnapshot(round, blockInfo, zone, winner, payouts) {
     max_zones:   round.maxZones,
     pool_uluna:  round.poolUluna,
     split:       round.split,
+    tax_rate:     money.tax,
+    payout_scale: money.scale,
     block_hash:   blockInfo.hash,
     block_height: blockInfo.height,
     block_time:   new Date(blockInfo.timeMs).toISOString(),
@@ -259,7 +339,7 @@ async function main() {
   const now = Date.now();
 
   console.log('round ' + round.roundId + ' - ' + round.sold + '/' + round.maxZones +
-              ' zones, pool ' + fmt(round.poolUluna / 1e6) + ' LUNC');
+              ' zones, pool ' + lunc(round.poolUluna));
 
   const full    = round.sold >= round.maxZones;
   const expired = now >= round.deadline;
@@ -273,7 +353,7 @@ async function main() {
   if (round.sold < round.minZones) {
     console.log('below the minimum (' + round.sold + ' < ' + round.minZones + ') - merging into the next round');
     const res = await closeRound({});
-    console.log('merged, carried ' + fmt((res.carried || 0) / 1e6) + ' LUNC into ' + res.nextRound);
+    console.log('merged, carried ' + lunc(res.carried || 0) + ' into ' + res.nextRound);
     return;
   }
 
@@ -302,82 +382,150 @@ async function main() {
   // чтобы обязательство было видно НА ЦЕПОЧКЕ, а не только счётчиком в KV:
   // пропадёт база - пропадёт и след, а баланс кошелька проверит кто угодно.
   // Сюда стекается вся доля TCO (6% + 6%) и отсюда идёт единственная
-  // покупка в конце эпохи. Ключ этого кошелька - единственный, который
-  // нужен скрипту эпохи.
+  // покупка в конце эпохи.
   const TCO_BUYBACK_WALLET = 'terra1x3axkacpes4d8q2svfeneqdtv8rvcvccrn66j5';
 
-  // Выплаты. Утешительная доля соседям берётся ИЗ призового фонда, а не сверх.
+  // ── Плановые суммы по данным воркера ─────────────────────────────────────
+  // Утешительная доля соседям берётся ИЗ призового фонда, а не сверх.
   const prizeTotal = round.split.prize;
   const neigh      = NEIGHBOUR_SHARE > 0 ? neighboursOf(round.blocks, zone, round.sold) : [];
   const perNeigh   = neigh.length ? Math.floor(prizeTotal * NEIGHBOUR_SHARE / neigh.length) : 0;
   const toWinner   = prizeTotal - perNeigh * neigh.length;
 
-  const marks = await fetchPayoutMarks(round.roundId);
-  const done = Object.keys(marks);
-  if (done.length) console.log('already paid in an earlier run: ' + done.join(', '));
-
-  // Каждый перевод отмечается сразу после отправки, до следующего.
-  const payOnce = async (leg, to, uluna, memo) => {
-    if (marks[leg]) {
-      console.log('skip ' + leg + ' - already sent, tx ' + marks[leg]);
-      return marks[leg];
-    }
-    const tx = await sendLunc(client, address, to, uluna, memo);
-    if (tx) await markPayout(round.roundId, leg, tx);
-    return tx;
-  };
-
-  const payouts = { winner: null, neighbours: [], treasury: null,
-                    tcoDrop: null, tcoBurn: null };
-  payouts.winner = {
-    wallet: winner.wallet, uluna: toWinner,
-    tx: await payOnce('winner', winner.wallet, toWinner,
-                      'Circuit ' + round.roundId + ' - zone ' + zone),
-  };
-  for (const n of neigh) {
-    payouts.neighbours.push({
-      wallet: n.wallet, uluna: perNeigh,
-      tx: await payOnce('neighbour:' + n.wallet, n.wallet, perNeigh,
-                        'Circuit ' + round.roundId + ' - neighbour of zone ' + zone),
-    });
-  }
-  payouts.treasury = {
-    wallet: TREASURY, uluna: round.split.treasury,
-    tx: await payOnce('treasury', TREASURY, round.split.treasury,
-                      'Circuit ' + round.roundId + ' - treasury'),
-  };
-  // Доли TCO уходят на свои кошельки и ЖДУТ там.
-  //
-  // Раздача: покупка идёт партией в конце эпохи - покупать по 31 центу за
-  // раунд бессмысленно, комиссия свопа и проскальзывание съедят больше.
-  // Доля каждого участника уже зафиксирована воркером в LUNC.
-  //
-  // Сжигание: не включается до попадания в белый список. До тех пор доля
-  // просто копится - ни покупки, ни сжигания.
-  //
-  // Поле split.tcoDrop появилось вместе с разделением 6/6; пока воркер
-  // старой версии, его нет, и переводы молча пропускаются.
-  // Обе доли уходят ОДНИМ переводом на кошелёк выкупа. Разделение
-  // произойдёт после покупки: скрипт эпохи поделит купленный TCO пополам -
-  // половину в claim-контракт, половину на бёрн-кошелёк.
-  //
-  // Бёрн-кошелёк только принимает, его ключ в CI не нужен.
   const dropUluna = round.split.tcoDrop || 0;
   const burnUluna = round.split.tcoBurn || 0;
   const tcoUluna  = dropUluna + burnUluna;
-
-  if (tcoUluna > 0) {
-    const tx = await payOnce('tco', TCO_BUYBACK_WALLET, tcoUluna,
-                             'Circuit ' + round.roundId + ' - TCO buyback share');
-    // Суммы пишем раздельно: пропорция 6/6 должна быть видна в снимке
-    // раунда, даже когда перевод один.
-    payouts.tcoDrop = { wallet: TCO_BUYBACK_WALLET, uluna: dropUluna, purpose: 'rewards', tx };
-    payouts.tcoBurn = { wallet: TCO_BUYBACK_WALLET, uluna: burnUluna, purpose: 'burn', tx };
-  } else {
+  if (tcoUluna <= 0) {
     console.log('WARNING: split has no tcoDrop/tcoBurn - worker is on the old format, TCO shares stay in the pool wallet');
   }
 
-  writeSnapshot(round, blockInfo, zone, winner, payouts);
+  const legs = [];
+  legs.push({ id: 'winner', to: winner.wallet, planned: toWinner,
+              memo: 'Circuit ' + round.roundId + ' - zone ' + zone });
+  for (const n of neigh) {
+    legs.push({ id: 'neighbour:' + n.wallet, to: n.wallet, planned: perNeigh, wallet: n.wallet,
+                memo: 'Circuit ' + round.roundId + ' - neighbour of zone ' + zone });
+  }
+  legs.push({ id: 'treasury', to: TREASURY, planned: round.split.treasury,
+              memo: 'Circuit ' + round.roundId + ' - treasury' });
+  if (tcoUluna > 0) {
+    legs.push({ id: 'tco', to: TCO_BUYBACK_WALLET, planned: tcoUluna,
+                memo: 'Circuit ' + round.roundId + ' - TCO buyback share' });
+  }
+
+  // ── Что уже отправлено ───────────────────────────────────────────────────
+  const marks = await fetchPayoutMarks(round.roundId);
+  const done  = Object.keys(marks);
+  if (done.length) console.log('already paid in an earlier run: ' + done.join(', '));
+
+  const toPay = legs.filter(l => !marks[l.id]);
+
+  // ── Масштабирование под то, что реально лежит на кошельке ────────────────
+  // Пул в учёте воркера ВАЛОВОЙ, а на кошелёк с каждого платежа игрока легло
+  // (1 - tax). Плюс отсюда же уходил газ прошлых операций. Поэтому масштаб
+  // считается не от пула, а от фактического баланса: он и есть единственная
+  // правда о том, сколько можно раздать.
+  //
+  // Пересчёт при повторе безопасен: выплата атомарна, значит неотмеченного
+  // «наполовину отправленного» перевода не бывает, а отмеченные не трогаем.
+  const tax     = await fetchTaxRate();
+  const balRaw  = await client.getBalance(address, DENOM);
+  const balance = Number(balRaw.amount);
+  const gasCost = Math.ceil((200000 + 100000 * Math.max(toPay.length, 1)) * GAS_PRICE);
+  const gross   = toPay.reduce((s, l) => s + l.planned, 0);
+  const budget  = balance - gasCost - FLOAT_RESERVE;
+  const scale   = gross > 0 ? Math.min(1, budget / gross) : 1;
+
+  console.log('operator ' + address + ', balance ' + lunc(balance));
+  console.log('chain tax ' + (tax * 100).toFixed(2) + '%, payout scale ' + scale.toFixed(6));
+
+  if (gross > 0 && !(scale > MIN_SCALE)) {
+    const short = gross + gasCost + FLOAT_RESERVE - balance;
+    throw new Error('payout scale ' + scale.toFixed(4) + ' is below ' + MIN_SCALE +
+                    ' - refusing to pay. Balance ' + lunc(balance) + ', unpaid legs ' +
+                    lunc(gross) + '. Top up the operator wallet with ' + lunc(short) +
+                    ' to pay in full, then re-run');
+  }
+
+  // Неоплаченные - по масштабу. Уже отмеченные показываем по плану: прошлый
+  // запуск отправлял их без масштаба, и снимок раунда должен это отражать.
+  for (const l of legs) l.uluna = marks[l.id] ? l.planned : Math.floor(l.planned * scale);
+
+  // Слишком мелкое не отправляем: комиссия дороже перевода.
+  const pending = toPay.filter(l => l.uluna >= 1_000_000);
+  for (const l of toPay) {
+    if (l.uluna < 1_000_000) console.log('too small to send (<1 LUNC), skipped: ' + l.id + ' -> ' + l.to);
+  }
+  const needed = pending.reduce((s, l) => s + l.uluna, 0);
+
+  for (const l of legs) {
+    const state = marks[l.id] ? 'ALREADY SENT ' + marks[l.id] : 'to send';
+    console.log('  ' + l.id.padEnd(24) + lunc(l.uluna).padStart(16) +
+                '  (planned ' + lunc(l.planned) + ')  ' + state);
+  }
+  console.log('to send now: ' + lunc(needed) + ' + ' + lunc(gasCost) + ' gas');
+
+  if (process.env.DRY_RUN === '1') {
+    console.log('DRY_RUN - nothing sent, exiting');
+    return;
+  }
+
+  // Не хватает - НЕ отправляем ничего. Полуоплаченный раунд хуже незакрытого.
+  if (pending.length && balance < needed + gasCost) {
+    throw new Error('not enough funds: balance ' + lunc(balance) + ', need ' +
+                    lunc(needed + gasCost) + ' - top up the operator wallet with ' +
+                    lunc(needed + gasCost - balance) + ' and re-run');
+  }
+
+  // ── Одна транзакция на все переводы ──────────────────────────────────────
+  if (pending.length) {
+    const memo = 'Circuit ' + round.roundId + ' - payouts';
+    console.log('sending ' + pending.length + ' payouts in one tx, ' + lunc(needed) + ' total');
+    const tx = await sendMany(client, address, pending, memo);
+    for (const l of pending) {
+      await markPayout(round.roundId, l.id, tx);
+      marks[l.id] = tx;
+    }
+  } else {
+    console.log('everything was already paid in an earlier run - closing the round');
+  }
+
+  // ── Снимок и закрытие ────────────────────────────────────────────────────
+  const netOf = u => u - Math.floor(u * tax);
+  const payouts = { winner: null, neighbours: [], treasury: null, tcoDrop: null, tcoBurn: null };
+  const legById = Object.fromEntries(legs.map(l => [l.id, l]));
+
+  payouts.winner = {
+    wallet: winner.wallet,
+    uluna:  legById['winner'].uluna,
+    received: netOf(legById['winner'].uluna),
+    tx: marks['winner'] || null,
+  };
+  for (const n of neigh) {
+    const l = legById['neighbour:' + n.wallet];
+    payouts.neighbours.push({
+      wallet: n.wallet, uluna: l.uluna, received: netOf(l.uluna),
+      tx: marks[l.id] || null,
+    });
+  }
+  payouts.treasury = {
+    wallet: TREASURY,
+    uluna:  legById['treasury'].uluna,
+    received: netOf(legById['treasury'].uluna),
+    tx: marks['treasury'] || null,
+  };
+  if (tcoUluna > 0) {
+    // Суммы пишем раздельно: пропорция 6/6 должна быть видна в снимке
+    // раунда, даже когда перевод один. Делим уже отмасштабированную сумму.
+    const sent = legById['tco'].uluna;
+    const dropPart = Math.floor(sent * (dropUluna / tcoUluna));
+    payouts.tcoDrop = { wallet: TCO_BUYBACK_WALLET, uluna: dropPart,
+                        purpose: 'rewards', tx: marks['tco'] || null };
+    payouts.tcoBurn = { wallet: TCO_BUYBACK_WALLET, uluna: sent - dropPart,
+                        purpose: 'burn', tx: marks['tco'] || null };
+  }
+
+  writeSnapshot(round, blockInfo, zone, winner, payouts, { tax, scale });
 
   const res = await closeRound({
     winnerZone:  zone,
@@ -386,7 +534,7 @@ async function main() {
     blockTime:   new Date(blockInfo.timeMs).toISOString(),
     txWinner:    payouts.winner.tx,
   });
-  console.log('round closed. TCO pending: ' + fmt((res.tcoPending || 0) / 1e6) + ' LUNC');
+  console.log('round closed. TCO pending: ' + lunc(res.tcoPending || 0));
 }
 
 main().catch(e => { console.error('FATAL: ' + e.message); process.exit(1); });
