@@ -40,5 +40,12 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add free-entries.json
-          git diff --staged --quiet || git commit -m "chore: update free-entries [skip ci]"
-          git push
+          git diff --staged --quiet && echo "нечего коммитить" && exit 0
+          git commit -m "chore: update free-entries [skip ci]"
+          for i in 1 2 3; do
+            git pull --rebase --autostash && git push && exit 0
+            echo "попытка $i не прошла, ждём 10 секунд"
+            sleep 10
+          done
+          echo "::error::free-entries.json не сохранён"
+          exit 1

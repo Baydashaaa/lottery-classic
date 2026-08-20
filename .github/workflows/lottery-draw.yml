@@ -88,5 +88,20 @@ jobs:
           # НЕ заменять на `git add -A`: шаг выше делает npm install прямо
           # в корне репо, и node_modules уедет в коммит.
           git add winners.json rounds/
-          git diff --staged --quiet || git commit -m "🎰 ${{ steps.draw_type.outputs.type }} draw - $(date -u +'%Y-%m-%d')"
-          git push
+          git diff --staged --quiet && echo "нечего коммитить" && exit 0
+          git commit -m "🎰 ${{ steps.draw_type.outputs.type }} draw - $(date -u +'%Y-%m-%d')"
+          # Пуш без pull ломался: розыгрыш идёт до семи минут, и за это время
+          # в ветку успевают лечь снимки Circuit и free-entries. 20 августа так
+          # потерялась запись о выплаченном daily-раунде, а защита от повтора
+          # в lottery-draw.js читает именно winners.json - следующий запуск
+          # заплатил бы приз второй раз.
+          for i in 1 2 3 4 5; do
+            if git pull --rebase --autostash && git push; then
+              echo "розыгрыш записан"
+              exit 0
+            fi
+            echo "попытка $i не прошла, ждём 10 секунд"
+            sleep 10
+          done
+          echo "::error::РОЗЫГРЫШ НЕ ЗАПИСАН. Призы уже отправлены, но winners.json не попал в репозиторий. НЕ ЗАПУСКАЙТЕ розыгрыш снова, пока запись не будет добавлена вручную - иначе тот же раунд разыграется и оплатится повторно."
+          exit 1

@@ -68,5 +68,13 @@ jobs:
           # Без pull --rebase push падает non-fast-forward, если между
           # checkout и push прилетел чужой коммит - призы уже отправлены,
           # а снимок потерялся бы.
-          git pull --rebase --autostash
-          git push
+          for i in 1 2 3 4 5; do
+            if git pull --rebase --autostash && git push; then
+              echo "снимок сохранён"
+              exit 0
+            fi
+            echo "попытка $i не прошла, ждём 10 секунд"
+            sleep 10
+          done
+          echo "::error::СНИМОК РАУНДА НЕ СОХРАНЁН. Выплаты прошли, раунд закрыт, но файл в rounds/ не попал в репозиторий - страница проверки этот раунд не покажет."
+          exit 1
