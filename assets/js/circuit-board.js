@@ -173,6 +173,10 @@
   /* ── опрос ─────────────────────────────────────────────────────────────── */
 
   async function refresh() {
+    // Пока circuit-reveal.js показывает розыгрыш, доска принадлежит ему:
+    // закрытый раунд держится на экране, и перекрашивать его под новый
+    // (пустой) нельзя - пробег бегунка оборвётся на полуслове.
+    if (window.__circuitRevealBusy) return;
     let state;
     try {
       const r = await fetch(base() + '/circuit/state', { signal: AbortSignal.timeout(8000) });

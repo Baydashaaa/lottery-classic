@@ -1907,7 +1907,8 @@ for place p in 0, 1, 2:
   <script src="assets/js/circuit-buy.js?v=5"></script>
   <script src="assets/js/oracle-mint-v2.js?v=3"></script>
   <script src="assets/js/circuit-claim.js?v=1"></script>
-  <script src="assets/js/circuit-board.js?v=2"></script>
+  <script src="assets/js/circuit-board.js?v=3"></script>
+  <script src="assets/js/circuit-reveal.js?v=1"></script>
 
   <!-- Oracle Draw V2 - один собранный файл.
        Раздельные модули кэшируются намертво: у вложенных import нет
@@ -2715,6 +2716,8 @@ document.getElementById('luncdash-modal').addEventListener('click', function(e) 
   let circuitFastPoll = null;
 
   async function refreshCircuit() {
+    // См. circuit-reveal.js: во время показа розыгрыша доска не наша.
+    if (window.__circuitRevealBusy) return;
     try {
       const r = await fetch(DRAW_WORKER + '/circuit/state', { signal: AbortSignal.timeout(8000) });
       if (!r.ok) return;
