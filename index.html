@@ -1039,7 +1039,7 @@ body.modal-open{overflow:hidden}
     <div class="dg-cir-grid">
      <div class="dg-cir-box"><span>Board</span><b id="cir-sold">0</b><i>of 250 zones</i></div>
      <div class="dg-cir-box"><span>Round pool</span><b id="cir-pool">0</b><i>LUNC</i></div>
-     <div class="dg-cir-box"><span>Next round in</span><b id="cir-left">-</b><i>draws with 20+ zones</i></div>
+     <div class="dg-cir-box"><span>Next round in</span><b id="cir-left">-</b><i id="cir-left-sub">draws with 20+ zones</i></div>
     </div>
 
     <div class="dg-cir-board" id="cir-board"></div>
@@ -2712,6 +2712,8 @@ document.getElementById('luncdash-modal').addEventListener('click', function(e) 
 
   // Circuit: доска и отсчёт из воркера. Пока эндпоинт не поднят - молча
   // оставляем прочерки, рельс не должен ломаться из-за 404.
+  let circuitFastPoll = null;
+
   async function refreshCircuit() {
     try {
       const r = await fetch(DRAW_WORKER + '/circuit/state', { signal: AbortSignal.timeout(8000) });
@@ -2720,9 +2722,13 @@ document.getElementById('luncdash-modal').addEventListener('click', function(e) 
       document.getElementById('dg-circuit-zones').textContent = d.sold;
       document.getElementById('dg-circuit-bar').style.width   = (d.sold / d.maxZones * 100) + '%';
       const m = Math.max(0, Math.round(d.msLeft / 60000));
-      // Дедлайн прошёл, ждём ближайшего запуска circuit-round.yml - GitHub
-      // держит крон «примерно раз в час», и честнее сказать это, чем висеть на 0m.
-      const tick = d.msLeft <= 0 ? 'closing' :
+      // Дедлайн прошёл: зоны заперты, ждём ближайшего запуска circuit-round.yml.
+      // Крон стоит на */5, но GitHub под нагрузкой задерживает запуски по
+      // расписанию, так что окно ожидания реально до 10-15 минут. Пустое слово
+      // «closing» люди читают как поломку и начинают жать F5, поэтому пишем
+      // «drawing» и объясняем прямо под цифрой, что происходит.
+      const drawing = d.msLeft <= 0;
+      const tick = drawing ? 'drawing' :
                    m >= 60 ? Math.floor(m / 60) + 'h ' + (m % 60) + 'm' : m + 'm';
       document.getElementById('dg-circuit-tick').textContent = tick;
 
@@ -2731,6 +2737,18 @@ document.getElementById('luncdash-modal').addEventListener('click', function(e) 
       set('cir-sold', d.sold);
       set('cir-pool', Math.round(d.poolUluna / 1e6).toLocaleString('en-US'));
       set('cir-left', tick);
+      set('cir-left-sub', drawing
+        ? 'zones are locked, picking the winner - usually a few minutes'
+        : 'draws with ' + d.minZones + '+ zones');
+
+      // Пока идёт розыгрыш, опрашиваем чаще обычных 20 секунд: доска должна
+      // сама перекинуться на новый раунд, без обновления страницы руками.
+      if (drawing && !circuitFastPoll) {
+        circuitFastPoll = setInterval(refreshCircuit, 5000);
+      } else if (!drawing && circuitFastPoll) {
+        clearInterval(circuitFastPoll);
+        circuitFastPoll = null;
+      }
       const bd = document.getElementById('cir-board');
       if (bd && bd.children.length !== d.maxZones) {
         bd.innerHTML = Array.from({ length: d.maxZones }, () => '<i></i>').join('');
