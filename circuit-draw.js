@@ -70,6 +70,12 @@ const SNAPSHOT_DIR  = 'rounds';
 const GAS_PRICE     = 28.325;
 const FLOAT_RESERVE = 25_000_000;
 
+// Газ на транзакцию с n переводами. Замер 20 августа: три MsgSend в одной
+// транзакции съели 500 266 при лимите 500 000 - не хватило 266 единиц, и
+// раунд не закрылся. Реальный расход около 165k на сообщение, берём с
+// запасом вдвое: комиссия всё равно копеечная против размера пула.
+const gasFor = (n) => 300_000 + 250_000 * n;
+
 // Налог, если LCD не ответил. Занижать нельзя: заниженный налог = недостаток
 // средств на последнем переводе, то есть ровно та поломка, от которой уходим.
 const TAX_FALLBACK = Number(process.env.CHAIN_TAX_RATE ?? '0.015');
@@ -113,7 +119,10 @@ async function fetchTaxRate() {
       if (!r.ok) continue;
       const d = await r.json();
       const v = Number(d?.tax_rate);
-      if (Number.isFinite(v) && v >= 0 && v < 0.2) return v;
+      // Ноль здесь означает «не тот параметр», а не «налога нет»: цепь
+      // фактически удерживает 1.5%, это видно в теле каждой транзакции.
+      // Поэтому ноль считаем неответом и уходим на запасное значение.
+      if (Number.isFinite(v) && v > 0 && v < 0.2) return v;
     } catch (e) {
       console.warn('tax rate fetch failed from ' + base + ': ' + e.message);
     }
@@ -276,11 +285,21 @@ async function sendMany(client, from, legs, memo) {
       amount:      [{ denom: DENOM, amount: String(Math.floor(l.uluna)) }],
     },
   }));
-  const gas = 200000 + 100000 * msgs.length;
+  // Лимит берём по замеру сети, а не по формуле: длина memo и количество
+  // получателей двигают расход, и упереться в потолок посреди выплаты дорого.
+  // Формула остаётся нижней границей на случай, если узел не даёт симуляцию.
+  let gas = gasFor(msgs.length);
+  try {
+    const simulated = Math.ceil((await client.simulate(from, msgs, memo)) * 1.6);
+    if (Number.isFinite(simulated)) gas = Math.max(gas, simulated);
+  } catch (e) {
+    console.warn('gas simulation unavailable (' + e.message + '), using ' + gas);
+  }
   const fee = {
     amount: [{ denom: DENOM, amount: String(Math.ceil(gas * GAS_PRICE)) }],
     gas: String(gas),
   };
+  console.log('gas limit ' + gas + ', fee ' + lunc(Math.ceil(gas * GAS_PRICE)));
   const res = await client.signAndBroadcast(from, msgs, fee, memo);
   if (res.code !== 0) throw new Error('tx failed: ' + res.rawLog);
   console.log('tx: ' + res.transactionHash);
@@ -431,7 +450,7 @@ async function main() {
   const tax     = await fetchTaxRate();
   const balRaw  = await client.getBalance(address, DENOM);
   const balance = Number(balRaw.amount);
-  const gasCost = Math.ceil((200000 + 100000 * Math.max(toPay.length, 1)) * GAS_PRICE);
+  const gasCost = Math.ceil(gasFor(Math.max(toPay.length, 1)) * GAS_PRICE);
   const gross   = toPay.reduce((s, l) => s + l.planned, 0);
   const budget  = balance - gasCost - FLOAT_RESERVE;
   const scale   = gross > 0 ? Math.min(1, budget / gross) : 1;
