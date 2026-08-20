@@ -344,7 +344,11 @@
   function boot() {
     if (!$('stage-circuit')) return;
 
-    if (/[?&]revealtest=1/.test(location.search)) {
+    // Ключ ищем и в строке запроса, и в хеше: страница живёт по адресам вида
+    // /#draw, и параметр легко оказывается по ту сторону решётки.
+    const testMode = /[?&]revealtest=1/.test(location.search) ||
+                     /[?&#]revealtest=1/.test(location.hash);
+    if (testMode) {
       // Доску строит refreshCircuit() из index.html; до этого клеток нет и
       // красить нечего. Ждём её появления, но не бесконечно.
       let waited = 0;
