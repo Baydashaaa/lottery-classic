@@ -855,6 +855,13 @@
       "tx_winner": "2B9B367451D9A907FB8EBF37E0EBEF89FC7C18751AB0700238B1897FF1116143",
       "tx_treasury": "4FD7AE3F1441AA5463EDE2C2DDABCBD8B555FDD2E2C39849806753F8F2564E85",
       "recovered": "запись восстановлена вручную: выплата прошла в прогоне #195 20 августа, коммит не сохранился из-за гонки за ветку"
+    },
+    {
+      "date": "2026-08-21",
+      "round_id": "daily_2026-08-21",
+      "skipped": true,
+      "reason": "Not enough entries: 0",
+      "entries": 0
     }
   ],
   "weekly": [
