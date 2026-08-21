@@ -8,6 +8,15 @@ name: Circuit - Round Closer
 # закрывать нечего.
 
 on:
+  # Основной запуск - от воркера на Cloudflare: он тикает раз в минуту и шлёт
+  # repository_dispatch, как только раунд действительно созрел. Его расписание
+  # пунктуально, в отличие от планировщика GitHub, который прореживает тики:
+  # 21 августа этап drawing на сайте висел 18 минут вместо обещанных пяти.
+  repository_dispatch:
+    types: [run-circuit]
+  # Крон GitHub остаётся страховкой на случай, если воркер не достучится.
+  # Лишний запуск ничего не стоит: скрипт сам решает, пора ли, а отметки
+  # переводов не дадут заплатить дважды.
   schedule:
     - cron: '*/5 * * * *'
   workflow_dispatch:
@@ -49,7 +58,9 @@ jobs:
           DISTRIBUTION_SECRET:       ${{ secrets.DISTRIBUTION_SECRET }}
           CIRCUIT_WORKER_URL:        ${{ secrets.CIRCUIT_WORKER_URL }}
           CIRCUIT_NEIGHBOUR_SHARE:   ${{ vars.CIRCUIT_NEIGHBOUR_SHARE }}
-          DRY_RUN:                   ${{ inputs.dry_run && '1' || '0' }}
+          # inputs существует только у workflow_dispatch. При запуске от воркера
+          # или по крону выражение даёт пустую строку, то есть боевой режим.
+          DRY_RUN:                   ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && '1' || '0' }}
         run: node circuit-draw.js
 
       # Снимок пишется только когда раунд реально закрылся. Коммитим ТОЧЕЧНО:
