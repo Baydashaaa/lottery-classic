@@ -41,6 +41,12 @@
   const GREY = '#5b6b78';
 
   const $ = (id) => document.getElementById(id);
+
+  // Показ срабатывает раз в три часа и только у того, кто в этот момент на
+  // странице - воспроизвести сбой по просьбе невозможно. Поэтому решения
+  // пишутся в консоль всегда: следующий отчёт «у меня ничего не было» можно
+  // будет разобрать по логу, а не по догадкам.
+  const log = (m) => { try { console.log('[reveal] ' + m); } catch (e) {} };
   const base = () => (typeof DRAW_WORKER !== 'undefined' ? DRAW_WORKER : '');
   const short = (a) => String(a).slice(0, 9) + '…' + String(a).slice(-4);
   const lunc = (u) => Math.round(u / 1e6).toLocaleString('en-US');
@@ -228,6 +234,7 @@
 
     window.__circuitRevealBusy = true;
     markShown(round.roundId);
+    log('показываем ' + round.roundId + ': зона ' + round.winnerZone + ' из ' + round.sold);
 
     const me = myWallet();
     const won = me && String(round.winner).toLowerCase() === me.toLowerCase();
@@ -302,13 +309,50 @@
 
     const closed = lastRoundId;
     lastRoundId = st.roundId;
-    if (alreadyShown(closed)) return;
+    log('раунд сменился: ' + closed + ' -> ' + st.roundId);
+    if (alreadyShown(closed)) { log('этот раунд уже показывали, пропускаем'); return; }
 
-    // Раунды, слитые из-за недобора, в историю не пишутся - если предыдущего
-    // там нет, значит розыгрыша не было и показывать нечего.
-    const rounds = await history(5);
-    const round = rounds.find((r) => r && r.roundId === closed);
-    if (round) await play(round);
+    // Доску замораживаем СРАЗУ, до похода в историю.
+    //
+    // Воркер меняет circuit_round и дописывает историю разными операциями,
+    // поэтому закрытый раунд появляется в /circuit/history на несколько секунд
+    // позже, чем текущий roundId успевает смениться. Раньше мы за эти секунды
+    // ничего не находили и выходили, а refreshCircuit тем временем перерисовывал
+    // доску под новый пустой раунд - зоны исчезали, показывать было нечего.
+    // 21 августа это дало разное поведение на телефоне и на ноутбуке: попал
+    // опрос в удачный момент или нет, решала случайность.
+    window.__circuitRevealBusy = true;
+    try {
+      caption('<b>Drawing…</b><span class="cr-sub">resolving the result</span>');
+      const round = await waitForClosedRound(closed);
+      if (!round) {
+        // Раунды, слитые из-за недобора, в историю не пишутся - розыгрыша не
+        // было, и это нормальный исход, а не сбой.
+        log('раунд ' + closed + ' в истории не появился - показывать нечего');
+        dropCaption();
+        return;
+      }
+      await play(round);
+    } finally {
+      window.__circuitRevealBusy = false;
+    }
+  }
+
+  // Ждём, пока закрытый раунд доедет до истории. Пятнадцать секунд с запасом:
+  // на практике хватает двух-трёх, но доска всё это время заморожена и человек
+  // видит «Drawing…», а не пустое поле.
+  async function waitForClosedRound(roundId) {
+    for (let attempt = 1; attempt <= 6; attempt++) {
+      const rounds = await history(5);
+      const r = rounds.find((x) => x && x.roundId === roundId);
+      if (r && r.status === 'closed') {
+        log('раунд найден в истории с попытки ' + attempt);
+        return r;
+      }
+      if (r) log('раунд найден, но статус "' + r.status + '" - ждём');
+      await new Promise((done) => setTimeout(done, 2500));
+    }
+    return null;
   }
 
   /* ── проверка без ожидания раунда ──────────────────────────────────────── */
