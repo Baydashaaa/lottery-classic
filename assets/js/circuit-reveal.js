@@ -276,10 +276,10 @@
     try {
       const r = await fetch(base() + '/circuit/history?limit=' + limit,
                             { signal: AbortSignal.timeout(8000) });
-      if (!r.ok) return [];
+      if (!r.ok) { log('history: HTTP ' + r.status); return []; }
       const d = await r.json();
       return (d && Array.isArray(d.rounds)) ? d.rounds : [];
-    } catch (e) { return []; }
+    } catch (e) { log('history: ' + (e && e.message ? e.message : e)); return []; }
   }
 
   let lastRoundId = null;
@@ -287,21 +287,19 @@
   async function tick(st) {
     if (window.__circuitRevealBusy) return;
     if (!$('cir-board')) return;
-
-    // Состояние приходит от circuit-state.js; свой пятисекундный опрос убран.
     if (!st) st = window.CircuitState && window.CircuitState.get();
     if (!st || !st.roundId) return;
 
-    // Первый заход: показываем только совсем свежий розыгрыш. Иначе человек,
-    // зашедший через час, получил бы пробег по давно закрытому раунду.
+    // Результат приезжает тем же тиком, что и смена раунда: воркер кладёт
+    // сводку закрытого раунда в circuit_round одной записью со сменой
+    // roundId. Раньше ходили в /circuit/history и не находили там ничего:
+    // KV кэширует чтения на 60 секунд, а ретраи ждали пятнадцать.
+    const lc = st.lastClosed;
+    const fresh = lc && lc.closedAt && (Date.now() - lc.closedAt) < MAX_AGE_MS;
+
     if (lastRoundId === null) {
       lastRoundId = st.roundId;
-      const rounds = await history(3);
-      const last = rounds.filter((r) => r && r.status === 'closed')[0];
-      if (last && !alreadyShown(last.roundId) &&
-          last.closedAt && (Date.now() - new Date(last.closedAt).getTime()) < MAX_AGE_MS) {
-        await play(last);
-      }
+      if (fresh && !alreadyShown(lc.roundId)) await show(lc);
       return;
     }
 
@@ -310,49 +308,19 @@
     const closed = lastRoundId;
     lastRoundId = st.roundId;
     log('раунд сменился: ' + closed + ' -> ' + st.roundId);
-    if (alreadyShown(closed)) { log('этот раунд уже показывали, пропускаем'); return; }
 
-    // Доску замораживаем СРАЗУ, до похода в историю.
-    //
-    // Воркер меняет circuit_round и дописывает историю разными операциями,
-    // поэтому закрытый раунд появляется в /circuit/history на несколько секунд
-    // позже, чем текущий roundId успевает смениться. Раньше мы за эти секунды
-    // ничего не находили и выходили, а refreshCircuit тем временем перерисовывал
-    // доску под новый пустой раунд - зоны исчезали, показывать было нечего.
-    // 21 августа это дало разное поведение на телефоне и на ноутбуке: попал
-    // опрос в удачный момент или нет, решала случайность.
-    window.__circuitRevealBusy = true;
-    try {
-      caption('<b>Drawing…</b><span class="cr-sub">resolving the result</span>');
-      const round = await waitForClosedRound(closed);
-      if (!round) {
-        // Раунды, слитые из-за недобора, в историю не пишутся - розыгрыша не
-        // было, и это нормальный исход, а не сбой.
-        log('раунд ' + closed + ' в истории не появился - показывать нечего');
-        dropCaption();
-        return;
-      }
-      await play(round);
-    } finally {
-      window.__circuitRevealBusy = false;
+    if (!lc || lc.roundId !== closed) {
+      log('раунд ' + closed + ' слит по недобору - розыгрыша не было');
+      return;
     }
+    if (alreadyShown(closed)) { log('этот раунд уже показывали, пропускаем'); return; }
+    await show(lc);
   }
 
-  // Ждём, пока закрытый раунд доедет до истории. Пятнадцать секунд с запасом:
-  // на практике хватает двух-трёх, но доска всё это время заморожена и человек
-  // видит «Drawing…», а не пустое поле.
-  async function waitForClosedRound(roundId) {
-    for (let attempt = 1; attempt <= 6; attempt++) {
-      const rounds = await history(5);
-      const r = rounds.find((x) => x && x.roundId === roundId);
-      if (r && r.status === 'closed') {
-        log('раунд найден в истории с попытки ' + attempt);
-        return r;
-      }
-      if (r) log('раунд найден, но статус "' + r.status + '" - ждём');
-      await new Promise((done) => setTimeout(done, 2500));
-    }
-    return null;
+  async function show(round) {
+    window.__circuitRevealBusy = true;
+    try { await play(round); }
+    finally { window.__circuitRevealBusy = false; }
   }
 
   /* ── проверка без ожидания раунда ──────────────────────────────────────── */
