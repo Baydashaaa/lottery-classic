@@ -313,9 +313,33 @@
       log('раунд ' + closed + ' слит по недобору - розыгрыша не было');
       return;
     }
+    // Сверка идёт ДО alreadyShown: если локальный показ уже прошёл, расхождение
+    // всё равно надо заметить. Разойтись эти два пути могут только при разном
+    // правиле на сторонах - самая дорогая поломка здесь, и молчаливая.
+    const loc = window.__circuitLocal;
+    if (loc && loc.roundId === closed) {
+      if (loc.winnerZone !== lc.winnerZone) {
+        console.error('[reveal] РАСХОЖДЕНИЕ ' + closed + ': локально зона ' +
+                      loc.winnerZone + ', воркер ' + lc.winnerZone);
+      } else {
+        log('локальный расчёт совпал с объявлением: зона ' + lc.winnerZone);
+      }
+    }
+
     if (alreadyShown(closed)) { log('этот раунд уже показывали, пропускаем'); return; }
     await show(lc);
   }
+
+  // Локальный результат приходит раньше выплаты: браузер сам считает
+  // победителя по блоку дедлайна. Показываем его сразу, не дожидаясь,
+  // пока closer расплатится и объявит раунд.
+  window.addEventListener('circuit-local-result', (ev) => {
+    const r = ev && ev.detail;
+    if (!r || window.__circuitRevealBusy) return;
+    if (alreadyShown(r.roundId)) return;
+    log('показываем локальный результат ' + r.roundId);
+    show(r);
+  });
 
   async function show(round) {
     window.__circuitRevealBusy = true;
