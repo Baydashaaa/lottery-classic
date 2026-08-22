@@ -4456,3 +4456,28 @@ window.renderWinners = function () {
     '</div>';
   }).join('');
 };
+
+/* ── Oracle Stats hooks (added automatically) ─────────────────── */
+(function () {
+  if (typeof setConnectedWallet !== 'function') return;
+  var loadedAt = Date.now();
+  var orig = setConnectedWallet;
+  setConnectedWallet = window.setConnectedWallet = function (addr, provider) {
+    var r = orig.apply(this, arguments);
+    try {
+      if (window.oa && addr) {
+        // anything within 4s of load is an automatic restore, not a click
+        var auto = (Date.now() - loadedAt) < 4000;
+        oa.wallet(addr, auto ? { restored: true } : undefined);
+      }
+    } catch (e) {}
+    return r;
+  };
+  if (typeof disconnectWallet === 'function') {
+    var od = disconnectWallet;
+    disconnectWallet = window.disconnectWallet = function () {
+      try { window.oa && oa.wallet(null); } catch (e) {}
+      return od.apply(this, arguments);
+    };
+  }
+})();

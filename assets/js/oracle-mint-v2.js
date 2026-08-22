@@ -310,6 +310,10 @@
 
       if (btn) btn.textContent = '⏳ Signing...';
       say('Please approve the transaction in your wallet...');
+      try {
+        if (window.oa) { oa.pool(pool); oa.wallet(wallet, { restored: true });
+          oa.track('mint_start', { tier: tier, pool: pool }); }
+      } catch (e) {}
 
       var txHash = await sendExecuteContract(
         wallet,
@@ -331,6 +335,11 @@
       if (!result.ok) {
         throw new Error(result.rawLog || 'Transaction failed on-chain.');
       }
+
+      try {
+        if (window.oa) oa.track('tx_ok', { tier: result.tier || tier,
+                                           pool: result.pool || pool });
+      } catch (e) {}
 
       // Регистрация в раунде. Оплата и NFT уже неотменяемо прошли -
       // если воркер не ответит, NFT всё равно у пользователя.
@@ -377,6 +386,13 @@
     } catch (err) {
       console.error('[mint-v2]', err);
       var m = String(err && err.message || err);
+      try {
+        if (window.oa) {
+          var rejected = /rejected|denied|Request rejected|cancel/i.test(m);
+          oa.track(rejected ? 'tx_reject' : 'tx_fail',
+                   { tier: tier, e: m.slice(0, 80) });
+        }
+      } catch (e2) {}
       if (/Wrong payment/i.test(m))        say('⚠️ Price changed while you were signing. Please try again.');
       else if (/paused/i.test(m))          say('⚠️ Minting is temporarily paused. Please try again later.');
       else if (/SoldOut|sold out/i.test(m))say('⚠️ This tier is sold out.');
