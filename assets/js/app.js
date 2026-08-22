@@ -16,6 +16,13 @@ const BAG_CACHE_KEY     = 'oracle_draw_bag_cache_v1';
 const BAG_CACHE_TTL_MS  = 5 * 60 * 1000;
 const BAG_CACHE_MAX_AGE_MS = 30 * 60 * 1000;
 
+// Доли розыгрыша. Были рассыпаны литералами по семи местам, поэтому смена
+// сплита требовала найти каждое. Воркер держит свою копию в
+// DRAW_PRIZE_SHARE (oracle-draw-worker/src/worker.js) - меняешь здесь,
+// меняй и там.
+const PRIZE_SHARE  = 0.80;                // победителю; остальное seed + казна
+const WEEKLY_SPLIT = [0.60, 0.25, 0.15];  // три места Weekly внутри PRIZE_SHARE
+
 // Format NFT tokenId to a human-readable label.
 // Contract tokens are "common-1" / "rare-7" / "legendary-2" → "Common #1" etc.
 // Legacy Paco ids (Common_092528042026_ETME5) → their trailing code.
@@ -501,7 +508,7 @@ function updatePoolDisplay() {
   const _realBalance = isDaily
     ? (window._dailyPoolBalance  || totalLunc)
     : (window._weeklyPoolBalance || totalLunc);
-  let poolPrize = _realBalance * 0.80;
+  let poolPrize = _realBalance * PRIZE_SHARE;
   let seededLunc = _realBalance * 0.10;
   let poolUsd = poolPrize * luncPrice;
 
@@ -544,7 +551,7 @@ function updatePoolDisplay() {
   // Refresh weekly prize split if on weekly tab - use real balance
   if (currentLottery === 'weekly') {
     const _wPool = window._weeklyPoolBalance || weeklyTickets.length * 25000;
-    const pool80 = _wPool * 0.8;
+    const pool80 = _wPool * PRIZE_SHARE;
     const p1 = document.getElementById('weekly-prize-1');
     const p2 = document.getElementById('weekly-prize-2');
     const p3 = document.getElementById('weekly-prize-3');
@@ -762,8 +769,12 @@ function switchLottery(type) {
   // ── Update podium prizes ──────────────────────────────────────
   if (!isDaily) {
     const tickets = weeklyTickets;
-    const pool = tickets.length * 25000;
-    const prize80 = Math.floor(pool * 0.80);
+    // Банк берём с кошелька, а не из билетов: в него попадает и вклад Q&A.
+    // Раньше эти же элементы заполнялись здесь от билетов, а несколькими
+    // строками выше - updatePodiumPrizes() от баланса, и на экране
+    // оставалась цифра той функции, что отработала последней.
+    const pool = window._weeklyPoolBalance || tickets.length * 25000;
+    const prize80 = Math.floor(pool * PRIZE_SHARE);
     const p1El = document.getElementById('podium-prize-1');
     const p2El = document.getElementById('podium-prize-2');
     const p3El = document.getElementById('podium-prize-3');
@@ -1933,7 +1944,7 @@ async function loadAllData() {
 function updatePodiumPrizes() {
   // Use real wallet balance - not ticket count * price
   const pool = window._weeklyPoolBalance || weeklyTickets.length * 25000;
-  const prize80 = Math.floor(pool * 0.80);
+  const prize80 = Math.floor(pool * PRIZE_SHARE);
   const p1El = document.getElementById('podium-prize-1');
   const p2El = document.getElementById('podium-prize-2');
   const p3El = document.getElementById('podium-prize-3');
@@ -2157,7 +2168,7 @@ function updateWheelTickets() {
 
   if (partEl) partEl.textContent = (paidAddrs.size + freeOnly) || 0;
   if (tickEl) tickEl.textContent = (tickets.length + totalFree) || 0;
-  if (poolEl) poolEl.textContent = fmt(realPool * 0.80) + ' ' + currency;
+  if (poolEl) poolEl.textContent = fmt(realPool * PRIZE_SHARE) + ' ' + currency;
 
   const badgeColor = isDaily ? '#f4d03f' : '#7eb8ff';
   if (partEl) { partEl.style.color = badgeColor; }
@@ -2383,7 +2394,7 @@ function verifyTickets() {
   // Pool prize
   const isDaily = currentLottery === 'daily';
   const pricePerTix = isDaily ? LUNC_PER_TICKET : weeklyTicketPrice();
-  const poolPrize = totalTix * pricePerTix * 0.80;
+  const poolPrize = totalTix * pricePerTix * PRIZE_SHARE;
   const currency  = 'LUNC';
 
   // Render summary cards
