@@ -2697,7 +2697,11 @@ document.getElementById('luncdash-modal').addEventListener('click', function(e) 
         const d = await r.json();
         const lunc = Number(d?.balance?.amount || 0) / 1e6;
         const el = document.getElementById('dg-' + game + '-pool');
-        if (el) el.textContent = short(lunc);
+        // Показываем приз, а не баланс кошелька: рядом центральный блок
+        // печатает 80% от того же баланса, и две разные цифры про один и
+        // тот же розыгрыш путают. Полоска ниже остаётся на балансе - она
+        // меряет наполнение до порога, а не выигрыш.
+        if (el) el.textContent = short(lunc * 0.80);
         const bar = document.getElementById('dg-' + game + '-bar');
         // Полоска у weekly - прогресс до минимума в 500 000 LUNC,
         // у daily - до порога в 5 входов, которого в балансе нет,
