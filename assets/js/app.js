@@ -475,6 +475,12 @@ async function loadWinners() {
   } catch(e) { console.warn('loadWinners:', e); winnersData = []; }
   renderWinners();
   populateDrawVerifySelect();
+  // Circuit живёт в воркере, а не в winners.json, и грузится отдельно. Без
+  // этого вызова вкладка ALL показывала только daily и weekly до тех пор,
+  // пока пользователь не открывал CIRCUIT руками.
+  if (typeof loadCircuitWinners === 'function' && !circuitWinnersLoaded) {
+    loadCircuitWinners();
+  }
 }
 
 // ─── UPDATE POOL DISPLAY ────────────────────────────────────────────────────
@@ -4380,7 +4386,12 @@ window.filterWinners = function (f) {
     var b = document.getElementById('wf-' + k);
     if (b) b.classList.toggle('active', k === f);
   });
-  if (f === 'circuit' && !circuitWinnersLoaded) { loadCircuitWinners(); return; }
+  // ALL тоже показывает Circuit, поэтому подтягиваем историю и для него:
+  // раньше вкладка ALL молчала о раундах, пока пользователь не открывал CIRCUIT.
+  if ((f === 'circuit' || f === 'all' || f === 'mine') && !circuitWinnersLoaded) {
+    loadCircuitWinners();
+    return;
+  }
   renderWinners();
 };
 
@@ -4403,10 +4414,12 @@ window.renderWinners = function () {
     list = (winnersData || []).concat(circuitWinners).filter(function (w) {
       return w.places.some(function (p) { return (p.address || '').toLowerCase() === me; });
     }).sort(function (a, b) { return (b.time || 0) - (a.time || 0); });
-  } else list = winnersData || [];
+  } else {
+    list = (winnersData || []).concat(circuitWinners)
+      .sort(function (a, b) { return (b.time || 0) - (a.time || 0); });
+  }
 
-  renderWinnersStats(winnersFilter === 'mine' || winnersFilter === 'circuit'
-    ? list : (winnersData || []));
+  renderWinnersStats(list);
 
   if (!list.length) {
     host.innerHTML = '<div class="wn-empty">' +
