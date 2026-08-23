@@ -4273,7 +4273,7 @@ function ensureRoundStatsStyle() {
   var s = document.createElement('style');
   s.id = 'rs-style';
   s.textContent =
-    '.wn-stats-panel{margin-top:10px;border-top:1px solid rgba(255,255,255,.10);padding-top:10px;font-size:12.5px}' +
+    '.wn-stats-panel{grid-column:1/-1;margin-top:10px;border-top:1px solid rgba(255,255,255,.10);padding-top:10px;font-size:12.5px}' +
     '.wn-stats-panel .rs-sum{color:#7fa8a5;margin-bottom:8px}' +
     '.wn-stats-panel table{width:100%;border-collapse:collapse}' +
     '.wn-stats-panel td{padding:4px 6px;border-bottom:1px solid rgba(255,255,255,.06);white-space:nowrap}' +
