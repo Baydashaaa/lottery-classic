@@ -40,6 +40,7 @@ import { stringToPath }            from '@cosmjs/crypto';
 import { SigningStargateClient }   from '@cosmjs/stargate';
 import fs   from 'fs';
 import path from 'path';
+import { selectZone, ownerOfZone } from './circuit-rule.js';
 
 // ── Настройки ──────────────────────────────────────────────────────────────
 const WORKER   = process.env.CIRCUIT_WORKER_URL || 'https://oracle-draw.vladislav-baydan.workers.dev';
@@ -197,15 +198,10 @@ async function waitForDeadline(deadlineMs) {
 }
 
 // ── Победитель ─────────────────────────────────────────────────────────────
-// Ровно та же формула, что показана на странице проверки и в макете:
-// зона = BigInt("0x" + block_hash) % проданных зон.
-function selectZone(blockHash, sold) {
-  return Number(BigInt('0x' + blockHash) % BigInt(sold));
-}
-
-function ownerOfZone(blocks, zone) {
-  return blocks.find(b => zone >= b.from && zone <= b.to) || null;
-}
+// selectZone и ownerOfZone переехали в circuit-rule.js: тот же модуль читает
+// страница, чтобы показать пробег до выплаты. Пока копий было две, они могли
+// разойтись - и тогда анимация показала бы одного победителя, а деньги ушли
+// бы другому, молча. Формулу правим только там.
 
 // Блоки, стоящие вплотную к победившему, но принадлежащие другим кошелькам
 function neighboursOf(blocks, zone, sold) {
