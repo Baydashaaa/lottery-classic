@@ -53,19 +53,6 @@ function showTab(tab, skipHistory) {
 
   if (tab === 'bag') renderMyBag();
 
-  // Колесо витрины живёт только пока главная видима. Канвас в скрытой
-  // вкладке даёт clientWidth = 0 - отсюда двойной requestAnimationFrame,
-  // как в ветке draw ниже.
-  if (window.HomeHero) {
-    if (tab === 'home') {
-      requestAnimationFrame(function () {
-        requestAnimationFrame(function () { window.HomeHero.activate(); });
-      });
-    } else {
-      window.HomeHero.deactivate();
-    }
-  }
-
   if (tab === 'home') {
     const hDraws = document.getElementById('home-stat-draws');
     const hNfts  = document.getElementById('home-stat-nfts');

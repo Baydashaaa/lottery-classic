@@ -15,7 +15,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;500;600;700&family=Rajdhani:wght@500;600;700&family=Stalinist+One&family=Boldonse&display=swap" rel="stylesheet">
 
   <!-- Стили -->
-  <link rel="stylesheet" href="assets/css/style.css?v=202608232300">
+  <link rel="stylesheet" href="assets/css/style.css?v=202608101505">
 <style>
 /* Weekly prize split animation */
 #weekly-prize-1, #weekly-prize-2, #weekly-prize-3 {
@@ -395,7 +395,6 @@ body.modal-open{overflow:hidden}
  <button class="nav-link" id="nav-winners" onclick="showTab('winners')">Winners</button>
  <button class="nav-link" id="nav-verify" onclick="showTab('verify')">Verify & Proof</button>
  <button class="nav-link" id="nav-bag" onclick="showTab('bag')">My Bag</button>
- <button class="nav-mint" id="nav-mint" onclick="homeMint()">Mint</button>
  <a class="nav-oracle" href="https://terraoracle.io/" target="_blank"
    style="display:inline-flex;align-items:center;padding:7px 18px;
    border:1px solid rgba(59,130,246,0.7);border-radius:8px;
@@ -515,7 +514,6 @@ body.modal-open{overflow:hidden}
   <button class="mobile-menu-item" id="mob-winners" onclick="showTab('winners');closeMobileMenu()"><svg class="oi oi--gold"><use href="#i-trophy"/></svg> Winners</button>
   <button class="mobile-menu-item" id="mob-verify" onclick="showTab('verify');closeMobileMenu()"><svg class="oi oi--cyan"><use href="#i-search"/></svg> Verify & Proof</button>
   <button class="mobile-menu-item" id="mob-bag" onclick="showTab('bag');closeMobileMenu()"><svg class="oi oi--violet"><use href="#i-bag"/></svg> My Bag</button>
-  <button class="mobile-menu-item" id="mob-mint" onclick="homeMint();closeMobileMenu()"><svg class="oi oi--gold"><use href="#i-reels"/></svg> Mint NFT</button>
   <div class="mobile-menu-sep"></div>
   <a class="mobile-menu-item oracle-link" href="https://terraoracle.io/" target="_blank" rel="noopener" onclick="closeMobileMenu()">
     <span style="color:#ffffff;">Terra&nbsp;</span><span style="color:#38bdf8;">Oracle</span>
@@ -525,153 +523,126 @@ body.modal-open{overflow:hidden}
 
 <!-- ═══ HOME PAGE ═══ -->
 <div id="page-home" class="tab-page" style="display:block;">
- <div class="hh-wrap">
+ <div style="max-width:900px;margin:0 auto;padding:60px 32px 80px;text-align:center;">
 
-  <!-- ═══ HERO: живое колесо + живые цифры ═══════════════════════════════ -->
-  <section class="hh-hero" id="hh-hero" data-pool="daily">
+  <!-- Hero -->
+  <div style="margin-bottom:60px;">
+   <div style="display:inline-block;font-size:10px;letter-spacing:0.25em;text-transform:uppercase;color:var(--accent,#7C5CFF);border:1px solid rgba(124,92,255,0.3);padding:6px 18px;border-radius:20px;margin-bottom:24px;background:rgba(124,92,255,0.06);">Terra Classic · LUNC Ecosystem</div>
+   <h1 style="font-family:'Cinzel',serif;font-weight:900;font-size:clamp(48px,7vw,88px);line-height:0.95;color:#fff;margin-bottom:24px;letter-spacing:0.5px;text-shadow:0 0 60px rgba(124,92,255,0.3);">ORACLE<br><span style="color:#7C5CFF;">DRAW</span></h1>
+   <p style="font-size:18px;color:#9FB0D0;max-width:560px;margin:0 auto 40px;line-height:1.7;">A decentralized NFT draw protocol built on Terra Classic. Mint Oracle Mask NFTs to enter - your purchase automatically adds you to the daily or weekly prize draw.</p>
+   <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;">
+    <button onclick="showTab('draw')" style="display:inline-flex;align-items:center;gap:10px;padding:16px 36px;border-radius:14px;cursor:pointer;font-family:'Cinzel',serif;font-size:15px;letter-spacing:0.12em;font-weight:700;text-transform:uppercase;background:linear-gradient(135deg,#7C5CFF,#5B8CFF);border:none;color:#fff;box-shadow:0 0 24px rgba(124,92,255,0.5);transition:all 0.3s ease;" onmouseover="this.style.transform='scale(1.05)';this.style.boxShadow='0 0 40px rgba(124,92,255,0.7)'" onmouseout="this.style.transform='scale(1)';this.style.boxShadow='0 0 24px rgba(124,92,255,0.5)'">
+      Launch App
+    </button>
 
-   <div class="hh-hero-left">
-    <div class="hh-badge">Terra Classic · LUNC ecosystem</div>
-    <h1 class="hh-h1">ORACLE<br><span>DRAW</span></h1>
-    <p class="hh-lead">Mint an Oracle Mask NFT and you are in the draw. The winner is picked from on-chain block data and the prize is sent automatically - nothing to claim.</p>
+   </div>
+  </div>
 
-    <div class="hh-pooltabs">
-     <button class="hh-pooltab active" id="hh-tab-daily" onclick="homeSetPool('daily')">Daily</button>
-     <button class="hh-pooltab" id="hh-tab-weekly" onclick="homeSetPool('weekly')">Weekly</button>
+  <!-- Stats row -->
+  <div class="home-stats-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:72px;">
+   <div style="background:rgba(18,24,42,0.7);border:1px solid rgba(124,92,255,0.15);border-radius:20px;padding:24px;backdrop-filter:blur(12px);">
+    <div style="font-family:'Cinzel',serif;font-size:28px;font-weight:700;color:#fff;text-shadow:0 0 10px rgba(124,92,255,0.3);" id="home-stat-draws">-</div>
+    <div style="font-size:11px;color:#6B7AA6;text-transform:uppercase;letter-spacing:0.12em;margin-top:6px;">Draws Completed</div>
+   </div>
+   <div style="background:rgba(18,24,42,0.7);border:1px solid rgba(124,92,255,0.15);border-radius:20px;padding:24px;backdrop-filter:blur(12px);">
+    <div style="font-family:'Cinzel',serif;font-size:28px;font-weight:700;color:#fff;text-shadow:0 0 10px rgba(124,92,255,0.3);" id="home-stat-nfts">-</div>
+    <div style="font-size:11px;color:#6B7AA6;text-transform:uppercase;letter-spacing:0.12em;margin-top:6px;">NFTs Minted</div>
+   </div>
+   <div style="background:rgba(18,24,42,0.7);border:1px solid rgba(124,92,255,0.15);border-radius:20px;padding:24px;backdrop-filter:blur(12px);">
+    <div style="font-family:'Cinzel',serif;font-size:28px;font-weight:700;color:#f5c842;text-shadow:0 0 10px rgba(212,160,23,0.3);" id="home-stat-chain">LUNC</div>
+    <div style="font-size:11px;color:#6B7AA6;text-transform:uppercase;letter-spacing:0.12em;margin-top:6px;">Terra Classic Chain</div>
+   </div>
+  </div>
+
+  <!-- How It Works -->
+  <div style="margin-bottom:72px;">
+   <div style="font-family:'Cinzel',serif;font-size:28px;font-weight:700;color:#fff;margin-bottom:8px;letter-spacing:0.5px;">How It Works</div>
+   <div style="width:60px;height:2px;background:linear-gradient(90deg,transparent,#7C5CFF,transparent);margin:0 auto 48px;opacity:0.7;"></div>
+   <div class="home-steps-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;">
+    <div style="background:rgba(18,24,42,0.7);border:1px solid rgba(124,92,255,0.15);border-radius:20px;padding:24px 16px;backdrop-filter:blur(12px);transition:all 0.3s;" onmouseover="this.style.transform='translateY(-5px)';this.style.borderColor='rgba(124,92,255,0.4)'" onmouseout="this.style.transform='none';this.style.borderColor='rgba(124,92,255,0.15)'">
+     <div style="margin-bottom:14px;"><img src="assets/img/step1-v1.png" style="width:72px;height:72px;object-fit:contain;"></div>
+     <div style="font-size:10px;color:#6B7AA6;letter-spacing:0.2em;text-transform:uppercase;margin-bottom:8px;">Step 01</div>
+     <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:10px;">Mint Oracle Mask</div>
+     <div style="font-size:13px;color:#9FB0D0;line-height:1.65;">Choose Daily or Weekly draw. Pick Common, Rare or Legendary. Pay in LUNC.</div>
     </div>
-
-    <div class="hh-live">
-     <div class="hh-live-head">
-      <div class="hh-live-lbl" id="hh-pool-label">Daily draw</div>
-      <div class="hh-prize"><span id="hh-prize">-</span><em>LUNC</em></div>
-      <div class="hh-prize-sub" id="hh-prize-sub">Pool is filling up</div>
-     </div>
-     <div class="hh-live-grid">
-      <div class="hh-cell"><div class="hh-cell-v hh-mono" id="hh-countdown">--:--:--</div><div class="hh-cell-l">Next draw</div></div>
-      <div class="hh-cell"><div class="hh-cell-v" id="hh-wallets">0</div><div class="hh-cell-l">Wallets in</div></div>
-      <div class="hh-cell"><div class="hh-cell-v" id="hh-entries">0</div><div class="hh-cell-l">Entries</div></div>
-     </div>
+    <div style="background:rgba(18,24,42,0.7);border:1px solid rgba(124,92,255,0.15);border-radius:20px;padding:24px 16px;backdrop-filter:blur(12px);transition:all 0.3s;" onmouseover="this.style.transform='translateY(-5px)';this.style.borderColor='rgba(124,92,255,0.4)'" onmouseout="this.style.transform='none';this.style.borderColor='rgba(124,92,255,0.15)'">
+     <div style="margin-bottom:14px;"><img src="assets/img/step2-v1.png" style="width:72px;height:72px;object-fit:contain;"></div>
+     <div style="font-size:10px;color:#6B7AA6;letter-spacing:0.2em;text-transform:uppercase;margin-bottom:8px;">Step 02</div>
+     <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:10px;">Auto-Entered</div>
+     <div style="font-size:13px;color:#9FB0D0;line-height:1.65;">Your purchase automatically registers your entry for Daily or Weekly draw.</div>
     </div>
-
-    <div class="hh-cta">
-     <button class="hh-btn-main" onclick="homeMint()">Mint and enter</button>
-     <button class="hh-btn-ghost" onclick="showTab('draw')">Open the draw</button>
+    <div style="background:rgba(18,24,42,0.7);border:1px solid rgba(124,92,255,0.15);border-radius:20px;padding:24px 16px;backdrop-filter:blur(12px);transition:all 0.3s;" onmouseover="this.style.transform='translateY(-5px)';this.style.borderColor='rgba(124,92,255,0.4)'" onmouseout="this.style.transform='none';this.style.borderColor='rgba(124,92,255,0.15)'">
+     <div style="margin-bottom:14px;"><img src="assets/img/step3-v1.png" style="width:72px;height:72px;object-fit:contain;"></div>
+     <div style="font-size:10px;color:#6B7AA6;letter-spacing:0.2em;text-transform:uppercase;margin-bottom:8px;">Step 03</div>
+     <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:10px;">Verifiable Draw</div>
+     <div style="font-size:13px;color:#9FB0D0;line-height:1.65;">Winner selected using on-chain block data. Fully transparent and verifiable.</div>
+    </div>
+    <div style="background:rgba(18,24,42,0.7);border:1px solid rgba(124,92,255,0.15);border-radius:20px;padding:24px 16px;backdrop-filter:blur(12px);transition:all 0.3s;" onmouseover="this.style.transform='translateY(-5px)';this.style.borderColor='rgba(124,92,255,0.4)'" onmouseout="this.style.transform='none';this.style.borderColor='rgba(124,92,255,0.15)'">
+     <div style="margin-bottom:14px;"><img src="assets/img/Step4-v1.png" style="width:72px;height:72px;object-fit:contain;"></div>
+     <div style="font-size:10px;color:#6B7AA6;letter-spacing:0.2em;text-transform:uppercase;margin-bottom:8px;">Step 04</div>
+     <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:10px;">Auto Payout</div>
+     <div style="font-size:13px;color:#9FB0D0;line-height:1.65;">Prize sent automatically to your wallet. No claiming required.</div>
     </div>
    </div>
+  </div>
 
-   <div class="hh-hero-right">
-    <div class="hh-wheel-box"><canvas id="hh-canvas" width="420" height="420"></canvas></div>
-    <div class="hh-wheel-cap">Each sector = one wallet · size = share of entries</div>
-   </div>
-
-  </section>
-
-  <!-- ═══ Лента последних выплат ═════════════════════════════════════════ -->
-  <section class="hh-ticker-row" onclick="showTab('winners')" title="Open Winners">
-   <span class="hh-ticker-lbl">Last payouts</span>
-   <div class="hh-ticker" id="hh-ticker"></div>
-   <span class="hh-ticker-more">All winners →</span>
-  </section>
-
-  <!-- ═══ Счётчики протокола ═════════════════════════════════════════════ -->
-  <section class="hh-stats home-stats-grid">
-   <div class="hh-stat">
-    <div class="hh-stat-v" id="home-stat-draws">-</div>
-    <div class="hh-stat-l">Draws completed</div>
-   </div>
-   <div class="hh-stat">
-    <div class="hh-stat-v" id="home-stat-nfts">-</div>
-    <div class="hh-stat-l">NFTs minted</div>
-   </div>
-   <div class="hh-stat">
-    <div class="hh-stat-v hh-stat-gold" id="home-stat-paid">-</div>
-    <div class="hh-stat-l">LUNC paid out</div>
-   </div>
-  </section>
-
-  <!-- ═══ How it works ═══════════════════════════════════════════════════ -->
-  <section class="hh-sec">
-   <div class="hh-sec-title">How it works</div>
-   <div class="hh-sec-rule"></div>
-   <div class="hh-steps home-steps-grid">
-    <div class="hh-step">
-     <div class="hh-step-ico"><img src="assets/img/step1-v1.png" alt=""></div>
-     <div class="hh-step-n">Step 01</div>
-     <div class="hh-step-t">Mint Oracle Mask</div>
-     <div class="hh-step-d">Choose Daily or Weekly. Pick Common, Rare or Legendary. Pay in LUNC.</div>
+  <!-- Prize Distribution -->
+  <div style="margin-bottom:40px;">
+   <div style="font-family:'Cinzel',serif;font-size:28px;font-weight:700;color:#fff;margin-bottom:8px;letter-spacing:0.5px;">Prize Distribution</div>
+   <div style="width:60px;height:2px;background:linear-gradient(90deg,transparent,#7C5CFF,transparent);margin:0 auto 48px;opacity:0.7;"></div>
+   <div class="home-distrib-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
+    <div style="background:rgba(18,24,42,0.7);border:1px solid rgba(124,92,255,0.15);border-radius:20px;padding:28px 16px;backdrop-filter:blur(12px);">
+     <div style="font-family:'Cinzel',serif;font-size:42px;font-weight:900;color:#F5C842;text-shadow:0 0 20px rgba(245,200,66,0.4);margin-bottom:10px;">80%</div>
+     <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:8px;"> Prize Pool</div>
+     <div style="font-size:12px;color:#9FB0D0;line-height:1.5;">Directly to the winner's wallet - automatic on-chain payout.</div>
     </div>
-    <div class="hh-step">
-     <div class="hh-step-ico"><img src="assets/img/step2-v1.png" alt=""></div>
-     <div class="hh-step-n">Step 02</div>
-     <div class="hh-step-t">Auto-entered</div>
-     <div class="hh-step-d">The mint itself registers your entry. No second transaction, no sign-up.</div>
+    <div style="background:rgba(18,24,42,0.7);border:1px solid rgba(124,92,255,0.15);border-radius:20px;padding:28px 16px;backdrop-filter:blur(12px);">
+     <div style="font-family:'Cinzel',serif;font-size:42px;font-weight:900;color:#60a5fa;text-shadow:0 0 20px rgba(96,165,250,0.4);margin-bottom:10px;">10%</div>
+     <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:8px;"> Seeds Next Round</div>
+     <div style="font-size:12px;color:#9FB0D0;line-height:1.5;">Stays in the pool as the starting prize for the next draw. For Weekly: if minimum pool not reached, all funds roll over to next week.</div>
     </div>
-    <div class="hh-step">
-     <div class="hh-step-ico"><img src="assets/img/step3-v1.png" alt=""></div>
-     <div class="hh-step-n">Step 03</div>
-     <div class="hh-step-t">Verifiable draw</div>
-     <div class="hh-step-d">The winner comes from the block hash at the deadline. Anyone can recheck it.</div>
-    </div>
-    <div class="hh-step">
-     <div class="hh-step-ico"><img src="assets/img/Step4-v1.png" alt=""></div>
-     <div class="hh-step-n">Step 04</div>
-     <div class="hh-step-t">Auto payout</div>
-     <div class="hh-step-d">The prize lands in the winner's wallet on-chain. Nothing to claim.</div>
+    <div style="background:rgba(18,24,42,0.7);border:1px solid rgba(124,92,255,0.15);border-radius:20px;padding:28px 16px;backdrop-filter:blur(12px);">
+     <div style="font-family:'Cinzel',serif;font-size:42px;font-weight:900;color:#7C5CFF;text-shadow:0 0 20px rgba(124,92,255,0.4);margin-bottom:10px;">10%</div>
+     <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:8px;"> Protocol Treasury</div>
+     <div style="font-size:12px;color:#9FB0D0;line-height:1.5;">Funds development, liquidity provision and protocol growth.</div>
     </div>
    </div>
-  </section>
+  </div>
 
-  <!-- ═══ Куда идёт пул ══════════════════════════════════════════════════ -->
-  <section class="hh-sec">
-   <div class="hh-sec-title">Where the pool goes</div>
-   <div class="hh-sec-rule"></div>
-   <div class="hh-split">
-    <div class="hh-bar">
-     <div class="hh-bar-seg hh-seg-prize" style="flex:80"><span>80%</span></div>
-     <div class="hh-bar-seg hh-seg-seed"  style="flex:10"><span>10%</span></div>
-     <div class="hh-bar-seg hh-seg-tre"   style="flex:10"><span>10%</span></div>
-    </div>
-    <div class="hh-legend home-distrib-grid">
-     <div class="hh-leg"><i class="hh-leg-dot hh-seg-prize"></i><b>Prize pool</b><span>Straight to the winner's wallet, automatic on-chain payout.</span></div>
-     <div class="hh-leg"><i class="hh-leg-dot hh-seg-seed"></i><b>Seeds next round</b><span>Stays in the pool as the starting prize. Weekly rolls over if the minimum is not reached.</span></div>
-     <div class="hh-leg"><i class="hh-leg-dot hh-seg-tre"></i><b>Protocol treasury</b><span>Development, liquidity provision and protocol growth.</span></div>
-    </div>
-   </div>
-  </section>
+  <!-- NFT Tiers -->
+  <div>
+   <div style="font-family:'Cinzel',serif;font-size:28px;font-weight:700;color:#fff;margin-bottom:8px;letter-spacing:0.5px;">Oracle Mask NFTs</div>
+   <div style="width:60px;height:2px;background:linear-gradient(90deg,transparent,#7C5CFF,transparent);margin:0 auto 48px;opacity:0.7;"></div>
+   <div class="home-tiers-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
 
-  <!-- ═══ Маски ══════════════════════════════════════════════════════════ -->
-  <section class="hh-sec">
-   <div class="hh-sec-title">Oracle Mask NFTs</div>
-   <div class="hh-sec-rule"></div>
-   <div class="hh-tiers home-tiers-grid">
-
-    <div class="hh-tier hh-tier-common">
-     <img class="hh-tier-img" src="assets/img/common-v1.png" alt="Common mask">
-     <div class="hh-tier-name">Common</div>
-     <div class="hh-tier-entries">1 entry</div>
-     <div class="hh-tier-price">25,000 LUNC</div>
-     <button class="hh-tier-btn" onclick="homeMint()">Mint</button>
+    <!-- Common -->
+    <div style="position:relative;background:#12182A;border:1px solid rgba(180,190,210,0.35);border-radius:20px;padding:32px 20px 24px;backdrop-filter:blur(12px);text-align:center;transition:all 0.3s;box-shadow:0 0 20px rgba(180,190,210,0.08);" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 0 30px rgba(180,190,210,0.2)';this.style.borderColor='rgba(180,190,210,0.6)'" onmouseout="this.style.transform='none';this.style.boxShadow='0 0 20px rgba(180,190,210,0.08)';this.style.borderColor='rgba(180,190,210,0.35)'">
+     <div style="margin-bottom:6px;"><img src="assets/img/common-v1.png" style="width:140px;height:140px;object-fit:contain;"></div>
+     <div style="font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:#B4BED2;margin-bottom:6px;">Common</div>
+     <div style="font-size:11px;color:#9FB0D0;margin-bottom:4px;">1 entry</div>
+     <div style="font-family:'Cinzel',serif;font-size:22px;font-weight:700;color:#C8D4E8;margin-bottom:4px;">25,000 LUNC</div>
     </div>
 
-    <div class="hh-tier hh-tier-rare">
-     <img class="hh-tier-img" src="assets/img/rare-v1.png" alt="Rare mask">
-     <div class="hh-tier-name">Rare</div>
-     <div class="hh-tier-entries">5 entries</div>
-     <div class="hh-tier-price">125,000 LUNC</div>
-     <button class="hh-tier-btn" onclick="homeMint()">Mint</button>
+    <!-- Rare -->
+    <div style="position:relative;background:#0E1525;border:1px solid rgba(59,130,246,0.45);border-radius:20px;padding:32px 20px 24px;backdrop-filter:blur(12px);text-align:center;transition:all 0.3s;box-shadow:0 0 24px rgba(59,130,246,0.12);" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 0 36px rgba(59,130,246,0.28)';this.style.borderColor='rgba(59,130,246,0.7)'" onmouseout="this.style.transform='none';this.style.boxShadow='0 0 24px rgba(59,130,246,0.12)';this.style.borderColor='rgba(59,130,246,0.45)'">
+
+     <div style="margin-bottom:6px;"><img src="assets/img/rare-v1.png" style="width:140px;height:140px;object-fit:contain;"></div>
+     <div style="font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:#60a5fa;margin-bottom:6px;">Rare</div>
+     <div style="font-size:11px;color:#9FB0D0;margin-bottom:4px;">5 entries</div>
+     <div style="font-family:'Cinzel',serif;font-size:22px;font-weight:700;color:#60a5fa;margin-bottom:4px;">125,000 LUNC</div>
     </div>
 
-    <div class="hh-tier hh-tier-legendary">
-     <div class="hh-tier-flag">Best odds</div>
-     <img class="hh-tier-img" src="assets/img/legendary-v1.png" alt="Legendary mask">
-     <div class="hh-tier-name">Legendary</div>
-     <div class="hh-tier-entries">10 entries</div>
-     <div class="hh-tier-price">250,000 LUNC</div>
-     <button class="hh-tier-btn" onclick="homeMint()">Mint</button>
+    <!-- Legendary -->
+    <div style="position:relative;background:linear-gradient(160deg,#150A00,#0D0600);border:1px solid rgba(251,146,60,0.45);border-radius:20px;padding:32px 20px 24px;backdrop-filter:blur(12px);text-align:center;transition:all 0.3s;box-shadow:0 0 24px rgba(251,146,60,0.12);" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 0 40px rgba(251,146,60,0.28)';this.style.borderColor='rgba(251,146,60,0.7)'" onmouseout="this.style.transform='none';this.style.boxShadow='0 0 24px rgba(251,146,60,0.12)';this.style.borderColor='rgba(251,146,60,0.45)'">
+
+     <div style="margin-bottom:6px;"><img src="assets/img/legendary-v1.png" style="width:140px;height:140px;object-fit:contain;"></div>
+     <div style="font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:#fb923c;margin-bottom:6px;">Legendary</div>
+     <div style="font-size:11px;color:#9FB0D0;margin-bottom:4px;">10 entries</div>
+     <div style="font-family:'Cinzel',serif;font-size:22px;font-weight:700;color:#fb923c;margin-bottom:4px;">250,000 LUNC</div>
     </div>
 
    </div>
-  </section>
+  </div>
 
  </div>
 </div>
@@ -1934,8 +1905,7 @@ for place p in 0, 1, 2:
        Обязан идти ДО app.js: app.js считает счётчики только через него. -->
   <script src="assets/js/draw-schedule.js?v=202608040710"></script>
   <script src="assets/js/oracle-nft-client.js?v=3"></script>
-  <script src="assets/js/app.js?v=202608232300"></script>
-  <script src="assets/js/home-hero.js?v=202608232300"></script>
+  <script src="assets/js/app.js?v=202608231430"></script>
   <script src="assets/js/circuit-state.js?v=1"></script>
   <script src="assets/js/circuit-buy.js?v=5"></script>
   <script src="assets/js/oracle-mint-v2.js?v=202608222211"></script>
