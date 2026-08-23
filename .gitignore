@@ -5,3 +5,5 @@ package-lock.json
 patch-*.py
 *.bak-*
 *.oabak*
+probe.mjs
+probe2.mjs
