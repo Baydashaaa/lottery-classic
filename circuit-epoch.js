@@ -38,6 +38,10 @@ const DENOM     = 'uluna';
 
 // Кривая, токен, бёрн-кошелёк, claim-контракт
 const BOND      = process.env.TCO_BOND    || 'terra1xnejslpfa398nn2mexv34y8737fcq998zz4dsnq74qn464lu9m4s604du5';
+// Покупка идёт ЧЕРЕЗ ФАБРИКУ, а не напрямую в кривую: сам бонд принимает
+// swap_buy только от неё ("Unauthorized - only terra1vd595gq..."). Поля при
+// этом те же - contract_address указывает, какую кривую дёрнуть.
+const BOND_FACTORY = process.env.TCO_BOND_FACTORY || 'terra1vd595gqyekq05p8hy9t0r9q68jtk5whleqt5py4wdwrqfykz74lqrmw8q5';
 const TOKEN     = process.env.TCO_TOKEN   || 'terra1566znlxwke0kp9jkhe6qgapsmcfdmc7k9czh380tlx80va8zlsgqzvjtfp';
 const BURN_WALLET = process.env.TCO_BURN_WALLET || 'terra10zptfez4jdvakrhu58q4nqj2te7mnpewqhu27a';
 // Ожидаемый адрес кошелька выкупа. Сверяется с тем, что вывелся из
@@ -223,7 +227,7 @@ async function main() {
   const before = await tokenBalance(me);
   const client = await SigningCosmWasmClient.connectWithSigner(RPC, wallet);
 
-  const txSwap = await exec(client, me, BOND,
+  const txSwap = await exec(client, me, BOND_FACTORY,
     { swap_buy: { contract_address: BOND, min_amount_out: String(minOut) } },
     [{ denom: DENOM, amount: String(spend) }],
     'Circuit epoch ' + (ledger.epoch + 1) + ' - TCO buyback');
