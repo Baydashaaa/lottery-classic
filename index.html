@@ -170,29 +170,6 @@ body > footer {
   }
 })();
 </script>
-  <script type="module">
-  import SignClient from 'https://esm.sh/@walletconnect/sign-client@2.17.4';
-  window._WCSignClient = SignClient;
-  window.dispatchEvent(new Event('wc-ready'));
-  </script>
-  <script>
-  window._wcProjectId = '4b0ea5adcda180c7ea42ba35259b2a87';
-  window.renderQRToCanvas = function(text, canvas) {
-    try {
-      var qr = qrcode(0, text.length > 200 ? 'L' : 'M');
-      qr.addData(text); qr.make();
-      var n = qr.getModuleCount(), sz = 260;
-      canvas.width = sz; canvas.height = sz;
-      var ctx = canvas.getContext('2d'), cell = sz / n;
-      ctx.fillStyle = '#fff'; ctx.fillRect(0,0,sz,sz);
-      ctx.fillStyle = '#000';
-      for (var r=0;r<n;r++) for (var c2=0;c2<n;c2++)
-        if (qr.isDark(r,c2)) ctx.fillRect(Math.floor(c2*cell),Math.floor(r*cell),Math.ceil(cell)+1,Math.ceil(cell)+1);
-      return true;
-    } catch(e) { return false; }
-  };
-  </script>
-  <!-- WalletConnect QR -->
   <script src="https://unpkg.com/qrcode-generator@1.4.4/qrcode.js" defer></script>
   <script type="module">
   import SignClient from 'https://esm.sh/@walletconnect/sign-client@2.17.4';
