@@ -610,6 +610,16 @@ function startTimer() {
   function tick() {
     const ms = window.DRAW_SCHEDULE.msToNext(currentLottery);
     const p  = window.DRAW_SCHEDULE.parts(ms);
+    // В понедельник daily не разыгрывается, и отсчёт идёт до вторника. Без
+    // пояснения человек, заминтивший в понедельник, ждёт колеса в тот же
+    // вечер и не дожидается: подпись "Next Draw In" читается как "сегодня".
+    const lbl = document.getElementById('timer-label');
+    if (lbl) {
+      const paused = window.DRAW_SCHEDULE.isPausedToday(currentLottery);
+      lbl.innerHTML = paused
+        ? '<svg class="oi oi--amber"><use href="#i-hourglass"/></svg> No draw today - next draw in'
+        : '<svg class="oi oi--cyan"><use href="#i-hourglass"/></svg> Next Draw In';
+    }
     document.getElementById('t-days').textContent  = String(p.d).padStart(2,'0');
     document.getElementById('t-hours').textContent = String(p.h).padStart(2,'0');
     document.getElementById('t-mins').textContent  = String(p.m).padStart(2,'0');
