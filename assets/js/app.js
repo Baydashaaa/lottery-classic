@@ -4239,8 +4239,8 @@ function vfPick(i) {
   var lbl = document.getElementById('vf-trigger-label');
   if (w && lbl) {
     lbl.innerHTML =
-      '<span class="vf-opt-chip ' + (w.type === 'daily' ? 'd' : 'w') + '">' +
-        (w.type === 'daily' ? 'Daily' : 'Weekly') + '</span>' +
+      '<span class="vf-opt-chip ' + (w.type === 'daily' ? 'd' : w.type === 'circuit' ? 'c' : 'w') + '">' +
+        (w.type === 'daily' ? 'Daily' : w.type === 'circuit' ? 'Circuit' : 'Weekly') + '</span>' +
       '<span class="vf-opt-id">' + (w.roundId || ('#' + w.round)) + '</span>' +
       '<span class="vf-opt-date">' + fmtDate(w.time) + '</span>';
   }
