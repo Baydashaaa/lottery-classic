@@ -2,7 +2,7 @@
  * Сборка всего фронта Draw V2 в один файл.
  *
  * Зачем: у `import "./X.js"` внутри модулей нет query-строки, поэтому
- * `index.js?v=5` НЕ сбрасывает кэш вложенных файлов — браузер продолжает
+ * `index.js?v=5` НЕ сбрасывает кэш вложенных файлов - браузер продолжает
  * крутить старый WheelRenderer, пока не истечёт TTL у Pages/Cloudflare.
  * Один файл решает это насовсем: у него есть ?v= и вложенных импортов нет.
  *
@@ -18,7 +18,7 @@ const CORE  = ["Config.js","DrawClock.js","DrawPhase.js","DrawState.js","DrawEve
 
 const files = [
   // Правило построения билетов. Лежит в корне, потому что им пользуется и
-  // lottery-draw.js — один экземпляр на скрипт и на браузер. Идёт первым:
+  // lottery-draw.js - один экземпляр на скрипт и на браузер. Идёт первым:
   // на него ссылается DrawEngine, а ему самому ничего отсюда не нужно.
   ["chain-tickets.js", "chain-tickets.js"],
   ...WHEEL.map(f => ["assets/js/wheel/" + f, f]),
@@ -38,7 +38,7 @@ for (const [path, name] of files) {
     else declared.set(id, name);
   }
 }
-// TAU объявлен одинаково в нескольких модулях — это ожидаемо, остальное нет
+// TAU объявлен одинаково в нескольких модулях - это ожидаемо, остальное нет
 const unexpected = dup.filter(d => !d.startsWith("TAU:"));
 if (unexpected.length) {
   console.error("КОНФЛИКТ ИМЁН, сборка остановлена:\n  " + unexpected.join("\n  "));
@@ -67,7 +67,7 @@ const parts = files.map(([path, name]) => {
 
 const version = new Date().toISOString().replace(/\D/g, "").slice(0, 12);
 const out =
-`/* Oracle Draw V2 — собранный бандл. НЕ РЕДАКТИРОВАТЬ.
+`/* Oracle Draw V2 - собранный бандл. НЕ РЕДАКТИРОВАТЬ.
    Источники: assets/js/wheel/ и assets/js/draw-v2/
    Пересобрать: node dev/_build_bundle.js
    Версия сборки: ${version} */
@@ -76,5 +76,5 @@ ${parts.join("\n\n")}
 `;
 
 fs.writeFileSync("assets/js/oracle-draw.bundle.js", out);
-console.log(`собран assets/js/oracle-draw.bundle.js — ${(out.length/1024).toFixed(0)} КБ, версия ${version}`);
+console.log(`собран assets/js/oracle-draw.bundle.js - ${(out.length/1024).toFixed(0)} КБ, версия ${version}`);
 console.log(`подключение: <script type="module" src="assets/js/oracle-draw.bundle.js?v=${version}"></script>`);

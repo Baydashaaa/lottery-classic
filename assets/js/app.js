@@ -3842,7 +3842,7 @@ function renderWinners() {
 function openVerifyForRound(roundId) {
   showTab('verify');
   setTimeout(function () {
-    var completed = winnersData.filter(function (w) { return w.places && w.places.length; });
+    var completed = vfRounds();
     var idx = completed.findIndex(function (w) { return w.roundId === roundId; });
     if (idx < 0) return;
     var sel = document.getElementById('vf-select');
@@ -3941,7 +3941,7 @@ async function renderDrawVerify(idx) {
   const empty = document.getElementById('vf-empty');
   if (!host) return;
 
-  const completed = winnersData.filter(w => w.places && w.places.length);
+  const completed = vfRounds();
   const w = completed[parseInt(idx)];
   if (!w) { if (empty) empty.style.display = 'block'; host.style.display = 'none'; return; }
   if (empty) empty.style.display = 'none';
@@ -3950,6 +3950,14 @@ async function renderDrawVerify(idx) {
   host.innerHTML = '<div class="vf-loading">Loading round snapshot…</div>';
 
   const snap = await vfLoadSnapshot(w.roundId);
+
+  // Circuit проверяется иначе: вместо списка билетов - доска зон, вместо
+  // индекса - номер зоны. Правило то же, что в circuit-rule.js и в блоке
+  // _verify самого снимка: зона = BigInt("0x" + block_hash) % total_sold.
+  if (w.type === 'circuit') {
+    host.innerHTML = vfCircuitHtml(w, snap);
+    return;
+  }
 
   // Без снимка воспроизвести нечего: список билетов после закрытия раунда
   // не восстанавливается - /round-complete проставляет consumedInRound.
@@ -4102,6 +4110,56 @@ function vfReproduceHtml(w, snap, total) {
     'from the snapshot, then run:</p><pre>' + code + '</pre></div>';
 }
 
+// ── Circuit: проверка одной формулой ─────────────────────────────────────
+function vfCircuitHtml(w, snap) {
+  if (!snap || !snap.block_hash || !snap.total_sold) {
+    return '<div class="vf-verdict vf-na"><b>Cannot be replayed</b>' +
+      '<span>No board snapshot was written for this round.</span></div>' +
+      vfInputsHtml(w, null);
+  }
+
+  const sold  = Number(snap.total_sold);
+  const zone  = Number(BigInt('0x' + snap.block_hash) % BigInt(sold));
+  const owner = (snap.blocks || []).find(b => zone >= b[1] && zone <= b[2]);
+  const addr  = owner ? owner[0] : null;
+
+  const zoneOk = snap.winner_zone !== undefined ? zone === Number(snap.winner_zone) : null;
+  const addrOk = snap.winner ? addr === snap.winner : null;
+  const allOk  = zoneOk !== false && addrOk !== false;
+
+  const verdict = allOk
+    ? '<div class="vf-verdict vf-ok"><b>Verified</b><span>Recomputing the zone in your ' +
+      'browser gives exactly the zone and wallet recorded for this round.</span></div>'
+    : '<div class="vf-verdict vf-bad"><b>Mismatch</b><span>The recomputed zone does not ' +
+      'match the recorded result. Something is wrong - please report this round.</span></div>';
+
+  const rows = [
+    ['Pool',          'Circuit'],
+    ['Round',         w.roundId || ('#' + w.round)],
+    ['Block height',  snap.block_height
+        ? '<a href="https://finder.terraport.finance/mainnet/blocks/' + snap.block_height +
+          '" target="_blank" rel="noopener">' + snap.block_height + '</a>'
+        : '-'],
+    ['Block time',    snap.block_time || '-'],
+    ['Zones claimed', sold],
+    ['Winning zone',  zone + (zoneOk === false ? ' (recorded ' + snap.winner_zone + ')' : '')],
+    ['Winner',        addr ? fmtAddr(addr) : '-']
+  ];
+
+  return verdict +
+    '<div class="vf-card"><div class="vf-h">Input data</div><div class="vf-kv">' +
+    rows.map(r => '<div><span>' + r[0] + '</span><b>' + r[1] + '</b></div>').join('') +
+    '</div><div class="vf-hash"><span>Block hash</span><code>' + snap.block_hash + '</code></div>' +
+    '<a class="vf-src" href="./rounds/' + w.roundId + '.json" target="_blank" rel="noopener">' +
+    'board snapshot &rarr;</a></div>' +
+    '<div class="vf-card vf-repro"><div class="vf-h">Reproduce it yourself</div>' +
+    '<p class="vf-intro">Take the block hash from the explorer above and the zone count ' +
+    'from the snapshot, then run:</p><pre>Number(BigInt("0x" + "' +
+    snap.block_hash.slice(0, 24) + '...") % ' + sold + 'n)</pre></div>';
+}
+
+window.vfCircuitHtml = vfCircuitHtml;
+
 window.renderDrawVerify = renderDrawVerify;
 
 
@@ -4112,15 +4170,21 @@ window.renderDrawVerify = renderDrawVerify;
 // дата и пометка, воспроизводим ли раунд.
 var vfPickerOpen = false;
 
+// ЕДИНСТВЕННЫЙ источник списка проверяемых раундов. Индексы из него идут и
+// в выпадающий список, и в openVerifyForRound, и в renderDrawVerify - разойдись
+// эти выборки, панель открыла бы чужой раунд. Circuit подмешивается сюда,
+// потому что живёт не в winners.json, а в отдельном списке из воркера.
 function vfRounds() {
-  return winnersData.filter(function (w) { return w.places && w.places.length; });
+  return (winnersData || []).concat(circuitWinners || [])
+    .filter(function (w) { return w.places && w.places.length; })
+    .sort(function (a, b) { return (b.time || 0) - (a.time || 0); });
 }
 
 function vfRowHtml(w, i, active) {
   return '<button class="vf-opt' + (active ? ' active' : '') + '" role="option" data-i="' + i + '" ' +
     'onclick="vfPick(' + i + ')">' +
-    '<span class="vf-opt-chip ' + (w.type === 'daily' ? 'd' : 'w') + '">' +
-      (w.type === 'daily' ? 'Daily' : 'Weekly') + '</span>' +
+    '<span class="vf-opt-chip ' + (w.type === 'daily' ? 'd' : w.type === 'circuit' ? 'c' : 'w') + '">' +
+      (w.type === 'daily' ? 'Daily' : w.type === 'circuit' ? 'Circuit' : 'Weekly') + '</span>' +
     '<span class="vf-opt-id">' + (w.roundId || ('#' + w.round)) + '</span>' +
     '<span class="vf-opt-date">' + fmtDate(w.time) + '</span>' +
     '<span class="vf-opt-tag" data-tag="' + i + '">&middot;&middot;&middot;</span>' +
@@ -4483,7 +4547,7 @@ window.renderWinners = function () {
           ? '<button class="wn-more" onclick="toggleRoundStats(\'' + w.roundId + '\',\'' +
             w.type + '\',this)">stats</button>'
           : '') +
-        (w.blockHash && w.type !== 'circuit'
+        (w.blockHash
           ? '<button class="wn-verify" onclick="openVerifyForRound(\'' + (w.roundId || '') + '\')">verify</button>'
           : '') +
       '</div>' +
