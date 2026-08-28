@@ -481,10 +481,34 @@ async function runDailyDraw(client, operatorAddr) {
   // pay the prize a second time. Two triggers are deliberate - the Worker's
   // cron is punctual, GitHub's schedule is the fallback - so this check is
   // what makes that safe.
+  //
+  // 20 авг 2026 эта защита не сработала и приз ушёл ДВАЖДЫ: 119498 и 11936
+  // LUNC, две транзакции, один и тот же победитель, один и тот же блок
+  // 30036889. Причина - ключ. round_id берётся из getCurrentRoundId(), а тот
+  // считает от `now` и переключается ровно в 20:00 UTC. Ранний запуск (cron
+  // стоит на 19:30) записал daily_2026-08-19, поздний посчитал себя
+  // daily_2026-08-20, совпадения не нашёл и разыграл раунд заново.
+  // getDrawDeadlineTs() такой болезнью не страдает - у него есть окно
+  // раннего старта, и оба запуска получают ОДИН дедлайн. По нему и сверяем.
+  // round_id оставлен в ключе как запасной вариант и не тронут в остальном:
+  // его формат обязан совпадать с воркером, иначе /round-complete перестанет
+  // помечать входы использованными.
+  const _deadlineIso = new Date(getDrawDeadlineTs()).toISOString();
+  const _deadlineDay = _deadlineIso.slice(0, 10);
   {
     const _prior = loadWinners();
-    if ((_prior.daily || []).some(w => w && w.round_id === roundId)) {
-      console.log('Round ' + roundId + ' is already recorded - nothing to do.');
+    const _same = (_prior.daily || []).find(function (w) {
+      if (!w) return false;
+      if (w.deadline) return w.deadline === _deadlineIso;
+      if (w.date)     return w.date === _deadlineDay;   // записи до появления deadline
+      return w.round_id === roundId;
+    });
+    if (_same) {
+      console.log(
+        'Round with deadline ' + _deadlineIso + ' is already recorded as ' +
+        (_same.round_id || _same.date) +
+        (_same.skipped ? ' (skipped)' : '') + ' - nothing to do.'
+      );
       return;
     }
   }
@@ -607,10 +631,34 @@ async function runWeeklyDraw(client, operatorAddr) {
   // pay the prize a second time. Two triggers are deliberate - the Worker's
   // cron is punctual, GitHub's schedule is the fallback - so this check is
   // what makes that safe.
+  //
+  // 20 авг 2026 эта защита не сработала и приз ушёл ДВАЖДЫ: 119498 и 11936
+  // LUNC, две транзакции, один и тот же победитель, один и тот же блок
+  // 30036889. Причина - ключ. round_id берётся из getCurrentRoundId(), а тот
+  // считает от `now` и переключается ровно в 20:00 UTC. Ранний запуск (cron
+  // стоит на 19:30) записал daily_2026-08-19, поздний посчитал себя
+  // daily_2026-08-20, совпадения не нашёл и разыграл раунд заново.
+  // getDrawDeadlineTs() такой болезнью не страдает - у него есть окно
+  // раннего старта, и оба запуска получают ОДИН дедлайн. По нему и сверяем.
+  // round_id оставлен в ключе как запасной вариант и не тронут в остальном:
+  // его формат обязан совпадать с воркером, иначе /round-complete перестанет
+  // помечать входы использованными.
+  const _deadlineIso = new Date(getDrawDeadlineTs()).toISOString();
+  const _deadlineDay = _deadlineIso.slice(0, 10);
   {
     const _prior = loadWinners();
-    if ((_prior.weekly || []).some(w => w && w.round_id === roundId)) {
-      console.log('Round ' + roundId + ' is already recorded - nothing to do.');
+    const _same = (_prior.weekly || []).find(function (w) {
+      if (!w) return false;
+      if (w.deadline) return w.deadline === _deadlineIso;
+      if (w.date)     return w.date === _deadlineDay;   // записи до появления deadline
+      return w.round_id === roundId;
+    });
+    if (_same) {
+      console.log(
+        'Round with deadline ' + _deadlineIso + ' is already recorded as ' +
+        (_same.round_id || _same.date) +
+        (_same.skipped ? ' (skipped)' : '') + ' - nothing to do.'
+      );
       return;
     }
   }
