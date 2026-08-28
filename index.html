@@ -1883,7 +1883,26 @@ for place p in 0, 1, 2:
        Обязан идти ДО app.js: app.js считает счётчики только через него. -->
   <script src="assets/js/draw-schedule.js?v=202608040710" defer></script>
   <script src="assets/js/oracle-nft-client.js?v=3" defer></script>
-  <script src="assets/js/app.js?v=202608251620" defer></script>
+  <!-- app.js разрезан на части 28 авг 2026. ПОРЯДОК МЕНЯТЬ НЕЛЬЗЯ:
+       в коде есть операторы верхнего уровня и объявления const/let,
+       порядок повторяет исходный файл строка в строку.
+       Все теги defer, как был исходный app.js. Не ставить type="module":
+       20 функций вызываются из inline on*= и должны остаться глобальными.
+       Тот же порядок продублирован в dev/_verify_split.cjs -->
+  <script src="assets/js/app/config.js?v=202608281200" defer></script>
+  <script src="assets/js/app/chain.js?v=202608281200" defer></script>
+  <script src="assets/js/app/pool-timer.js?v=202608281200" defer></script>
+  <script src="assets/js/app/modal.js?v=202608281200" defer></script>
+  <script src="assets/js/app/buy.js?v=202608281200" defer></script>
+  <script src="assets/js/app/data.js?v=202608281200" defer></script>
+  <script src="assets/js/app/wheel-legacy.js?v=202608281200" defer></script>
+  <script src="assets/js/app/verify.js?v=202608281200" defer></script>
+  <script src="assets/js/app/admin.js?v=202608281200" defer></script>
+  <script src="assets/js/app/wallet.js?v=202608281200" defer></script>
+  <script src="assets/js/app/init.js?v=202608281200" defer></script>
+  <script src="assets/js/app/winners-v2.js?v=202608281200" defer></script>
+  <script src="assets/js/app/verify-v2.js?v=202608281200" defer></script>
+  <script src="assets/js/app/winners-v3.js?v=202608281200" defer></script>
   <script src="assets/js/circuit-state.js?v=1" defer></script>
   <script src="assets/js/circuit-buy.js?v=5" defer></script>
   <script src="assets/js/oracle-mint-v2.js?v=202608222211" defer></script>

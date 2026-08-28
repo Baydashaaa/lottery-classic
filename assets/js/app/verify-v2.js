@@ -1,0 +1,414 @@
+// ═══ VERIFY v2 ═══════════════════════════════════════════════════════════
+// Заменяет расчёт на странице Verify & Proof.
+//
+// Прежний код считал seed как SHA256("<height>:<hash>:<count>") - такой
+// формулы в lottery-draw.js нет вообще, она была выдумана. На раунде
+// weekly_2026-08-03 она давала индекс 1, тогда как скрипт записал 10 и 12.
+// «Совпадение» проходило только потому, что один кошелёк держал 12 билетов
+// из 13 и оба индекса указывали на него. Сверка тоже была фиктивной:
+// `recalcIdx === (w.winnerIndex || recalcIdx)` при отсутствии winnerIndex
+// сравнивает число само с собой.
+//
+// Здесь воспроизводится РЕАЛЬНЫЙ алгоритм, оба варианта:
+//   daily  - index = BigInt("0x" + block_hash) % total
+//   weekly - seed<0> = block_hash
+//            для каждого места p: seed = sha256(seed + String(p))
+//                                 index = BigInt("0x" + seed) % total
+//                                 пока билет принадлежит уже выигравшему
+//                                 кошельку - index сдвигается на +1 по кругу
+
+// ── утилиты ───────────────────────────────────────────────────────────────
+async function vfSha256Hex(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Пара [addr, n] в снимке = n подряд идущих билетов
+function vfExpandTickets(pairs) {
+  const flat = [];
+  (pairs || []).forEach(p => { for (let i = 0; i < (p[1] || 0); i++) flat.push(p[0]); });
+  return flat;
+}
+
+// Диапазоны билетов по кошелькам - для карты и подписей
+function vfRanges(pairs) {
+  const out = []; let at = 0;
+  (pairs || []).forEach(p => {
+    const n = p[1] || 0;
+    out.push({ address: p[0], from: at, to: at + n - 1, count: n });
+    at += n;
+  });
+  return out;
+}
+
+async function vfLoadSnapshot(roundId) {
+  if (!roundId) return null;
+  try {
+    const r = await fetch('./rounds/' + roundId + '.json?t=' + Date.now());
+    return r.ok ? await r.json() : null;
+  } catch (e) { return null; }
+}
+
+// ── воспроизведение розыгрыша ─────────────────────────────────────────────
+async function vfReplay(pool, blockHash, tickets) {
+  const total = tickets.length;
+  if (!total || !blockHash) return [];
+
+  if (pool === 'daily') {
+    const index = Number(BigInt('0x' + blockHash) % BigInt(total));
+    return [{ place: 1, seed: blockHash, seedLabel: 'block hash', raw: index,
+              index, shifted: 0, address: tickets[index] }];
+  }
+
+  // weekly - цепочка мест, seed каждого следующего считается от предыдущего
+  const placesCount = Math.min(3, new Set(tickets).size);
+  const used = new Set();
+  const steps = [];
+  let seed = blockHash;
+
+  for (let place = 0; place < placesCount; place++) {
+    seed = await vfSha256Hex(seed + String(place));
+    const raw = Number(BigInt('0x' + seed) % BigInt(total));
+    let index = raw, shifted = 0;
+    while (used.has(tickets[index]) && shifted < total) {
+      index = (index + 1) % total; shifted++;
+    }
+    used.add(tickets[index]);
+    steps.push({ place: place + 1, seed, seedLabel: 'sha256(prev seed + "' + place + '")',
+                 raw, index, shifted, address: tickets[index] });
+  }
+  return steps;
+}
+
+// ── отрисовка ─────────────────────────────────────────────────────────────
+async function renderDrawVerify(idx) {
+  const host  = document.getElementById('vf-result');
+  const empty = document.getElementById('vf-empty');
+  if (!host) return;
+
+  const completed = vfRounds();
+  const w = completed[parseInt(idx)];
+  if (!w) { if (empty) empty.style.display = 'block'; host.style.display = 'none'; return; }
+  if (empty) empty.style.display = 'none';
+  host.style.display = 'block';
+
+  host.innerHTML = '<div class="vf-loading">Loading round snapshot…</div>';
+
+  const snap = await vfLoadSnapshot(w.roundId);
+
+  // Circuit проверяется иначе: вместо списка билетов - доска зон, вместо
+  // индекса - номер зоны. Правило то же, что в circuit-rule.js и в блоке
+  // _verify самого снимка: зона = BigInt("0x" + block_hash) % total_sold.
+  if (w.type === 'circuit') {
+    host.innerHTML = vfCircuitHtml(w, snap);
+    return;
+  }
+
+  // Без снимка воспроизвести нечего: список билетов после закрытия раунда
+  // не восстанавливается - /round-complete проставляет consumedInRound.
+  if (!snap || !snap.tickets) {
+    host.innerHTML =
+      '<div class="vf-verdict vf-na"><b>Cannot be replayed</b>' +
+      '<span>No entry snapshot was written for this round. Snapshots start from ' +
+      'the first draw after the 1 Aug 2026 upgrade - earlier rounds only have the ' +
+      'recorded result.</span></div>' + vfInputsHtml(w, null);
+    return;
+  }
+
+  const tickets = vfExpandTickets(snap.tickets);
+  const ranges  = vfRanges(snap.tickets);
+  const steps   = await vfReplay(w.type, w.blockHash || snap.block_hash, tickets);
+
+  // Записанные индексы: у daily число, у weekly массив
+  const recorded = Array.isArray(snap.winner_index) ? snap.winner_index
+                 : (snap.winner_index !== undefined ? [snap.winner_index] : []);
+
+  const checks = steps.map((s, i) => {
+    const rec  = recorded[i];
+    const addr = (w.places[i] || {}).address;
+    return {
+      step: s,
+      recorded: rec,
+      indexOk: rec !== undefined ? s.index === rec : null,
+      addrOk:  addr ? s.address === addr : null
+    };
+  });
+  const allOk = checks.length > 0 && checks.every(c => c.indexOk !== false && c.addrOk !== false);
+  const anyRecorded = checks.some(c => c.recorded !== undefined);
+
+  host.innerHTML =
+    vfVerdictHtml(allOk, anyRecorded, w) +
+    vfInputsHtml(w, snap) +
+    vfStepsHtml(checks, tickets.length, w) +
+    vfMapHtml(ranges, tickets.length, checks) +
+    vfReproduceHtml(w, snap, tickets.length);
+}
+
+function vfVerdictHtml(ok, anyRecorded, w) {
+  if (!anyRecorded) {
+    return '<div class="vf-verdict vf-na"><b>Replayed, nothing to compare against</b>' +
+      '<span>This round has no recorded winner index, so the replay cannot be ' +
+      'checked against it. The wallets below still come from the real algorithm.</span></div>';
+  }
+  return ok
+    ? '<div class="vf-verdict vf-ok"><b>Verified</b><span>Replaying the draw in your ' +
+      'browser produces exactly the indices and wallets recorded on chain.</span></div>'
+    : '<div class="vf-verdict vf-bad"><b>Mismatch</b><span>The replay does not match the ' +
+      'recorded result. Something is wrong - please report this round.</span></div>';
+}
+
+function vfInputsHtml(w, snap) {
+  const rows = [
+    ['Pool',         w.type === 'daily' ? 'Daily' : 'Weekly'],
+    ['Round',        w.roundId || ('#' + w.round)],
+    ['Block height', w.blockHeight
+        ? '<a href="https://finder.terraport.finance/mainnet/blocks/' + w.blockHeight +
+          '" target="_blank" rel="noopener">' + w.blockHeight + '</a>'
+        : '&mdash;'],
+    ['Block time',   w.blockTime || '&mdash;'],
+    ['Total entries', snap ? snap.total : (w.tickets || '&mdash;')]
+  ];
+  return '<div class="vf-card"><div class="vf-h">Input data</div>' +
+    '<div class="vf-kv">' + rows.map(r =>
+      '<div><span>' + r[0] + '</span><b>' + r[1] + '</b></div>').join('') + '</div>' +
+    (w.blockHash
+      ? '<div class="vf-hash"><span>Block hash</span><code>' + w.blockHash + '</code></div>'
+      : '') +
+    (snap
+      ? '<a class="vf-src" href="./rounds/' + w.roundId + '.json" target="_blank" rel="noopener">' +
+        'entry snapshot &rarr;</a>' : '') +
+    '</div>';
+}
+
+function vfStepsHtml(checks, total, w) {
+  const intro = w.type === 'daily'
+    ? 'One winner. The block hash is read as a number and divided by the entry count &mdash; ' +
+      'the remainder is the winning entry.'
+    : 'Up to three places. Each place uses a seed derived from the <em>previous</em> one, ' +
+      'so the chain has to be replayed in order. If a place lands on a wallet that already ' +
+      'won, the index moves forward one entry at a time until it reaches a new wallet.';
+
+  const body = checks.map(c => {
+    const s = c.step;
+    const mark = c.indexOk === null ? '' :
+      (c.indexOk ? '<span class="vf-ok-pill">matches record</span>'
+                 : '<span class="vf-bad-pill">recorded ' + c.recorded + '</span>');
+    return '<div class="vf-step">' +
+      '<div class="vf-step-h"><span class="vf-place p' + s.place + '">' + s.place + '</span>' +
+        '<span class="vf-step-t">' + (checks.length > 1 ? 'Place ' + s.place : 'Winner') + '</span>' +
+        mark + '</div>' +
+      '<div class="vf-calc">' +
+        '<div><i>seed</i> = ' + s.seedLabel + '</div>' +
+        '<div><i>&nbsp;</i>&nbsp;&nbsp;<code>' + s.seed.slice(0, 40) + '&hellip;</code></div>' +
+        '<div><i>index</i> = BigInt("0x" + seed) % ' + total + ' = <b>' + s.raw + '</b></div>' +
+        (s.shifted
+          ? '<div class="vf-shift">wallet already won &rarr; moved ' + s.shifted +
+            ' entr' + (s.shifted > 1 ? 'ies' : 'y') + ' forward &rarr; <b>' + s.index + '</b></div>'
+          : '') +
+      '</div>' +
+      '<div class="vf-lands">entry <b>#' + s.index + '</b> belongs to <code>' + s.address + '</code></div>' +
+    '</div>';
+  }).join('');
+
+  return '<div class="vf-card"><div class="vf-h">How this round was drawn</div>' +
+    '<p class="vf-intro">' + intro + '</p>' + body + '</div>';
+}
+
+// Карта билетов - то, что делает результат наглядным: видно, в чей отрезок попал индекс
+function vfMapHtml(ranges, total, checks) {
+  const winIdx = checks.map(c => c.step.index);
+  const bar = ranges.map((r, i) => {
+    const hit = winIdx.filter(x => x >= r.from && x <= r.to);
+    return '<div class="vf-seg' + (hit.length ? ' hit' : '') + '" ' +
+      'style="flex:' + r.count + '" title="' + r.address + ' · entries ' + r.from + '-' + r.to + '">' +
+      (hit.length ? '<span>' + hit.join(', ') + '</span>' : '') + '</div>';
+  }).join('');
+
+  const list = ranges.map(r => {
+    const hit = winIdx.filter(x => x >= r.from && x <= r.to);
+    return '<div class="vf-row' + (hit.length ? ' hit' : '') + '">' +
+      '<code>' + fmtAddr(r.address) + '</code>' +
+      '<span class="vf-range">' + (r.count === 1 ? 'entry ' + r.from : 'entries ' + r.from + '&ndash;' + r.to) + '</span>' +
+      '<span class="vf-cnt">' + r.count + '</span>' +
+      (hit.length ? '<span class="vf-hitmark">won at #' + hit.join(', #') + '</span>' : '') +
+    '</div>';
+  }).join('');
+
+  return '<div class="vf-card"><div class="vf-h">Entry map</div>' +
+    '<p class="vf-intro">Every entry in the order the draw used it. Segment width = share of ' +
+    'the pool. The winning index falls inside one wallet&rsquo;s range &mdash; that is the whole result.</p>' +
+    '<div class="vf-bar">' + bar + '</div>' +
+    '<div class="vf-rows">' + list + '</div></div>';
+}
+
+function vfReproduceHtml(w, snap, total) {
+  const code = w.type === 'daily'
+    ? 'BigInt("0x" + "' + (w.blockHash || '').slice(0, 24) + '...") % ' + total + 'n'
+    : 'let s = "' + (w.blockHash || '').slice(0, 24) + '...";\n' +
+      'for (let p = 0; p < 3; p++) {\n' +
+      '  s = sha256(s + String(p));            // hex\n' +
+      '  let i = Number(BigInt("0x" + s) % ' + total + 'n);\n' +
+      '  // skip forward while entries[i] already won\n' +
+      '}';
+  return '<div class="vf-card vf-repro"><div class="vf-h">Reproduce it yourself</div>' +
+    '<p class="vf-intro">Take the block hash from the block explorer above and the entry list ' +
+    'from the snapshot, then run:</p><pre>' + code + '</pre></div>';
+}
+
+// ── Circuit: проверка одной формулой ─────────────────────────────────────
+function vfCircuitHtml(w, snap) {
+  if (!snap || !snap.block_hash || !snap.total_sold) {
+    return '<div class="vf-verdict vf-na"><b>Cannot be replayed</b>' +
+      '<span>No board snapshot was written for this round.</span></div>' +
+      vfInputsHtml(w, null);
+  }
+
+  const sold  = Number(snap.total_sold);
+  const zone  = Number(BigInt('0x' + snap.block_hash) % BigInt(sold));
+  const owner = (snap.blocks || []).find(b => zone >= b[1] && zone <= b[2]);
+  const addr  = owner ? owner[0] : null;
+
+  const zoneOk = snap.winner_zone !== undefined ? zone === Number(snap.winner_zone) : null;
+  const addrOk = snap.winner ? addr === snap.winner : null;
+  const allOk  = zoneOk !== false && addrOk !== false;
+
+  const verdict = allOk
+    ? '<div class="vf-verdict vf-ok"><b>Verified</b><span>Recomputing the zone in your ' +
+      'browser gives exactly the zone and wallet recorded for this round.</span></div>'
+    : '<div class="vf-verdict vf-bad"><b>Mismatch</b><span>The recomputed zone does not ' +
+      'match the recorded result. Something is wrong - please report this round.</span></div>';
+
+  const rows = [
+    ['Pool',          'Circuit'],
+    ['Round',         w.roundId || ('#' + w.round)],
+    ['Block height',  snap.block_height
+        ? '<a href="https://finder.terraport.finance/mainnet/blocks/' + snap.block_height +
+          '" target="_blank" rel="noopener">' + snap.block_height + '</a>'
+        : '-'],
+    ['Block time',    snap.block_time || '-'],
+    ['Zones claimed', sold],
+    ['Winning zone',  zone + (zoneOk === false ? ' (recorded ' + snap.winner_zone + ')' : '')],
+    ['Winner',        addr ? fmtAddr(addr) : '-']
+  ];
+
+  return verdict +
+    '<div class="vf-card"><div class="vf-h">Input data</div><div class="vf-kv">' +
+    rows.map(r => '<div><span>' + r[0] + '</span><b>' + r[1] + '</b></div>').join('') +
+    '</div><div class="vf-hash"><span>Block hash</span><code>' + snap.block_hash + '</code></div>' +
+    '<a class="vf-src" href="./rounds/' + w.roundId + '.json" target="_blank" rel="noopener">' +
+    'board snapshot &rarr;</a></div>' +
+    '<div class="vf-card vf-repro"><div class="vf-h">Reproduce it yourself</div>' +
+    '<p class="vf-intro">Take the block hash from the explorer above and the zone count ' +
+    'from the snapshot, then run:</p><pre>Number(BigInt("0x" + "' +
+    snap.block_hash.slice(0, 24) + '...") % ' + sold + 'n)</pre></div>';
+}
+
+window.vfCircuitHtml = vfCircuitHtml;
+
+window.renderDrawVerify = renderDrawVerify;
+
+
+// ── Выбор раунда ─────────────────────────────────────────────────────────
+// Родной <select> рисуется средствами ОС и в тёмную тему сайта не ложится
+// никак: ни фон, ни шрифт, ни стрелка не поддаются CSS. Поэтому кнопка
+// плюс собственная панель - и заодно в строку помещается больше: чип пула,
+// дата и пометка, воспроизводим ли раунд.
+var vfPickerOpen = false;
+
+// ЕДИНСТВЕННЫЙ источник списка проверяемых раундов. Индексы из него идут и
+// в выпадающий список, и в openVerifyForRound, и в renderDrawVerify - разойдись
+// эти выборки, панель открыла бы чужой раунд. Circuit подмешивается сюда,
+// потому что живёт не в winners.json, а в отдельном списке из воркера.
+function vfRounds() {
+  return (winnersData || []).concat(circuitWinners || [])
+    .filter(function (w) { return w.places && w.places.length; })
+    .sort(function (a, b) { return (b.time || 0) - (a.time || 0); });
+}
+
+function vfRowHtml(w, i, active) {
+  return '<button class="vf-opt' + (active ? ' active' : '') + '" role="option" data-i="' + i + '" ' +
+    'onclick="vfPick(' + i + ')">' +
+    '<span class="vf-opt-chip ' + (w.type === 'daily' ? 'd' : w.type === 'circuit' ? 'c' : 'w') + '">' +
+      (w.type === 'daily' ? 'Daily' : w.type === 'circuit' ? 'Circuit' : 'Weekly') + '</span>' +
+    '<span class="vf-opt-id">' + (w.roundId || ('#' + w.round)) + '</span>' +
+    '<span class="vf-opt-date">' + fmtDate(w.time) + '</span>' +
+    '<span class="vf-opt-tag" data-tag="' + i + '">&middot;&middot;&middot;</span>' +
+  '</button>';
+}
+
+// Наличие снимка НЕ угадывается по данным раунда. Первая попытка помечала
+// строки по наличию block_height - и врала для пяти раундов из восьми:
+// высота есть, а снимка нет, потому что снимки пишутся только с 3 авг 2026.
+// Раз весь раздел про честность, статус берётся запросом, а не догадкой.
+var vfSnapCache = {};
+
+function vfMarkSnapshots(list) {
+  list.forEach(function (w, i) {
+    if (!w.roundId) return vfSetTag(i, false);
+    if (vfSnapCache[w.roundId] !== undefined) return vfSetTag(i, vfSnapCache[w.roundId]);
+    fetch('./rounds/' + w.roundId + '.json', { method: 'HEAD' })
+      .then(function (r) { vfSnapCache[w.roundId] = r.ok; vfSetTag(i, r.ok); })
+      .catch(function () { vfSnapCache[w.roundId] = false; vfSetTag(i, false); });
+  });
+}
+
+function vfSetTag(i, ok) {
+  var el = document.querySelector('[data-tag="' + i + '"]');
+  if (!el) return;
+  el.textContent = ok ? 'replayable' : 'result only';
+  el.className = 'vf-opt-tag' + (ok ? ' ok' : '');
+}
+
+function populateDrawVerifySelect() {
+  var menu = document.getElementById('vf-menu');
+  if (!menu) return;
+  var list = vfRounds();
+  menu.innerHTML = list.length
+    ? list.map(function (w, i) { return vfRowHtml(w, i, false); }).join('')
+    : '<div class="vf-opt-empty">No completed rounds yet.</div>';
+  vfMarkSnapshots(list);
+}
+
+function vfToggle(force) {
+  var menu = document.getElementById('vf-menu');
+  var btn  = document.getElementById('vf-trigger');
+  if (!menu || !btn) return;
+  vfPickerOpen = (force === undefined) ? !vfPickerOpen : !!force;
+  menu.style.display = vfPickerOpen ? 'block' : 'none';
+  btn.classList.toggle('open', vfPickerOpen);
+  btn.setAttribute('aria-expanded', vfPickerOpen ? 'true' : 'false');
+}
+
+function vfPick(i) {
+  var w = vfRounds()[i];
+  var lbl = document.getElementById('vf-trigger-label');
+  if (w && lbl) {
+    lbl.innerHTML =
+      '<span class="vf-opt-chip ' + (w.type === 'daily' ? 'd' : w.type === 'circuit' ? 'c' : 'w') + '">' +
+        (w.type === 'daily' ? 'Daily' : w.type === 'circuit' ? 'Circuit' : 'Weekly') + '</span>' +
+      '<span class="vf-opt-id">' + (w.roundId || ('#' + w.round)) + '</span>' +
+      '<span class="vf-opt-date">' + fmtDate(w.time) + '</span>';
+  }
+  var menu = document.getElementById('vf-menu');
+  if (menu) {
+    Array.prototype.forEach.call(menu.children, function (el) {
+      if (el.classList) el.classList.toggle('active', el.dataset && String(el.dataset.i) === String(i));
+    });
+  }
+  vfToggle(false);
+  renderDrawVerify(i);
+}
+
+// Закрытие по клику мимо и по Escape - как ведёт себя родной select
+document.addEventListener('click', function (e) {
+  if (!vfPickerOpen) return;
+  var box = document.getElementById('vf-picker');
+  if (box && !box.contains(e.target)) vfToggle(false);
+});
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape' && vfPickerOpen) vfToggle(false);
+});
+
+window.populateDrawVerifySelect = populateDrawVerifySelect;
+window.vfToggle = vfToggle;
+window.vfPick   = vfPick;
