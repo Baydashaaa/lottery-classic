@@ -340,15 +340,32 @@ function vfRowHtml(w, i, active) {
 // строки по наличию block_height - и врала для пяти раундов из восьми:
 // высота есть, а снимка нет, потому что снимки пишутся только с 3 авг 2026.
 // Раз весь раздел про честность, статус берётся запросом, а не догадкой.
-var vfSnapCache = {};
+//
+// Разметка ленивая: раньше она шла из populateDrawVerifySelect, то есть при
+// загрузке страницы, когда выпадашка закрыта и её никто не видит. На каждый
+// раунд уходил свой HEAD, а loadWinners зовётся дважды (из init и по событию
+// движка), поэтому запросы ещё и дублировались - в кэш клался результат, и
+// второй заход стартовал раньше, чем возвращался первый. Теперь размечаем
+// при первом открытии списка, а в кэше держим ОБЕЩАНИЕ, а не результат, -
+// параллельные вызовы подхватывают уже летящий запрос.
+var vfSnapCache = {};   // roundId -> Promise<bool>
+var vfMarked    = false; // размечен ли текущий список
+
+function vfSnapExists(roundId) {
+  if (!vfSnapCache[roundId]) {
+    vfSnapCache[roundId] = fetch('./rounds/' + roundId + '.json', { method: 'HEAD' })
+      .then(function (r) { return r.ok; })
+      .catch(function () { return false; });
+  }
+  return vfSnapCache[roundId];
+}
 
 function vfMarkSnapshots(list) {
+  if (vfMarked) return;
+  vfMarked = true;
   list.forEach(function (w, i) {
     if (!w.roundId) return vfSetTag(i, false);
-    if (vfSnapCache[w.roundId] !== undefined) return vfSetTag(i, vfSnapCache[w.roundId]);
-    fetch('./rounds/' + w.roundId + '.json', { method: 'HEAD' })
-      .then(function (r) { vfSnapCache[w.roundId] = r.ok; vfSetTag(i, r.ok); })
-      .catch(function () { vfSnapCache[w.roundId] = false; vfSetTag(i, false); });
+    vfSnapExists(w.roundId).then(function (ok) { vfSetTag(i, ok); });
   });
 }
 
@@ -366,7 +383,10 @@ function populateDrawVerifySelect() {
   menu.innerHTML = list.length
     ? list.map(function (w, i) { return vfRowHtml(w, i, false); }).join('')
     : '<div class="vf-opt-empty">No completed rounds yet.</div>';
-  vfMarkSnapshots(list);
+  // Список перестроен - метки в разметке снова '...', значит размечать заново.
+  // Пока выпадашка закрыта, запросы не шлём вовсе.
+  vfMarked = false;
+  if (vfPickerOpen) vfMarkSnapshots(list);
 }
 
 function vfToggle(force) {
@@ -377,6 +397,7 @@ function vfToggle(force) {
   menu.style.display = vfPickerOpen ? 'block' : 'none';
   btn.classList.toggle('open', vfPickerOpen);
   btn.setAttribute('aria-expanded', vfPickerOpen ? 'true' : 'false');
+  if (vfPickerOpen) vfMarkSnapshots(vfRounds());
 }
 
 function vfPick(i) {
