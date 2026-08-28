@@ -1,65 +1,17 @@
-// ─── FORTUNE WHEEL ─────────────────────────────────────────────────────────────
-// Cyber/neon style · Addresses on sectors · Auto-spin at draw time only
-const ADMIN_WALLET    = 'terra15jt5a9ycsey4hd6nlqgqxccl9aprkmg2mxmfc6';
-const MAX_SECTORS     = 20;
+// ─── МОСТ К КОЛЕСУ V2 ─────────────────────────────────────────────────────────
+// Файл назывался FORTUNE WHEEL и когда-то сам рисовал колесо. Рисование ушло
+// в assets/js/wheel/, а здесь остались данные раунда, сообщения под колесом,
+// карточка победителя и экспорт window.OracleDrawUI - единственная точка,
+// через которую ядро V2 трогает страницу.
+//
+// 28 авг 2026 вычищено мёртвое наследие старого колеса: MAX_SECTORS (сектора
+// теперь взвешенные, ограничения нет), ticksCanvas/ticksCtx/wheelDrawnOnce
+// (свой канвас), TIER_ICONS, ENTRY_DEADLINE_MS и весь блок цветов участников
+// (getParticipantColor, getNeonColors, две палитры) - цвета секторов живут
+// в WheelTheme.js. Ни на одно из этих имён не ссылался ни один файл репо.
+const ADMIN_WALLET = 'terra15jt5a9ycsey4hd6nlqgqxccl9aprkmg2mxmfc6';
 
-let ticksCanvas   = null;
-let ticksCtx      = null;
-let wheelDrawnOnce = false;
 let adminUnlocked = false;
-
-// Per-participant color palettes - each participant gets unique color
-// Tier icon prefixes for labels
-const TIER_ICONS = { legendary: 'LEG', rare: 'RARE', common: 'COM', free: 'FREE' };
-
-// 8 distinct participant colors (daily palette)
-const PARTICIPANT_COLORS_DAILY = [
-  { fill:'rgba(212,160,23,0.35)',  stroke:'#d4a017', text:'#ffe066'  },  // gold
-  { fill:'rgba(220,60,60,0.30)',   stroke:'#e05050', text:'#ff9999'  },  // red
-  { fill:'rgba(50,200,120,0.28)', stroke:'#32c878', text:'#80ffbb'  },  // green
-  { fill:'rgba(160,80,220,0.30)', stroke:'#a050dc', text:'#d499ff'  },  // purple
-  { fill:'rgba(230,130,20,0.30)', stroke:'#e68214', text:'#ffbb55'  },  // orange
-  { fill:'rgba(20,180,220,0.28)', stroke:'#14b4dc', text:'#66ddff'  },  // cyan
-  { fill:'rgba(220,180,20,0.30)', stroke:'#dcb414', text:'#ffee66'  },  // yellow
-  { fill:'rgba(220,80,160,0.28)', stroke:'#dc50a0', text:'#ff99dd'  },  // pink
-];
-// 8 distinct participant colors (weekly palette - cooler tones)
-const PARTICIPANT_COLORS_WEEKLY = [
-  { fill:'rgba(74,144,217,0.28)',  stroke:'#4a90d9', text:'#99ccff'  },  // blue
-  { fill:'rgba(100,200,180,0.25)',stroke:'#64c8b4', text:'#aaffee'  },  // teal
-  { fill:'rgba(180,100,220,0.25)',stroke:'#b464dc', text:'#dd99ff'  },  // violet
-  { fill:'rgba(220,160,60,0.28)', stroke:'#dca03c', text:'#ffdd88'  },  // amber
-  { fill:'rgba(80,180,255,0.22)', stroke:'#50b4ff', text:'#cceeFF'  },  // sky
-  { fill:'rgba(220,80,120,0.25)', stroke:'#dc5078', text:'#ff99bb'  },  // rose
-  { fill:'rgba(60,220,140,0.22)', stroke:'#3cdc8c', text:'#88ffcc'  },  // mint
-  { fill:'rgba(255,140,60,0.25)', stroke:'#ff8c3c', text:'#ffcc88'  },  // peach
-];
-
-// Map address → color index (stable across redraws)
-const _addrColorMap = new Map();
-let _addrColorCounter = 0;
-function getParticipantColor(address) {
-  if (!address) return { fill:'rgba(80,80,80,0.2)', stroke:'#555', text:'#888' };
-  if (!_addrColorMap.has(address)) {
-    _addrColorMap.set(address, _addrColorCounter % 8);
-    _addrColorCounter++;
-  }
-  const idx = _addrColorMap.get(address);
-  const palette = currentLottery === 'weekly' ? PARTICIPANT_COLORS_WEEKLY : PARTICIPANT_COLORS_DAILY;
-  return palette[idx];
-}
-function getNeonColors() {
-  return currentLottery === 'weekly' ? PARTICIPANT_COLORS_WEEKLY : PARTICIPANT_COLORS_DAILY;
-}
-
-
-// ── Draw the wheel ────────────────────────────────────────────────────────────
-
-// ── Spin animation ────────────────────────────────────────────────────────────
-
-// ── Build ticket list for wheel ───────────────────────────────────────────────
-
-// ── Wheel legend - shows participants with color, tier, entries ──────────────
 
 // ── ДАННЫЕ РАУНДА ДЛЯ КОЛЕСА ────────────────────────────────────────────────
 // Раньше эта функция строила wheelTickets и рисовала канвас вручную.
@@ -271,9 +223,6 @@ function setWheelMsg(msg, sub, color) {
   if (m) { m.innerHTML = msg; m.style.color = color || '#00c8ff'; m.style.textShadow = '0 0 20px '+color+'88'; }
   if (s)   s.innerHTML = sub || '';
 }
-
-// ── Auto check draw time (every second) ──────────────────────────────────────
-const ENTRY_DEADLINE_MS = 15 * 60 * 1000; // 15 minutes before draw
 
 
 function updateBurnButtonState(open) {
