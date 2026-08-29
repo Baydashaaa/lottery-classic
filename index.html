@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <script src="/assets/js/oa.js?v=3" defer></script>
+  <script src="/assets/js/oa.js?v=6cf79fe0db" defer></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <script>if (history.scrollRestoration) history.scrollRestoration = 'manual';</script>
@@ -15,16 +15,16 @@
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;500;600;700&family=Rajdhani:wght@500;600;700&family=Stalinist+One&family=Boldonse&display=swap" rel="stylesheet">
 
   <!-- Стили -->
-  <link rel="stylesheet" href="assets/css/style.css?v=202608101505">
-  <link rel="stylesheet" href="assets/css/page/weekly-prize.css?v=202608281600">
-  <link rel="stylesheet" href="assets/css/page/mob-nav.css?v=202608281600">
-  <link rel="stylesheet" href="assets/css/page/icons.css?v=202608281600">
-  <link rel="stylesheet" href="assets/css/page/mobile-menu.css?v=202608281600">
-  <link rel="stylesheet" href="assets/css/page/modal-fit.css?v=202608281600">
-  <link rel="stylesheet" href="assets/css/page/game-rail.css?v=202608281600">
-  <link rel="stylesheet" href="assets/css/page/winners-v2.css?v=202608281600">
-  <link rel="stylesheet" href="assets/css/page/verify-v2.css?v=202608281600">
-  <link rel="stylesheet" href="assets/css/page/footer-spin.css?v=202608281600">
+  <link rel="stylesheet" href="assets/css/style.css?v=6cd34db99e">
+  <link rel="stylesheet" href="assets/css/page/weekly-prize.css?v=951006f670">
+  <link rel="stylesheet" href="assets/css/page/mob-nav.css?v=9d6c3cdcc4">
+  <link rel="stylesheet" href="assets/css/page/icons.css?v=d8722acfb5">
+  <link rel="stylesheet" href="assets/css/page/mobile-menu.css?v=f139fe3ad7">
+  <link rel="stylesheet" href="assets/css/page/modal-fit.css?v=5bcfd8b016">
+  <link rel="stylesheet" href="assets/css/page/game-rail.css?v=4789231144">
+  <link rel="stylesheet" href="assets/css/page/winners-v2.css?v=890aa6ce5b">
+  <link rel="stylesheet" href="assets/css/page/verify-v2.css?v=703c407c77">
+  <link rel="stylesheet" href="assets/css/page/footer-spin.css?v=77f3400b7b">
 <script>
 // iOS zoom: don't fight it - survive it by redrawing canvas on scale change
 (function() {
@@ -1325,38 +1325,38 @@ for place p in 0, 1, 2:
   <!-- Логика -->
   <!-- Расписание розыгрышей. ОБЩИЙ файл с репо terra-oracle, побайтово тот же.
        Обязан идти ДО app.js: app.js считает счётчики только через него. -->
-  <script src="assets/js/draw-schedule.js?v=202608040710" defer></script>
-  <script src="assets/js/oracle-nft-client.js?v=3" defer></script>
+  <script src="assets/js/draw-schedule.js?v=02321a6b89" defer></script>
+  <script src="assets/js/oracle-nft-client.js?v=da71a703b2" defer></script>
   <!-- app.js разрезан на части 28 авг 2026. ПОРЯДОК МЕНЯТЬ НЕЛЬЗЯ:
        в коде есть операторы верхнего уровня и объявления const/let,
        порядок повторяет исходный файл строка в строку.
        Все теги defer, как был исходный app.js. Не ставить type="module":
        20 функций вызываются из inline on*= и должны остаться глобальными.
        Тот же порядок продублирован в dev/_verify_split.cjs -->
-  <script src="assets/js/app/config.js?v=202608281200" defer></script>
-  <script src="assets/js/app/chain.js?v=202608281200" defer></script>
-  <script src="assets/js/app/pool-timer.js?v=202608281200" defer></script>
-  <script src="assets/js/app/modal.js?v=202608281200" defer></script>
-  <script src="assets/js/app/buy.js?v=202608281200" defer></script>
-  <script src="assets/js/app/data.js?v=202608281200" defer></script>
-  <script src="assets/js/app/wheel-bridge.js?v=202608282000" defer></script>
-  <script src="assets/js/app/verify.js?v=202608281200" defer></script>
-  <script src="assets/js/app/admin.js?v=202608281200" defer></script>
-  <script src="assets/js/app/wallet.js?v=202608281200" defer></script>
-  <script src="assets/js/app/init.js?v=202608281900" defer></script>
-  <script src="assets/js/app/bag.js?v=202608281900" defer></script>
-  <script src="assets/js/app/enter-draw.js?v=202608281900" defer></script>
-  <script src="assets/js/app/bag-filter.js?v=202608281900" defer></script>
-  <script src="assets/js/app/winners-v2.js?v=202608281200" defer></script>
-  <script src="assets/js/app/verify-v2.js?v=202608281730" defer></script>
-  <script src="assets/js/app/winners-v3.js?v=202608281200" defer></script>
-  <script src="assets/js/circuit-state.js?v=1" defer></script>
-  <script src="assets/js/circuit-buy.js?v=5" defer></script>
-  <script src="assets/js/oracle-mint-v2.js?v=202608222211" defer></script>
-  <script src="assets/js/circuit-claim.js?v=1" defer></script>
-  <script src="assets/js/circuit-board.js?v=4" defer></script>
-  <script src="assets/js/circuit-reveal.js?v=5" defer></script>
-  <script type="module" src="assets/js/circuit-local.js?v=1"></script>
+  <script src="assets/js/app/config.js?v=0aaf657c4a" defer></script>
+  <script src="assets/js/app/chain.js?v=0ddde4f1a3" defer></script>
+  <script src="assets/js/app/pool-timer.js?v=e04bcce53d" defer></script>
+  <script src="assets/js/app/modal.js?v=64466586cf" defer></script>
+  <script src="assets/js/app/buy.js?v=0409e4bfae" defer></script>
+  <script src="assets/js/app/data.js?v=e00b91042c" defer></script>
+  <script src="assets/js/app/wheel-bridge.js?v=ac6235e602" defer></script>
+  <script src="assets/js/app/verify.js?v=bca9638598" defer></script>
+  <script src="assets/js/app/admin.js?v=a927ca4d63" defer></script>
+  <script src="assets/js/app/wallet.js?v=ebe2d96d1e" defer></script>
+  <script src="assets/js/app/init.js?v=f1616af45b" defer></script>
+  <script src="assets/js/app/bag.js?v=23624bf450" defer></script>
+  <script src="assets/js/app/enter-draw.js?v=8c408fbc88" defer></script>
+  <script src="assets/js/app/bag-filter.js?v=f2765ea97d" defer></script>
+  <script src="assets/js/app/winners-v2.js?v=9bab5b96de" defer></script>
+  <script src="assets/js/app/verify-v2.js?v=6fe696ff23" defer></script>
+  <script src="assets/js/app/winners-v3.js?v=cb19e822b6" defer></script>
+  <script src="assets/js/circuit-state.js?v=b78fabda43" defer></script>
+  <script src="assets/js/circuit-buy.js?v=caa316693f" defer></script>
+  <script src="assets/js/oracle-mint-v2.js?v=3e09f8d14e" defer></script>
+  <script src="assets/js/circuit-claim.js?v=6332c22f4b" defer></script>
+  <script src="assets/js/circuit-board.js?v=980e9fe1e8" defer></script>
+  <script src="assets/js/circuit-reveal.js?v=b3a8db52b4" defer></script>
+  <script type="module" src="assets/js/circuit-local.js?v=175f1e029e"></script>
 
   <!-- Oracle Draw V2 - один собранный файл.
        Раздельные модули кэшируются намертво: у вложенных import нет
@@ -1365,10 +1365,10 @@ for place p in 0, 1, 2:
        Пересобрать после правок в assets/js/wheel/ или draw-v2/:
            node dev/_build_bundle.js
        и поменять номер ниже на тот, что напечатает сборщик. -->
-  <script type="module" src="assets/js/oracle-draw.bundle.js?v=202608161319"></script>
+  <script type="module" src="assets/js/oracle-draw.bundle.js?v=ff40b165d4"></script>
 
-<script src="assets/js/page/weekly-podium.js?v=202608281400"></script>
-<script src="assets/js/page/admin-spin.js?v=202608281400"></script>
+<script src="assets/js/page/weekly-podium.js?v=f4765e9bf0"></script>
+<script src="assets/js/page/admin-spin.js?v=b0d865aeb0"></script>
 
 
 <!-- ═══ WALLET QR MODAL ═══ -->
@@ -1393,7 +1393,7 @@ for place p in 0, 1, 2:
   </div>
 </div>
 
-<script src="assets/js/page/wallet-qr.js?v=202608281400"></script>
+<script src="assets/js/page/wallet-qr.js?v=71de2a864c"></script>
 
 <!-- MOBILE WALLET MODAL -->
 <div id="mobile-wallet-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);align-items:flex-end;justify-content:center;">
@@ -1467,7 +1467,7 @@ for place p in 0, 1, 2:
   </div>
 </div>
 
-<script src="assets/js/page/mobile-wallet.js?v=202608281400"></script>
+<script src="assets/js/page/mobile-wallet.js?v=08147cd8f6"></script>
 
 <!-- LUNCDASH INPUT MODAL -->
 <div id="luncdash-modal" style="display:none;position:fixed;inset:0;z-index:10001;background:rgba(0,0,0,0.88);backdrop-filter:blur(12px);align-items:center;justify-content:center;">
@@ -1482,14 +1482,14 @@ for place p in 0, 1, 2:
   </div>
 </div>
 
-<script src="assets/js/page/luncdash.js?v=202608281400"></script>
+<script src="assets/js/page/luncdash.js?v=efccef38de"></script>
 
 <!-- ═══ ORACLE EYE (shared module) ═══ -->
-<script src="assets/js/oracle-eye.js?v=5" defer></script>
-<script src="assets/js/oracle-notify.js?v=202608241620" defer></script>
+<script src="assets/js/oracle-eye.js?v=3cf89cd2e9" defer></script>
+<script src="assets/js/oracle-notify.js?v=d99e586143" defer></script>
 <!-- ═══ END ORACLE EYE ═══ -->
 
 
-<script src="assets/js/page/game-switcher.js?v=202608281400"></script>
+<script src="assets/js/page/game-switcher.js?v=7d78cf7bee"></script>
 </body>
 </html>
