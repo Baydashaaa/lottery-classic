@@ -1,7 +1,7 @@
-/* Oracle Draw V2 — собранный бандл. НЕ РЕДАКТИРОВАТЬ.
+/* Oracle Draw V2 - собранный бандл. НЕ РЕДАКТИРОВАТЬ.
    Источники: assets/js/wheel/ и assets/js/draw-v2/
    Пересобрать: node dev/_build_bundle.js
-   Версия сборки: 202608161319 */
+   Версия сборки: 202608292138 */
 
 /* ── chain-tickets.js ─────────────────────────────────── */
 /**
@@ -2311,7 +2311,7 @@ const CONFIG = {
     LOCK_MS: 15 * 60 * 1000,            // T-15м: приём NFT закрыт (LOCKED)
     PRE_DRAW_MS: 30 * 1000,             // T-30с: PRE_DRAW, колесо раскручивается
     AWAIT_TIMEOUT_MS: 100 * 60 * 1000,   // сколько ждать публикацию, потом отпускаем
-    REVEAL_WINDOW_MS: 60 * 60 * 1000,   // сколько держать результат на колесе
+    REVEAL_WINDOW_MS: 120 * 60 * 1000,   // сколько держать результат на колесе
 
     /* ---------- колесо ---------- */
 
@@ -2504,7 +2504,7 @@ function derivePhase(ctx) {
 
     if (covers && withinReveal) return result.skipped ? PHASE.ROLLOVER : PHASE.REVEALED;
 
-    if (lastDeadline !== null) {
+    if (lastDeadline !== null && !covers) {
         const since = now - lastDeadline;
         // Результата за прошедший дедлайн ещё нет - ждём, но не вечно
         if (since >= 0 && since <= cfg.AWAIT_TIMEOUT_MS) return PHASE.AWAITING;

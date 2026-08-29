@@ -18,17 +18,23 @@ const {CONFIG}=await import("../assets/js/draw-v2/Config.js");
 let fails=0; const ok=(c,m)=>{if(!c){console.log("❌",m);fails++;}else console.log("✓",m);};
 
 // ── фазовая машина как чистая функция ──────────────────────────────────
-const ctx=(offset,result=null,revealing=false)=>derivePhase({
+const ctx=(offset,result=null,revealing=false,cfg=CONFIG)=>derivePhase({
   now:deadline+offset, deadline:offset<0?deadline:deadline+86400000,
   lastDeadline:offset>=0?deadline:deadline-86400000,
-  result, revealing, cfg:CONFIG});
+  result, revealing, cfg});
 
 ok(ctx(-3600000)===PHASE.OPEN,      "за час до - OPEN");
 ok(ctx(-10*60000)===PHASE.LOCKED,   "за 10 минут - LOCKED");
 ok(ctx(-20000)===PHASE.PRE_DRAW,    "за 20 секунд - PRE_DRAW");
 ok(ctx(+5000)===PHASE.AWAITING,     "через 5 секунд после - AWAITING");
 ok(ctx(+9*60000)===PHASE.AWAITING,  "через 9 минут всё ещё AWAITING");
-ok(ctx(+30*60000)===PHASE.OPEN,     "через полчаса без результата - отпустили в OPEN");
+ok(ctx(CONFIG.AWAIT_TIMEOUT_MS-60000)===PHASE.AWAITING, "внутри окна ожидания - AWAITING");
+ok(ctx(CONFIG.AWAIT_TIMEOUT_MS+60000)===PHASE.OPEN,     "окно ожидания истекло - отпустили в OPEN");
+// Окно показа НАРОЧНО короче окна ожидания - та самая щель, в которую
+// провалился раунд 2026-08-29. Проверяем код, а не текущий конфиг.
+const narrow={...CONFIG,REVEAL_WINDOW_MS:60*60000,AWAIT_TIMEOUT_MS:100*60000};
+ok(ctx(+81*60000,{drawnAt:deadline+40000,skipped:false},false,narrow)!==PHASE.AWAITING,
+   "результат за прошедший дедлайн есть - не пишем, что ждём его");
 const res={drawnAt:deadline+40000,skipped:false};
 ok(ctx(+60000,res)===PHASE.REVEALED,"результат пришёл - REVEALED");
 ok(ctx(+60000,res,true)===PHASE.REVEALING,"во время анимации - REVEALING");

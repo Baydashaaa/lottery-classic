@@ -65,7 +65,7 @@ export function derivePhase(ctx) {
 
     if (covers && withinReveal) return result.skipped ? PHASE.ROLLOVER : PHASE.REVEALED;
 
-    if (lastDeadline !== null) {
+    if (lastDeadline !== null && !covers) {
         const since = now - lastDeadline;
         // Результата за прошедший дедлайн ещё нет - ждём, но не вечно
         if (since >= 0 && since <= cfg.AWAIT_TIMEOUT_MS) return PHASE.AWAITING;
