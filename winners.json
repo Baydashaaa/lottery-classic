@@ -903,6 +903,25 @@
       "skipped": true,
       "reason": "Not enough entries: 3",
       "entries": 3
+    },
+    {
+      "date": "2026-08-29",
+      "round_id": "daily_2026-08-29",
+      "winner": "terra1a9see2df2w8wh8hsty0y6gw9tkamlkzah8kd74",
+      "prize_lunc": 157704,
+      "entries": 6,
+      "participants": 6,
+      "ticket_rule": "chain-v1",
+      "nft_contract": "terra1hcsq79vmcqxr97sv720yw6scvyknssx62ufsa4rwlmv02gyft43s46uaqx",
+      "deadline": "2026-08-29T20:00:00.000Z",
+      "boundary_ts": 1787688000,
+      "block_hash": "72B4D79B981474C00D5696BBD32E70410A3B92E6A9F1F3D8EE1003C0912F21CD",
+      "block_height": "30168433",
+      "block_time": "2026-08-29T20:00:05.645Z",
+      "randomness": "terra-classic-block-hash-at-round-deadline",
+      "winner_index": 1,
+      "tx_winner": "EB8E87F4F30FB7E7E20A5D21770921F13AF9FD260BA23FF1357E8D957A8245CD",
+      "tx_treasury": "D5B69159FAF293A7B8172CAC290DB51EF04D5180875CB519C237F780E02ADEB6"
     }
   ],
   "weekly": [
