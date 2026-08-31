@@ -7,3 +7,5 @@ patch-*.py
 *.oabak*
 probe.mjs
 probe2.mjs
+home.css
+page-home.html
