@@ -38,18 +38,64 @@ const DENOM = 'uluna';
 const GAS_PRICE_ULUNA = 28.325;
 
 /**
- * Fixed gas limits. Generous on purpose: an under-estimated draw would revert
- * after doing all its work, and the round would sit unsettled until somebody
- * noticed. gasUsed is logged so these can be trimmed once there is real data.
+ * Нижние границы газа. Раньше это были фиксированные лимиты, и расчёт
+ * недельного раунда 31 августа съел 1 407 221 из 1 500 000 - запас 6% на
+ * десяти билетах. Стоимость execute_draw растёт с числом входов, поэтому
+ * фиксированный лимит рано или поздно упёрся бы в потолок и раунд
+ * реветился бы ПОСЛЕ всей работы, оставаясь нерассчитанным.
+ *
+ * Теперь газ считает симуляция, а эти числа - только пол: если узел не
+ * ответил на симуляцию, работаем по старым значениям.
  */
 const GAS_LIMITS = { open: 400000, settle: 1500000 };
 
-function feeFor(kind) {
-  const gas = GAS_LIMITS[kind];
+/** Запас поверх симуляции. Симуляция считает по текущему состоянию, а к
+ *  моменту исполнения входов может стать больше. */
+const GAS_MULTIPLIER = 1.6;
+
+/** Потолок на одну транзакцию. Комиссия платится за ЗАКАЗАННЫЙ газ, не за
+ *  использованный, поэтому потолок ограничивает и расход кипера: 8M газа
+ *  это около 227 LUNC. */
+const GAS_CAP = 8_000_000;
+
+function feeFor(kind, gasOverride) {
+  const gas = gasOverride || GAS_LIMITS[kind];
   return {
     amount: [{ denom: DENOM, amount: String(Math.ceil(gas * GAS_PRICE_ULUNA)) }],
     gas: String(gas),
   };
+}
+
+/**
+ * Газ под конкретное сообщение: симуляция плюс запас, но не ниже пола и не
+ * выше потолка. Сообщение кодируется через реестр клиента - никаких новых
+ * зависимостей в workflow добавлять не нужно.
+ */
+async function feeForMsg(ctx, kind, contract, msg, memo) {
+  const floor = GAS_LIMITS[kind];
+  let gas = floor;
+  try {
+    const encoded = {
+      typeUrl: '/cosmwasm.wasm.v1.MsgExecuteContract',
+      value: {
+        sender: ctx.address,
+        contract,
+        msg: new TextEncoder().encode(JSON.stringify(msg)),
+        funds: [],
+      },
+    };
+    const simulated = await ctx.client.simulate(ctx.address, [encoded], memo);
+    gas = Math.ceil(simulated * GAS_MULTIPLIER);
+    console.log(`[gas] ${kind}: симуляция ${simulated}, с запасом ${gas}`);
+  } catch (e) {
+    console.warn(`[gas] ${kind}: симуляция не удалась (${e.message}), беру пол ${floor}`);
+  }
+  if (gas < floor) gas = floor;
+  if (gas > GAS_CAP) {
+    console.warn(`[gas] ${kind}: расчёт ${gas} выше потолка, ограничиваю ${GAS_CAP}`);
+    gas = GAS_CAP;
+  }
+  return { fee: feeFor(kind, gas), gas };
 }
 
 /** Open the next round once the current one is within this of closing. */
@@ -154,14 +200,18 @@ async function openIfDue(pool, addr, ctx) {
       `will flag the round has_late_entries`);
   }
 
+  const openMsg = { open_round: { seed_hash: seedHash, close_time: String(closeTime * 1_000_000) } };
+  const openMemo = `oracle-pool: open ${pool} round ${nextId}`;
+  const openGas = await feeForMsg(ctx, 'open', addr, openMsg, openMemo);
+
   const res = await ctx.client.execute(
     ctx.address,
     addr,
-    { open_round: { seed_hash: seedHash, close_time: String(closeTime * 1_000_000) } },
-    feeFor('open'),
-    `oracle-pool: open ${pool} round ${nextId}`
+    openMsg,
+    openGas.fee,
+    openMemo
   );
-  console.log(`[${pool}] opened, tx ${res.transactionHash}, gas ${res.gasUsed}/${GAS_LIMITS.open}`);
+  console.log(`[${pool}] opened, tx ${res.transactionHash}, gas ${res.gasUsed}/${openGas.gas}`);
 }
 
 async function settleDue(pool, addr, ctx) {
@@ -182,14 +232,16 @@ async function settleDue(pool, addr, ctx) {
 
     const secret = secretFor(pool, id).toString('base64');
     console.log(`[${pool}] settling round ${id}`);
-    const res = await ctx.client.execute(
-      ctx.address,
-      addr,
-      { execute_draw: { round_id: id, secret } },
-      feeFor('settle'),
-      `oracle-pool: settle ${pool} round ${id}`
-    );
-    console.log(`[${pool}] settled, tx ${res.transactionHash}, gas ${res.gasUsed}/${GAS_LIMITS.settle}`);
+    const drawMsg = { execute_draw: { round_id: id, secret } };
+    const drawMemo = `oracle-pool: settle ${pool} round ${id}`;
+    const drawGas = await feeForMsg(ctx, 'settle', addr, drawMsg, drawMemo);
+    const res = await ctx.client.execute(ctx.address, addr, drawMsg, drawGas.fee, drawMemo);
+    const usedPct = Math.round((Number(res.gasUsed) / drawGas.gas) * 100);
+    console.log(`[${pool}] settled, tx ${res.transactionHash}, gas ${res.gasUsed}/${drawGas.gas} (${usedPct}%)`);
+    if (usedPct > 85) {
+      console.warn(`[${pool}] газа израсходовано ${usedPct}% от заказанного - ` +
+        `поднять GAS_MULTIPLIER, пока расчёт не начал реветиться`);
+    }
 
     const after = await query(addr, { round: { round_id: id } });
     console.log(`[${pool}] status ${after.status}, entries ${after.total_entries}, ` +
@@ -239,7 +291,7 @@ if (!['open', 'settle', 'both'].includes(action)) {
   process.exit(1);
 }
 
-console.log('pool-keeper build: fee-2026-08-06');
+console.log('pool-keeper build: gas-sim-2026-09-01');
 const ctx = await connect();
 console.log(`keeper ${ctx.address} on ${CHAIN_ID}, action=${action}`);
 
