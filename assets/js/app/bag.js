@@ -1,7 +1,8 @@
 // ── MY BAG ────────────────────────────────────────────────────────────────────
 // (NFT_API_BASE / DRAW_WORKER constants moved to top of file to avoid TDZ errors)
 
-// Oracle Mask nft_ids on nft.lunc.tools:
+// Токены берутся из контракта через OracleNFT.getContractTokensLegacy.
+// Прежние id коллекций на nft.lunc.tools (сервис отключён 31 авг 2026):
 //   134 = Common   (25,000 LUNC, 1 entry)
 //   135 = Rare     (125,000 LUNC, 5 entries)
 //   136 = Legendary (250,000 LUNC, 10 entries)

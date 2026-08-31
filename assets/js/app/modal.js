@@ -27,25 +27,12 @@ document.body.classList.add('modal-open');
 function closeModal() { const _mo2=document.getElementById('modal');if(_mo2)_mo2.classList.remove('open'); document.body.classList.remove('modal-open'); }
 document.getElementById('modal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
 
-// ── NFT Mint iframe modal ─────────────────────────────────────
-const NFT_MINT_URLS = {
-  // Daily pool - funds go directly to DAILY_WALLET (terra1amp68zg7vph3nq84ummnfma4dz753ezxfqa9px)
-  common_daily:     'https://nft.lunc.tools/nft/150/mint?embed=1',
-  rare_daily:       'https://nft.lunc.tools/nft/151/mint?embed=1',
-  legendary_daily:  'https://nft.lunc.tools/nft/152/mint?embed=1',
-  // Weekly pool - funds go directly to WEEKLY_WALLET (terra1p5l6q95kfl3hes7edy76tywav9f79n6xlkz6qz)
-  common_weekly:    'https://nft.lunc.tools/nft/147/mint?embed=1',
-  rare_weekly:      'https://nft.lunc.tools/nft/148/mint?embed=1',
-  legendary_weekly: 'https://nft.lunc.tools/nft/149/mint?embed=1',
-};
+// Минт идёт через собственный контракт (oracle-mint-v2.js). Прежняя
+// схема с iframe на nft.lunc.tools удалена 31 авг 2026 вместе с сервисом:
+// адреса минта, id коллекций Paco и опрос его API больше не нужны.
+
 // REP awarded per tier on mint
 const NFT_TIER_REP = { common: 25, rare: 125, legendary: 250 };
-// Paco NFT ids per tier+pool (must match worker's NFT_IDS). Used for the
-// browser-side mint call that bypasses the Cloudflare-IP block on Paco.
-const NFT_IDS_FRONT = {
-  common_daily: 150, rare_daily: 151, legendary_daily: 152,
-  common_weekly: 147, rare_weekly: 148, legendary_weekly: 149,
-};
 const NFT_TIER_LABELS = {
   common:    'Common · 25,000 LUNC · 1 entry',
   rare:      'Rare · 125,000 LUNC · 5 entries',
@@ -116,29 +103,12 @@ const NFT_MINT_PRICES = {
 };
 
 // ── Mint service health check ────────────────────────────────────────────────
-// Probes Paco (nft.lunc.tools) DIRECTLY FROM THE BROWSER. Paco blocks
-// Cloudflare Worker datacenter IPs (the worker times out → "unreachable"),
-// but browsers reach Paco fine - and since the mint itself now also runs from
-// the browser, this checks the exact same path the mint will use.
+// Осталась заглушкой: у контрактного минта нет внешнего бэкенда, который
+// можно опросить - бэкенд это сама цепочка. buy.js её всё ещё зовёт.
 async function isMintServiceUp(wallet) {
   // Contract mint has no external backend to probe - the chain is always the
   // backend. Kept only so any stray caller still resolves. Always true.
   return true;
-}
-
-async function _isMintServiceUp_OLD_worker(wallet) {
-  try {
-    const r = await fetch(`${DRAW_WORKER}/mint-health?wallet=${wallet}`, {
-      signal: AbortSignal.timeout(40000),
-    });
-    if (!r.ok) return true;            // worker error → inconclusive → allow
-    const d = await r.json();
-    return d.up !== false;             // only an explicit up:false blocks
-  } catch(e) {
-    // Timeout / network error reaching OUR worker → inconclusive → allow.
-    console.warn('mint-health probe inconclusive, allowing mint:', e.message);
-    return true;
-  }
 }
 
 async function nativeMint() {
@@ -329,130 +299,6 @@ async function sendTwoMsgSend(fromAddr, toAddr1, amount1, toAddr2, amount2, memo
   return sendMsgSends(fromAddr,
     [{ to: toAddr1, amount: amount1 }, { to: toAddr2, amount: amount2 }],
     memo, chainId);
-}
-
-// Snapshot of NFTs owned BEFORE opening mint iframe - used to detect newly minted NFT
-window._preMintTokenIds = null;
-window._mintSelectedPool = null;
-window._mintSelectedTier = null;
-window._postMintPollAbort = false;
-
-async function openMintIframe() {
-  const tier    = window.selectedTier || 'common';
-  const pool    = window.selectedPool || window.currentLottery || 'daily';   // выбор в модалке имеет приоритет над вкладками
-  const wallet  = connectedWalletAddress || lotteryAddress;
-  const frame   = document.getElementById('nft-mint-frame');
-  const overlay = document.getElementById('mint-modal-overlay');
-  const subEl   = document.getElementById('mint-modal-sub');
-
-  // Take snapshot of currently owned NFTs so we can diff after mint
-  window._mintSelectedPool = pool;
-  window._mintSelectedTier = tier;
-  window._postMintPollAbort = false;
-  if (wallet) {
-    try {
-      const r = await fetch(`${NFT_API_BASE}/owned-nfts/${wallet}`, { signal: AbortSignal.timeout(8000) });
-      if (r.ok) {
-        const data = await r.json();
-        const nfts = Array.isArray(data) ? data : data.nfts || data.data || data.tokens || [];
-        window._preMintTokenIds = new Set(nfts.map(n => String(n.id || n.tokenId || n.token_id || '')).filter(Boolean));
-        console.log(`[mint] pre-mint snapshot: ${window._preMintTokenIds.size} NFTs owned`);
-      }
-    } catch(e) {
-      console.warn('[mint] pre-mint snapshot failed:', e.message);
-      window._preMintTokenIds = new Set();   // empty set - we'll still try to detect any new NFT
-    }
-  }
-
-  const mintKey = `${tier}_${pool}`;
-  if (frame)   frame.src = NFT_MINT_URLS[mintKey] || NFT_MINT_URLS[`${tier}_daily`];
-  if (subEl)   subEl.textContent = NFT_TIER_LABELS[tier] || NFT_TIER_LABELS.common;
-  if (overlay) overlay.style.display = 'flex';
-}
-
-function closeMintIframe() {
-  const frame   = document.getElementById('nft-mint-frame');
-  const overlay = document.getElementById('mint-modal-overlay');
-  if (frame)   frame.src = '';
-  if (overlay) overlay.style.display = 'none';
-
-  // After closing iframe, poll for newly minted NFT and auto-activate it
-  // (only if user opened iframe with a snapshot)
-  if (window._preMintTokenIds && window._mintSelectedPool && !window._postMintPollAbort) {
-    pollForNewMintAndActivate();
-  }
-}
-
-// Poll Paco API after mint iframe closes - detect new NFT, record in Worker, award REP.
-// New architecture: mint goes directly to DAILY/WEEKLY wallet - no enterDraw tx needed.
-async function pollForNewMintAndActivate() {
-  const wallet = connectedWalletAddress || lotteryAddress;
-  if (!wallet) return;
-
-  const pool    = window._mintSelectedPool  || 'daily';
-  const tier    = window._mintSelectedTier  || 'common';
-  const entries = NFT_TIER_ENTRIES[tier]    || 1;
-  const repPts  = NFT_TIER_REP[tier]        || 25;
-  const preIds  = window._preMintTokenIds   || new Set();
-
-  showAutoActivationToast('<svg class="oi oi--cyan"><use href="#i-hourglass"/></svg> Detecting your new NFT...', 'info');
-
-  const POLL_INTERVAL_MS = 5000;
-  const MAX_ATTEMPTS     = 12; // 12 × 5s = 60s
-
-  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-    if (window._postMintPollAbort) { console.log('[mint] poll aborted'); return; }
-    await new Promise(r => setTimeout(r, POLL_INTERVAL_MS));
-    try {
-      const r = await fetch(`${NFT_API_BASE}/owned-nfts/${wallet}`, { signal: AbortSignal.timeout(8000) });
-      if (!r.ok) continue;
-      const data = await r.json();
-      const nfts = Array.isArray(data) ? data : (data.nfts || data.data || data.tokens || []);
-
-      const newNFT = nfts.find(n => {
-        const id = String(n.id || n.tokenId || n.token_id || '');
-        return id && !preIds.has(id);
-      });
-
-      if (newNFT) {
-        const newId = String(newNFT.id || newNFT.tokenId || newNFT.token_id);
-        console.log(`[mint] detected new NFT: ${newId} tier=${tier} pool=${pool}`);
-        showAutoActivationToast(`<svg class="oi oi--gold"><use href="#i-sparkles"/></svg> NFT detected! Registering for ${pool.toUpperCase()} draw...`, 'info');
-
-        // 1. Record in Worker for My Bag tracking (no on-chain tx needed)
-        try {
-          await fetch(`${DRAW_WORKER}/use-nft`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              tokenId: newId, pool, wallet, entries, tier,
-              txHash: 'direct_mint_' + newId,
-              directMint: true,
-            }),
-          });
-        } catch(e) { console.warn('[mint] Worker record failed:', e.message); }
-
-        // REP is awarded server-side by the Worker's /use-nft directMint path
-        // (guaranteed once per token). Front-end no longer awards to avoid double-counting.
-        const tierLabel = tier.charAt(0).toUpperCase() + tier.slice(1);
-        showAutoActivationToast(`<svg class="oi oi--green"><use href="#i-check"/></svg> ${tierLabel} NFT entered into ${pool.toUpperCase()} draw! +${repPts} REP`, 'success');
-
-        window._preMintTokenIds  = null;
-        window._mintSelectedPool = null;
-        window._mintSelectedTier = null;
-
-        if (typeof loadMyBagNFTs === 'function') loadMyBagNFTs(wallet);
-        if (typeof loadAllData   === 'function') loadAllData();
-        return;
-      }
-      console.log(`[mint] poll ${attempt}/${MAX_ATTEMPTS} - no new NFT yet`);
-    } catch(e) { console.warn(`[mint] poll ${attempt} error:`, e.message); }
-  }
-
-  console.warn('[mint] poll timed out');
-  showAutoActivationToast('<svg class="oi oi--amber"><use href="#i-warning"/></svg> Could not auto-detect new NFT. Check My Bag in a moment.', 'warning');
-  window._preMintTokenIds  = null;
-  window._mintSelectedPool = null;
 }
 
 // Floating toast in bottom-right corner with auto-activation status.

@@ -1014,38 +1014,6 @@ for place p in 0, 1, 2:
  </div>
 </div>
 
-<!-- MINT IFRAME MODAL (отдельное окно) -->
-<div id="mint-modal-overlay" style="position:fixed;inset:0;z-index:300;background:rgba(0,0,0,0.92);backdrop-filter:blur(10px);display:none;align-items:center;justify-content:center;">
- <div style="background:linear-gradient(135deg,#1a0d00,#0f0800);border:1px solid rgba(212,160,23,0.3);border-radius:16px;
-  padding:20px;width:94%;max-width:560px;height:88vh;display:flex;flex-direction:column;
-  box-shadow:0 24px 80px rgba(0,0,0,0.8),0 0 0 1px rgba(212,160,23,0.1);position:relative;">
-  <!-- Header -->
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-shrink:0;">
-   <div>
-    <div style="font-family:'Cinzel',serif;font-size:16px;font-weight:700;color:var(--gold-light);">Mint Oracle Mask NFT</div>
-    <div style="font-size:11px;color:var(--muted);margin-top:2px;" id="mint-modal-sub">Common · 25,000 LUNC · 1 entry</div>
-   </div>
-   <button onclick="closeMintIframe()"
-    style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:4px 8px;transition:color 0.2s;"
-    onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--muted)'">✕</button>
-  </div>
-  <!-- iframe - fills all available space -->
-  <iframe id="nft-mint-frame"
-   src=""
-   style="width:100%;flex:1;border:1px solid rgba(255,255,255,0.08);border-radius:10px;background:#f5f0e8;"
-   frameborder="0"
-   allow="clipboard-write">
-  </iframe>
-  <!-- Back button -->
-  <button onclick="closeMintIframe()"
-   style="margin-top:10px;flex-shrink:0;width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);
-   color:var(--muted);font-family:'Cinzel',serif;font-size:11px;letter-spacing:0.08em;
-   padding:9px;border-radius:8px;cursor:pointer;transition:all 0.2s;"
-   onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='rgba(255,255,255,0.04)'">
-   ← Back to selection
-  </button>
- </div>
-</div>
 <div id="admin-panel" style="display:none;max-width:700px;margin:0 auto 80px;padding:0 20px;">
  <div style="background:rgba(0,200,255,0.03);border:1px solid rgba(0,200,255,0.15);
  border-radius:16px;padding:28px;">
@@ -1333,10 +1301,10 @@ for place p in 0, 1, 2:
        Все теги defer, как был исходный app.js. Не ставить type="module":
        20 функций вызываются из inline on*= и должны остаться глобальными.
        Тот же порядок продублирован в dev/_verify_split.cjs -->
-  <script src="assets/js/app/config.js?v=3a198fcb77" defer></script>
+  <script src="assets/js/app/config.js?v=66719a1828" defer></script>
   <script src="assets/js/app/chain.js?v=0ddde4f1a3" defer></script>
   <script src="assets/js/app/pool-timer.js?v=e04bcce53d" defer></script>
-  <script src="assets/js/app/modal.js?v=64466586cf" defer></script>
+  <script src="assets/js/app/modal.js?v=2fa3fcf658" defer></script>
   <script src="assets/js/app/buy.js?v=0409e4bfae" defer></script>
   <script src="assets/js/app/data.js?v=0591d08a1b" defer></script>
   <script src="assets/js/app/wheel-bridge.js?v=ac6235e602" defer></script>
@@ -1344,7 +1312,7 @@ for place p in 0, 1, 2:
   <script src="assets/js/app/admin.js?v=a927ca4d63" defer></script>
   <script src="assets/js/app/wallet.js?v=db664669e2" defer></script>
   <script src="assets/js/app/init.js?v=e16696bc51" defer></script>
-  <script src="assets/js/app/bag.js?v=23624bf450" defer></script>
+  <script src="assets/js/app/bag.js?v=8a0849e7aa" defer></script>
   <script src="assets/js/app/enter-draw.js?v=8c408fbc88" defer></script>
   <script src="assets/js/app/bag-filter.js?v=f2765ea97d" defer></script>
   <script src="assets/js/app/winners-v2.js?v=9bab5b96de" defer></script>
