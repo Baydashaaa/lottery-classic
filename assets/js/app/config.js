@@ -249,7 +249,44 @@ async function loadFreeEntriesOnChain() {
 function getFreeEntries(wallet) {
   return freeEntriesData[wallet] || { chat: 0, questions: 0, total: 0 };
 }
-const MIN_TICKETS    = 5; // minimum to hold draw
+// Пороги розыгрыша живут в контракте (min_entries, min_pot) и меняются одной
+// транзакцией. Константа ниже - только запасное значение, пока конфиг не
+// загружен: раньше 5 входов и 500 000 LUNC были зашиты в код и разошлись с
+// реальностью в первый же контрактный раунд.
+const MIN_TICKETS    = 1; // фолбэк, реальное значение приходит из контракта
+window.POOL_LIMITS   = window.POOL_LIMITS || {};
+
+async function loadPoolLimits() {
+  const q = btoa('{"config":{}}');
+  await Promise.all(Object.entries(POOL_CONTRACTS).map(async ([pool, addr]) => {
+    try {
+      const res = await fetch(
+        `https://terra-classic-lcd.publicnode.com/cosmwasm/wasm/v1/contract/${addr}/smart/${q}`,
+        { signal: AbortSignal.timeout(8000) }
+      );
+      if (!res.ok) return;
+      const d = (await res.json()).data || {};
+      window.POOL_LIMITS[pool] = {
+        minEntries: Number(d.min_entries || 0),
+        minPot:     Math.floor(Number(d.min_pot || 0) / 1e6),
+        payoutBps:  d.payout_bps || [],
+      };
+    } catch (e) { /* остаёмся на фолбэке */ }
+  }));
+  return window.POOL_LIMITS;
+}
+
+/** Минимум входов для розыгрыша в этом пуле. */
+function poolMinEntries(pool) {
+  const v = (window.POOL_LIMITS[pool] || {}).minEntries;
+  return Number.isFinite(v) ? v : MIN_TICKETS;
+}
+
+/** Минимальный пот в LUNC. Ноль означает, что порога нет вовсе. */
+function poolMinPot(pool) {
+  const v = (window.POOL_LIMITS[pool] || {}).minPot;
+  return Number.isFinite(v) ? v : 0;
+}
 const LCD_NODES      = [
   'https://terra-classic-fcd.publicnode.com',
   'https://fcd.terra-classic.hexxagon.io',

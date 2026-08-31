@@ -109,7 +109,96 @@ async function fetchTickets(wallet, isDaily) {
 // ─── ROUND-BASED TICKETS from Worker /round-stats ───────────────────────────
 // Source of truth for Daily/Weekly stats: Worker KV (activated NFTs in current round)
 // Returns the same shape as fetchTickets() so wheel and stats code works unchanged.
+/**
+ * Билеты текущего раунда прямо из контракта oracle-pool.
+ *
+ * Раньше это был запрос к воркеру /round-stats, который вёл собственный учёт
+ * в KV со времён офчейн-розыгрыша. После переезда он разошёлся с цепочкой:
+ * колесо показывало уже разыгранные входы, а карточка приза - несуществующий
+ * пул. Источник истины теперь один - контракт.
+ *
+ * Текущими считаются входы, которые ещё не забрал ни один расчёт: всё, что
+ * идёт после last_entry_id последнего рассчитанного раунда. У пропущенного
+ * раунда контракт сдвигает границу назад, поэтому его входы тоже попадут
+ * сюда - ровно так, как их посчитает следующий execute_draw.
+ */
+async function fetchContractRoundTickets(pool) {
+  const LCD  = 'https://terra-classic-lcd.publicnode.com';
+  const addr = (typeof POOL_CONTRACTS !== 'undefined' && POOL_CONTRACTS[pool]) || '';
+  const tickets = [];
+  if (!addr) return tickets;
+
+  const ask = async (msg) => {
+    const r = await fetch(`${LCD}/cosmwasm/wasm/v1/contract/${addr}/smart/${btoa(JSON.stringify(msg))}`,
+                          { signal: AbortSignal.timeout(10000) });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return (await r.json()).data;
+  };
+
+  try {
+    const cfg = await ask({ config: {} });
+    let after = 0;
+    const lastSettled = Number(cfg.next_unsettled_id) - 1;
+    if (lastSettled >= 1) {
+      const r = await ask({ round: { round_id: lastSettled } });
+      after = Number(r.last_entry_id || 0);
+    }
+
+    // Постранично, но не бесконечно: десять страниц по сто входов с запасом
+    // перекрывают любой реальный раунд.
+    const raw = [];
+    let cursor = after;
+    for (let page = 0; page < 10; page++) {
+      const res = await ask({ entries: { start_after: cursor, limit: 100 } });
+      const list = res.entries || [];
+      if (!list.length) break;
+      raw.push(...list);
+      cursor = Number(list[list.length - 1].entry_id);
+      if (list.length < 100) break;
+    }
+
+    // Сумма входов по кошельку - её показывает секция колеса
+    const byWallet = {};
+    for (const { entry } of raw) {
+      byWallet[entry.minter] = (byWallet[entry.minter] || 0) + (Number(entry.entries) || 0);
+    }
+
+    const mints = [];
+    for (const { entry_id, entry } of raw) {
+      const n     = Number(entry.entries) || 0;
+      const tier  = (/^(common|rare|legendary)/i.exec(entry.token_id || '') || [, 'common'])[1].toLowerCase();
+      const timeS = Math.floor(Number(entry.recorded_at || 0) / 1e9) || Math.floor(Date.now() / 1000);
+      mints.push({ wallet: entry.minter, tokenId: entry.token_id, tier, entries: n,
+                   usedAt: new Date(timeS * 1000).toISOString() });
+      for (let i = 0; i < n; i++) {
+        tickets.push({
+          address:     entry.minter,
+          txhash:      `entry:${entry_id}:${i}`,
+          time:        timeS,
+          entries:     byWallet[entry.minter],
+          mintEntries: n,
+          tier,
+          // Одна единица на вход, а не на билет: карточка считает по этому
+          // полю число заминченных NFT в раунде.
+          nft:         i === 0 ? 1 : 0,
+        });
+      }
+    }
+
+    window._roundMints        = mints.length ? mints : null;
+    window._roundTotalEntries = tickets.length;
+  } catch (e) {
+    console.warn('fetchContractRoundTickets error:', e.message);
+  }
+  return tickets;
+}
+
+// Старое имя оставлено: его зовут data.js и init.js.
 async function fetchRoundStatsAsTickets(pool) {
+  return fetchContractRoundTickets(pool);
+}
+
+async function _fetchRoundStatsAsTickets_OLD_worker(pool) {
   const DRAW_WORKER = 'https://oracle-draw.vladislav-baydan.workers.dev';
   const tickets = [];
   try {

@@ -33,6 +33,7 @@ async function loadAllData() {
   const [_dailyBal, _weeklyBal] = await Promise.all([
     getPoolAmount('daily'),
     getPoolAmount('weekly'),
+    loadPoolLimits(),
   ]);
   window._dailyPoolBalance  = _dailyBal;
   window._weeklyPoolBalance = _weeklyBal;
@@ -121,15 +122,26 @@ function updatePodiumPrizes() {
   if (totalEl) totalEl.textContent = fmt(pool) + ' LUNC';
   if (tickEl)  tickEl.textContent  = weeklyTickets.length + ' NFTs minted this round';
 
-  // Update minimum pool progress bar
-  const WEEKLY_MIN = 500000;
-  const pct = Math.min(100, Math.round((pool / WEEKLY_MIN) * 100));
+  // Порог берём у контракта: min_pot можно поменять транзакцией, и зашитые
+  // 500 000 разъезжались бы с реальностью молча.
+  const WEEKLY_MIN = poolMinPot('weekly');
+  const pct = WEEKLY_MIN > 0 ? Math.min(100, Math.round((pool / WEEKLY_MIN) * 100)) : 100;
   const bar    = document.getElementById('weekly-progress-bar');
   const label  = document.getElementById('weekly-progress-label');
   const status = document.getElementById('weekly-draw-status');
   if (bar)   bar.style.width = pct + '%';
-  if (label) label.textContent = fmt(pool) + ' / 500,000 LUNC';
-  if (status) {
+  if (label) label.textContent = fmt(pool) + ' / ' + fmt(WEEKLY_MIN) + ' LUNC';
+  // Порога нет - полосе нечего показывать, а обещание про перенос средств
+  // было бы враньём: контракт разыграет раунд при любом поте.
+  const barWrap = bar && bar.parentElement;
+  if (WEEKLY_MIN <= 0) {
+    // Ранний выход здесь недопустим: ниже по функции синхронизируется
+    // видимость подиума и блоков вкладки.
+    if (barWrap) barWrap.style.display = 'none';
+    if (label)   label.textContent = fmt(pool) + ' LUNC';
+    if (status)  status.innerHTML = '<span style="color:#66ffaa;"><svg class="oi oi--green"><use href="#i-check"/></svg> Draw runs at 20:00 UTC</span>';
+  } else if (status) {
+    if (barWrap) barWrap.style.display = '';
     if (pool >= WEEKLY_MIN) {
       bar.style.background = 'linear-gradient(90deg,#66ffaa,#00c8ff)';
       bar.style.boxShadow  = '0 0 8px rgba(102,255,170,0.5)';

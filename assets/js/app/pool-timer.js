@@ -26,9 +26,11 @@ function updatePoolDisplay() {
   }
 
   // Use real wallet balance if available (includes Q&A + NFT contributions)
+  // Именно ??, а не ||: у контракта пустой раунд даёт честный ноль, а ||
+  // подменял его суммой по билетам и рисовал приз, которого нет.
   const _realBalance = isDaily
-    ? (window._dailyPoolBalance  || totalLunc)
-    : (window._weeklyPoolBalance || totalLunc);
+    ? (window._dailyPoolBalance  ?? totalLunc)
+    : (window._weeklyPoolBalance ?? totalLunc);
   let poolPrize = _realBalance * PRIZE_SHARE;
   let seededLunc = _realBalance * 0.10;
   let poolUsd = poolPrize * luncPrice;
@@ -42,9 +44,16 @@ function updatePoolDisplay() {
   const _pt=document.getElementById('pool-tickets');if(_pt)_pt.textContent = nftCount + ' NFT' + (nftCount !== 1 ? 's' : '') + ' minted this round';
 
   const minNotice = document.getElementById('pool-min-notice');
-  if (count < MIN_TICKETS && count > 0) {
+  const _minEntries = typeof poolMinEntries === 'function'
+    ? poolMinEntries(currentLottery) : MIN_TICKETS;
+  if (minNotice && count < _minEntries && count > 0) {
+    // Текст собираем здесь, а не в разметке: порог живёт в контракте, и
+    // зашитая в index.html «пятёрка» обещала перенос там, где контракт
+    // раунд разыграет.
+    minNotice.innerHTML = '<svg class="oi oi--amber"><use href="#i-warning"/></svg> Less than ' +
+      _minEntries + ' NFT' + (_minEntries !== 1 ? 's' : '') + ' minted - pool rolls over to next draw';
     minNotice.style.display = 'block';
-  } else {
+  } else if (minNotice) {
     minNotice.style.display = 'none';
   }
 

@@ -56,10 +56,11 @@
         // меряет наполнение до порога, а не выигрыш.
         if (el) el.textContent = short(lunc * 0.80);
         const bar = document.getElementById('dg-' + game + '-bar');
-        // Полоска у weekly - прогресс до минимума в 500 000 LUNC,
-        // у daily - до порога в 5 входов, которого в балансе нет,
-        // поэтому там просто заполненность относительно недельного.
-        if (bar) bar.style.width = Math.min(100, lunc / (game === 'weekly' ? 500000 : 200000) * 100) + '%';
+        // Порог берём из контракта, если он уже загружен. min_pot = 0
+        // означает, что порога нет: тогда полоса просто полная.
+        const lim = (window.POOL_LIMITS || {})[game] || {};
+        const target = Number(lim.minPot) || 0;
+        if (bar) bar.style.width = (target > 0 ? Math.min(100, lunc / target * 100) : 100) + '%';
       } catch (e) {}
     }
   }
