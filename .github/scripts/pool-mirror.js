@@ -29,7 +29,19 @@ const WINNERS_PATH = path.resolve('winners.json');
 const ROUNDS_DIR = path.resolve('rounds');
 const DRY = process.env.DRY_RUN === '1';
 
-/** Сколько раундов назад заглядывать. Историю до переезда не трогаем. */
+/**
+ * Первый раунд КАЖДОГО пула, который принадлежит новой схеме. Контракты
+ * крутились с 20 августа параллельно со старым off-chain розыгрышем и дали
+ * раунды с нулевым потом: их даты уже заняты настоящими выплатами из
+ * winners.json, и переносить их означало бы затереть историю. Всё, что
+ * раньше этой границы, мост не трогает никогда.
+ */
+const MIRROR_FROM = {
+  daily: Number(process.env.MIRROR_FROM_DAILY || 23),
+  weekly: Number(process.env.MIRROR_FROM_WEEKLY || 4),
+};
+
+/** Сколько раундов назад заглядывать от последнего рассчитанного. */
 const MAX_BACKFILL = 10;
 
 const POOLS = {
@@ -258,15 +270,28 @@ async function mirrorPool(pool, addr, winners) {
   const done = new Set(
     winners[pool].map((r) => Number(r.contract_round_id)).filter(Number.isFinite)
   );
+  // Второй рубеж, уже по дате: запись за этот день могла прийти из старой
+  // системы, у неё contract_round_id нет вовсе и первая проверка её не видит.
+  const seenKeys = new Set(winners[pool].map((r) => r.round_id));
 
   let wrote = 0;
-  const from = Math.max(1, lastSettled - MAX_BACKFILL + 1);
+  const floor = Math.max(1, MIRROR_FROM[pool] || 1);
+  const from = Math.max(floor, lastSettled - MAX_BACKFILL + 1);
+  if (lastSettled < floor) {
+    console.log(`[${pool}] рассчитанных раундов новее ${floor} пока нет`);
+  }
   for (let id = from; id <= lastSettled; id++) {
     if (done.has(id)) continue;
 
     const round = await query(addr, { round: { round_id: id } });
     if (round.status !== 'drawn' && round.status !== 'skipped') {
       console.log(`[${pool}] раунд ${id}: статус ${round.status}, пропуск`);
+      continue;
+    }
+
+    const key = roundKey(pool, round.close_time);
+    if (seenKeys.has(key)) {
+      console.log(`[${pool}] раунд ${id}: запись ${key} уже есть, пропуск`);
       continue;
     }
 
@@ -286,6 +311,12 @@ async function mirrorPool(pool, addr, winners) {
       }
     }
 
+    if (seenKeys.has(record.round_id)) {
+      console.warn(`[${pool}] раунд ${id} даёт ключ ${record.round_id}, ` +
+        `а он уже занят в winners.json - НЕ ПИШУ, разбирайся руками`);
+      continue;
+    }
+    seenKeys.add(record.round_id);
     winners[pool].push(record);
     console.log(`[${pool}] раунд ${id} -> ${record.round_id}` +
       (record.skipped ? ' (skipped)' : `, билетов ${flat.length}, пот ${record.pot_lunc} LUNC`));

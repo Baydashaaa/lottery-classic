@@ -43,6 +43,11 @@ jobs:
         env:
           POOL_DAILY: terra1d9ga3dzhg63v6rmm8ahts55ekjpwlm6dusw5cwhpt60s6t0actqqsul6tm
           POOL_WEEKLY: terra19w39c3qz6kc756hap92x374reptah9kp5825f5c67hmquy383r5qd7dmd8
+          # Первый раунд после переезда денег на контракты. Всё, что раньше,
+          # разыгрывала старая офчейн-система, и записи за те даты в
+          # winners.json уже есть - переносить их нельзя.
+          MIRROR_FROM_DAILY: '23'
+          MIRROR_FROM_WEEKLY: '4'
           DRY_RUN: ${{ github.event.inputs.dry_run == 'true' && '1' || '0' }}
         run: node .github/scripts/pool-mirror.js
 
