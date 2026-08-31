@@ -29,8 +29,8 @@
 
   // ── Load balances first - update podium immediately ──
   const [_dBal, _wBal] = await Promise.all([
-    getWalletBalance(DAILY_WALLET),
-    getWalletBalance(WEEKLY_WALLET),
+    getPoolAmount('daily'),
+    getPoolAmount('weekly'),
   ]);
   window._dailyPoolBalance  = _dBal;
   window._weeklyPoolBalance = _wBal;

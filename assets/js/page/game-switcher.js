@@ -29,8 +29,8 @@
   // в DOM держит только ВЫБРАННУЮ игру, а рельс должен показывать все три
   // сразу - иначе теряется весь смысл видеть их рядом.
   const POOL_WALLETS = {
-    daily:  'terra1amp68zg7vph3nq84ummnfma4dz753ezxfqa9px',
-    weekly: 'terra1p5l6q95kfl3hes7edy76tywav9f79n6xlkz6qz',
+    daily:  'terra1d9ga3dzhg63v6rmm8ahts55ekjpwlm6dusw5cwhpt60s6t0actqqsul6tm',
+    weekly: 'terra19w39c3qz6kc756hap92x374reptah9kp5825f5c67hmquy383r5qd7dmd8',
   };
   const LCD = 'https://terra-classic-lcd.publicnode.com';
   const short = n => n >= 1e6 ? (n/1e6).toFixed(2) + 'M'
@@ -41,11 +41,14 @@
     if (document.visibilityState === 'hidden') return;
     for (const [game, addr] of Object.entries(POOL_WALLETS)) {
       try {
-        const r = await fetch(LCD + '/cosmos/bank/v1beta1/balances/' + addr + '/by_denom?denom=uluna',
+        // Пул - контракт: спрашиваем pot, а не баланс. Баланс включает
+        // излишек, который в этом раунде не разыгрывается.
+        const r = await fetch(LCD + '/cosmwasm/wasm/v1/contract/' + addr + '/smart/' + btoa('{"pot":{}}'),
                               { signal: AbortSignal.timeout(8000) });
         if (!r.ok) continue;
-        const d = await r.json();
-        const lunc = Number(d?.balance?.amount || 0) / 1e6;
+        const d = (await r.json())?.data || {};
+        const sum = Number(d.pending || 0) + Number(d.carry || 0);
+        const lunc = Math.min(sum, Number(d.balance || 0)) / 1e6;
         const el = document.getElementById('dg-' + game + '-pool');
         // Показываем приз, а не баланс кошелька: рядом центральный блок
         // печатает 80% от того же баланса, и две разные цифры про один и

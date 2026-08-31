@@ -3,8 +3,6 @@ let connectedWalletAddress = null;
 
 // ── Global API constants (must be declared before any function uses them) ──
 // NFT_API_BASE / DRAW_WORKER moved to top of file (TDZ fix)
-const DAILY_WALLET_ADDR  = 'terra1amp68zg7vph3nq84ummnfma4dz753ezxfqa9px';
-const WEEKLY_WALLET_ADDR = 'terra1p5l6q95kfl3hes7edy76tywav9f79n6xlkz6qz';
 
 // ── Multi-layered wallet persistence (works around mobile browser quirks) ──
 // Mobile Safari/Chrome can clear localStorage between sessions in some modes.

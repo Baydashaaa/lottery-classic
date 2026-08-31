@@ -91,8 +91,35 @@ window.addEventListener('popstate', function(e) {
   showTab(validTabs.includes(tab) ? tab : 'home', true);
 });
 
-const DAILY_WALLET   = 'terra1amp68zg7vph3nq84ummnfma4dz753ezxfqa9px';
-const WEEKLY_WALLET  = 'terra1p5l6q95kfl3hes7edy76tywav9f79n6xlkz6qz';
+// Пулы - смарт-контракты, а не кошельки (переезд 31 авг 2026). Приз считает
+// контракт: pot = min(записанные входы + carry, баланс). Баланс сам по себе
+// призом больше не является: излишек на нём войдёт в пот следующих раундов
+// через carry, а не сразу.
+const DAILY_WALLET   = 'terra1d9ga3dzhg63v6rmm8ahts55ekjpwlm6dusw5cwhpt60s6t0actqqsul6tm';
+const WEEKLY_WALLET  = 'terra19w39c3qz6kc756hap92x374reptah9kp5825f5c67hmquy383r5qd7dmd8';
+const POOL_CONTRACTS = { daily: DAILY_WALLET, weekly: WEEKLY_WALLET };
+
+// Приз раунда - это pot контракта: min(записанные входы + carry, баланс).
+// Баланс сам по себе призом больше не является, поэтому страница спрашивает
+// pot. Фолбэк на баланс - на случай, если узел не ответил на smart-запрос.
+async function getPoolAmount(pool) {
+  const addr = POOL_CONTRACTS[pool] || '';
+  if (!addr) return 0;
+  try {
+    const q = btoa('{"pot":{}}');
+    const res = await fetch(
+      `https://terra-classic-lcd.publicnode.com/cosmwasm/wasm/v1/contract/${addr}/smart/${q}`,
+      { signal: AbortSignal.timeout(8000) }
+    );
+    if (!res.ok) return getWalletBalance(addr);
+    const d = (await res.json()).data || {};
+    const sum = BigInt(d.pending || '0') + BigInt(d.carry || '0');
+    const bal = BigInt(d.balance || '0');
+    return Math.floor(Number(sum < bal ? sum : bal) / 1e6);
+  } catch (e) {
+    return getWalletBalance(addr);
+  }
+}
 const BURN_WALLET    = 'terra16m05j95p9qvq93cdtchjcpwgvny8f57vzdj06p';
 const DEV_WALLET     = 'terra17g55uzkm6cr5fcl3vzcrmu73v8as4yvf2kktzr';
 const CHAIN_ID       = 'columbus-5';

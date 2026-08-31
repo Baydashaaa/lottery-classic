@@ -10,9 +10,13 @@ import path  from 'path';
 const TREASURY_WALLET   = 'terra1549z8zd9hkggzlwf0rcuszhc9rs9fxqfy2kagt';
 const DAILY_WALLET      = 'terra1amp68zg7vph3nq84ummnfma4dz753ezxfqa9px';
 const WEEKLY_WALLET     = 'terra1p5l6q95kfl3hes7edy76tywav9f79n6xlkz6qz';
+// Пулы переехали на контракты 31 авг 2026. Старые адреса из фильтра НЕ убраны:
+// они всё ещё встречаются в истории, по которой считается окно.
+const DAILY_POOL        = 'terra1d9ga3dzhg63v6rmm8ahts55ekjpwlm6dusw5cwhpt60s6t0actqqsul6tm';
+const WEEKLY_POOL       = 'terra19w39c3qz6kc756hap92x374reptah9kp5825f5c67hmquy383r5qd7dmd8';
 
 // Exclude these senders - they send protocol funds, not user payments
-const EXCLUDED_SENDERS  = new Set([DAILY_WALLET, WEEKLY_WALLET, TREASURY_WALLET]);
+const EXCLUDED_SENDERS  = new Set([DAILY_WALLET, WEEKLY_WALLET, DAILY_POOL, WEEKLY_POOL, TREASURY_WALLET]);
 
 // A chat message is identified by its EXACT amount (±1%), not by a range.
 // The old range [5,000 … 100,000) also swallowed the Treasury leg of questions:

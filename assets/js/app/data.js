@@ -31,8 +31,8 @@ async function loadAllData() {
 
   // ── Step 1: balances only (very fast) ──
   const [_dailyBal, _weeklyBal] = await Promise.all([
-    getWalletBalance(DAILY_WALLET),
-    getWalletBalance(WEEKLY_WALLET),
+    getPoolAmount('daily'),
+    getPoolAmount('weekly'),
   ]);
   window._dailyPoolBalance  = _dailyBal;
   window._weeklyPoolBalance = _weeklyBal;
