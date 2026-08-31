@@ -13,7 +13,7 @@ name: Oracle Pool - Keeper
 # picked up by the next one rather than needing a human.
 on:
   schedule:
-    - cron: '0 19 * * *'
+    - cron: '0 16 * * *'
     - cron: '5 20 * * *'
   workflow_dispatch:
     inputs:
@@ -49,10 +49,8 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "action=${{ github.event.inputs.action }}" >> $GITHUB_OUTPUT
-          elif [ "${{ github.event.schedule }}" = "0 19 * * *" ]; then
-            echo "action=open" >> $GITHUB_OUTPUT
           else
-            echo "action=settle" >> $GITHUB_OUTPUT
+            echo "action=both" >> $GITHUB_OUTPUT
           fi
 
       - name: Run keeper
