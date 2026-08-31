@@ -1181,6 +1181,56 @@
       "skipped": true,
       "reason": "Not enough entries: 2",
       "entries": 2
+    },
+    {
+      "date": "2026-08-31",
+      "round_id": "weekly_2026-08-31",
+      "contract_round_id": 4,
+      "entries": 10,
+      "participants": 6,
+      "ticket_rule": "oracle-pool",
+      "nft_contract": "terra1hcsq79vmcqxr97sv720yw6scvyknssx62ufsa4rwlmv02gyft43s46uaqx",
+      "pool_contract": "terra19w39c3qz6kc756hap92x374reptah9kp5825f5c67hmquy383r5qd7dmd8",
+      "deadline": "2026-08-31T20:00:00.000Z",
+      "boundary_ts": 1788206400,
+      "winners": [
+        {
+          "place": 1,
+          "address": "terra180wgtfvhmxcarmddhwzpapt8pasmvgv5skegx7",
+          "amount_lunc": 120000,
+          "tx": "23652D13E6CEA967F344BEA6C1065FF09342114A6AB0E916F37A4C0512C78C90",
+          "winner_index": 0
+        },
+        {
+          "place": 2,
+          "address": "terra1n5qj93jw56wsym0yp2kpll2ydlpa5c8a0dvej6",
+          "amount_lunc": 50000,
+          "tx": "23652D13E6CEA967F344BEA6C1065FF09342114A6AB0E916F37A4C0512C78C90",
+          "winner_index": 9
+        },
+        {
+          "place": 3,
+          "address": "terra1fq7jznwlfclzn9v4mc5vl8u5g6xnu8f6ra4gu3",
+          "amount_lunc": 30000,
+          "tx": "23652D13E6CEA967F344BEA6C1065FF09342114A6AB0E916F37A4C0512C78C90",
+          "winner_index": 8
+        }
+      ],
+      "nft_tickets": 10,
+      "free_tickets": 0,
+      "pot_lunc": 250000,
+      "treasury_lunc": 25000,
+      "randomness": "oracle-pool-commit-reveal",
+      "seed_hash": "ETryBIPEjeJnlWyywgudDlDSkxcXL2h2IyHjOaTLaAM=",
+      "secret": "LZP8CVOEj8HZ2sx4QaNvIgqcQhOecntoRtPAwOy3gnI=",
+      "entropy": "I2p5ae3oU7JT78tH6NTxoANhDrsd2lyJcyWqa2jpMx8=",
+      "result": "OEhtJsnpNgTdS3oppQukNsIjyxCyBYHYKIEBTqUChco=",
+      "settled_at": "2026-08-31T22:08:37.111Z",
+      "has_late_entries": true,
+      "block_hash": null,
+      "block_height": null,
+      "block_time": "2026-08-31T22:08:37.111Z",
+      "tx_treasury": "23652D13E6CEA967F344BEA6C1065FF09342114A6AB0E916F37A4C0512C78C90"
     }
   ]
 }
