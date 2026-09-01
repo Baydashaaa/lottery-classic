@@ -245,6 +245,10 @@ export function buildSnapshot({ pool, record, round, flat, meta }) {
     block_hash: null,
     block_height: null,
     result: round.result ?? null,
+    // seed_hash обязателен для проверки на странице Verify: без него нельзя
+    // показать, что секрет был зафиксирован ДО появления участников, а это
+    // вся суть commit-reveal.
+    seed_hash: round.seed_hash ?? null,
     secret: round.secret ?? null,
     entropy: round.entropy ?? null,
     winner_index: pool === 'weekly' && record.winners

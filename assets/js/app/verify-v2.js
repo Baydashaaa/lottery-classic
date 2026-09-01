@@ -23,6 +23,46 @@ async function vfSha256Hex(str) {
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
+// Байты из base64: секрет, энтропия и результат контракта лежат в снимке
+// именно так, а хеширует контракт СЫРЫЕ байты, не их текстовую запись.
+function vfB64(s) {
+  const bin = atob(s || '');
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+function vfHex(bytes) {
+  return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function vfB64FromBytes(bytes) {
+  let s = '';
+  bytes.forEach(b => { s += String.fromCharCode(b); });
+  return btoa(s);
+}
+
+function vfConcat(parts) {
+  const len = parts.reduce((n, p) => n + p.length, 0);
+  const out = new Uint8Array(len);
+  let at = 0;
+  parts.forEach(p => { out.set(p, at); at += p.length; });
+  return out;
+}
+
+/** u64 big-endian - в этом виде контракт подмешивает round_id и номер места. */
+function vfBe64(n) {
+  const out = new Uint8Array(8);
+  let v = BigInt(n);
+  for (let i = 7; i >= 0; i--) { out[i] = Number(v & 0xffn); v >>= 8n; }
+  return out;
+}
+
+async function vfSha256Bytes(bytes) {
+  const buf = await crypto.subtle.digest('SHA-256', bytes);
+  return new Uint8Array(buf);
+}
+
 // Пара [addr, n] в снимке = n подряд идущих билетов
 function vfExpandTickets(pairs) {
   const flat = [];
@@ -47,6 +87,68 @@ async function vfLoadSnapshot(roundId) {
     const r = await fetch('./rounds/' + roundId + '.json?t=' + Date.now());
     return r.ok ? await r.json() : null;
   } catch (e) { return null; }
+}
+
+// ── воспроизведение розыгрыша контракта (commit-reveal) ───────────────────
+// Отличается от прежней схемы принципиально: случайность даёт не хеш блока, а
+// пара «секрет кипера + энтропия минтеров», причём секрет публикуется ТОЛЬКО
+// в момент расчёта, а его хеш зафиксирован при открытии раунда. Поэтому здесь
+// две проверки вместо одной:
+//   1. sha256(secret) совпадает с seed_hash, обещанным при открытии;
+//   2. sha256(secret + entropy + round_id) даёт записанный result,
+//      из которого и выводятся места.
+//
+// Формула контракта, дословно (src/contract.rs):
+//   result   = sha256(secret ‖ entropy ‖ be64(round_id))
+//   seed<p>  = sha256(seed<p-1> ‖ be64(p)),  seed<-1> = result
+//   index    = u128(первые 16 байт seed, big-endian) % total
+//   занято   - index двигается на +1 по кругу, пока не найдётся новый минтер
+async function vfReplayContract(snap, tickets) {
+  const total = tickets.length;
+  if (!total || !snap || !snap.secret || !snap.entropy) return null;
+
+  const secret  = vfB64(snap.secret);
+  const entropy = vfB64(snap.entropy);
+  const roundId = Number(snap.contract_round_id);
+
+  const seedHashOk = snap.seed_hash
+    ? vfB64FromBytes(await vfSha256Bytes(secret)) === snap.seed_hash
+    : null;
+
+  const result = await vfSha256Bytes(vfConcat([secret, entropy, vfBe64(roundId)]));
+  const resultOk = snap.result ? vfB64FromBytes(result) === snap.result : null;
+
+  // Сколько мест разыгрывалось - берём из записи раунда, а не из догадки:
+  // у daily одно, у weekly три, но при малом числе кошельков контракт
+  // заполнит меньше.
+  const recorded = Array.isArray(snap.winner_index) ? snap.winner_index
+                 : (snap.winner_index !== undefined ? [snap.winner_index] : []);
+  const places = Math.max(1, Math.min(recorded.length || 1, new Set(tickets).size));
+
+  const used = new Set();
+  const steps = [];
+  let seed = result;
+
+  for (let place = 0; place < places; place++) {
+    seed = await vfSha256Bytes(vfConcat([seed, vfBe64(place)]));
+    let acc = 0n;
+    for (let i = 0; i < 16; i++) acc = (acc << 8n) | BigInt(seed[i]);
+    const raw = Number(acc % BigInt(total));
+
+    let index = raw, shifted = 0;
+    while (used.has(tickets[index]) && shifted < total) {
+      index = (index + 1) % total; shifted++;
+    }
+    used.add(tickets[index]);
+    steps.push({
+      place: place + 1,
+      seed: vfHex(seed),
+      seedLabel: place === 0 ? 'sha256(result + be64(0))'
+                             : 'sha256(prev seed + be64(' + place + '))',
+      raw, index, shifted, address: tickets[index],
+    });
+  }
+  return { steps, seedHashOk, resultOk, resultHex: vfHex(result) };
 }
 
 // ── воспроизведение розыгрыша ─────────────────────────────────────────────
@@ -117,7 +219,22 @@ async function renderDrawVerify(idx) {
 
   const tickets = vfExpandTickets(snap.tickets);
   const ranges  = vfRanges(snap.tickets);
-  const steps   = await vfReplay(w.type, w.blockHash || snap.block_hash, tickets);
+
+  // Контрактные раунды узнаём по наличию секрета: у них нет хеша блока вовсе.
+  const chain = snap.contract_round_id !== undefined && snap.secret
+    ? await vfReplayContract(snap, tickets)
+    : null;
+  const steps = chain
+    ? chain.steps
+    : await vfReplay(w.type, w.blockHash || snap.block_hash, tickets);
+
+  if (!chain && !(w.blockHash || snap.block_hash)) {
+    host.innerHTML =
+      '<div class="vf-verdict vf-na"><b>Cannot be replayed</b>' +
+      '<span>This round has neither a block hash nor a contract secret.</span></div>' +
+      vfInputsHtml(w, snap);
+    return;
+  }
 
   // Записанные индексы: у daily число, у weekly массив
   const recorded = Array.isArray(snap.winner_index) ? snap.winner_index
@@ -137,7 +254,8 @@ async function renderDrawVerify(idx) {
   const anyRecorded = checks.some(c => c.recorded !== undefined);
 
   host.innerHTML =
-    vfVerdictHtml(allOk, anyRecorded, w) +
+    vfVerdictHtml(allOk && (!chain || chain.resultOk !== false), anyRecorded, w) +
+    (chain ? vfCommitHtml(chain, snap) : '') +
     vfInputsHtml(w, snap) +
     vfStepsHtml(checks, tickets.length, w) +
     vfMapHtml(ranges, tickets.length, checks) +
@@ -155,6 +273,31 @@ function vfVerdictHtml(ok, anyRecorded, w) {
       'browser produces exactly the indices and wallets recorded on chain.</span></div>'
     : '<div class="vf-verdict vf-bad"><b>Mismatch</b><span>The replay does not match the ' +
       'recorded result. Something is wrong - please report this round.</span></div>';
+}
+
+/**
+ * Карточка обязательства: показывает, что секрет был зафиксирован ДО того,
+ * как появились участники, и что из него получается именно записанный
+ * результат. Это и есть суть commit-reveal, ради которой схему меняли.
+ */
+function vfCommitHtml(chain, snap) {
+  const pill = (ok) => ok === null ? ''
+    : (ok ? '<span class="vf-ok-pill">matches</span>'
+          : '<span class="vf-bad-pill">does not match</span>');
+  return '<div class="vf-card"><div class="vf-h">Commit &amp; reveal</div>' +
+    '<div class="vf-kv">' +
+      '<div><span>Contract round</span><b>#' + snap.contract_round_id + '</b></div>' +
+      '<div><span>sha256(secret) vs seed_hash</span><b>' + pill(chain.seedHashOk) + '</b></div>' +
+      '<div><span>sha256(secret+entropy+id) vs result</span><b>' + pill(chain.resultOk) + '</b></div>' +
+    '</div>' +
+    '<div class="vf-hash"><span>seed_hash (committed at open)</span><code>' +
+      (snap.seed_hash || '&mdash;') + '</code></div>' +
+    '<div class="vf-hash"><span>secret (revealed at settle)</span><code>' +
+      (snap.secret || '&mdash;') + '</code></div>' +
+    '<div class="vf-hash"><span>entropy (from minters)</span><code>' +
+      (snap.entropy || '&mdash;') + '</code></div>' +
+    '<div class="vf-hash"><span>result</span><code>' + chain.resultHex + '</code></div>' +
+    '</div>';
 }
 
 function vfInputsHtml(w, snap) {
