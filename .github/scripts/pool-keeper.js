@@ -254,20 +254,26 @@ async function settleDue(pool, addr, ctx) {
 }
 
 /**
- * Поставить min_pot обоим пулам (или одному) от имени админа.
+ * Поставить пороги розыгрыша обоим пулам (или одному) от имени админа.
  *
  * Зачем: при нулевом пороге контракт разыгрывает раунд с любым потом, включая
  * нулевой - так 30 августа daily-раунд 22 списал единственный вход и выдал
  * победителю ноль. С порогом такой раунд уходит в skipped, а входы
  * переносятся в следующий: контракт сдвигает last_entry_id назад.
  *
- * Значение в uluna. Пул выбирается через SET_POOL: daily, weekly или both.
+ * SET_MIN_POT - в uluna, SET_MIN_ENTRIES - в входах. Оба необязательны, но
+ * хотя бы один должен быть задан. Цена минта пропорциональна входам
+ * (common 1 вход и 25 000 LUNC, rare 5, legendary 10), поэтому пороги
+ * взаимозаменяемы: 5 входов это те же 125 000 LUNC.
+ *
+ * Пул выбирается через SET_POOL: daily, weekly или both.
  */
-async function setMinPot(ctx) {
-  const raw = (process.env.SET_MIN_POT || '').trim();
-  if (!/^\d+$/.test(raw)) {
-    throw new Error('SET_MIN_POT must be a whole number of uluna');
-  }
+async function setLimits(ctx) {
+  const pot = (process.env.SET_MIN_POT || '').trim();
+  const ent = (process.env.SET_MIN_ENTRIES || '').trim();
+  if (pot && !/^\d+$/.test(pot)) throw new Error('SET_MIN_POT must be a whole number of uluna');
+  if (ent && !/^\d+$/.test(ent)) throw new Error('SET_MIN_ENTRIES must be a whole number');
+  if (!pot && !ent) throw new Error('set SET_MIN_POT or SET_MIN_ENTRIES (or both)');
   const which = (process.env.SET_POOL || 'both').trim();
   if (!['daily', 'weekly', 'both'].includes(which)) {
     throw new Error('SET_POOL must be daily, weekly or both');
@@ -281,18 +287,23 @@ async function setMinPot(ctx) {
     if (before.admin !== ctx.address) {
       throw new Error(`[${pool}] admin is ${before.admin}, keeper is ${ctx.address}`);
     }
-    if (String(before.min_pot) === raw) {
-      console.log(`[${pool}] min_pot уже ${raw} uluna - пропуск`);
+    // update_config понимает частичное обновление: незаданное поле остаётся
+    // прежним, поэтому в сообщение кладём только то, что реально меняется.
+    const update = {};
+    if (pot && String(before.min_pot) !== pot) update.min_pot = pot;
+    if (ent && String(before.min_entries) !== ent) update.min_entries = Number(ent);
+    if (!Object.keys(update).length) {
+      console.log(`[${pool}] пороги уже такие - пропуск`);
       continue;
     }
 
-    const msg = { update_config: { min_pot: raw } };
-    const memo = `oracle-pool: set ${pool} min_pot ${raw}`;
+    const msg = { update_config: update };
+    const memo = `oracle-pool: set ${pool} limits ${JSON.stringify(update)}`;
     const g = await feeForMsg(ctx, 'open', addr, msg, memo);
     const res = await ctx.client.execute(ctx.address, addr, msg, g.fee, memo);
     const after = await query(addr, { config: {} });
-    console.log(`[${pool}] min_pot ${before.min_pot} -> ${after.min_pot} uluna, ` +
-      `tx ${res.transactionHash}`);
+    console.log(`[${pool}] min_pot ${before.min_pot} -> ${after.min_pot}, ` +
+      `min_entries ${before.min_entries} -> ${after.min_entries}, tx ${res.transactionHash}`);
   }
 }
 
@@ -329,20 +340,22 @@ async function checkBalance(ctx) {
 // ── main ────────────────────────────────────────────────────────────────────
 
 const action = process.argv[2];
-if (!['open', 'settle', 'both', 'set-min-pot'].includes(action)) {
-  console.error('usage: pool-keeper.js <open|settle|both|set-min-pot>');
-  console.error('  set-min-pot читает SET_MIN_POT (uluna) и SET_POOL (daily|weekly|both)');
+// set-min-pot оставлено псевдонимом: так называется действие в уже выложенном
+// воркфлоу, и ломать его ради переименования незачем.
+if (!['open', 'settle', 'both', 'set-limits', 'set-min-pot'].includes(action)) {
+  console.error('usage: pool-keeper.js <open|settle|both|set-limits>');
+  console.error('  set-limits читает SET_MIN_POT (uluna), SET_MIN_ENTRIES и SET_POOL (daily|weekly|both)');
   process.exit(1);
 }
 
-console.log('pool-keeper build: minpot-2026-09-01');
+console.log('pool-keeper build: limits-2026-09-01');
 const ctx = await connect();
 console.log(`keeper ${ctx.address} on ${CHAIN_ID}, action=${action}`);
 
 // Административное действие идёт отдельной веткой: оно ничего не считает и
 // не открывает, поэтому проверки очереди ниже к нему неприменимы.
-if (action === 'set-min-pot') {
-  await setMinPot(ctx);
+if (action === 'set-limits' || action === 'set-min-pot') {
+  await setLimits(ctx);
   process.exit(0);
 }
 
