@@ -11,7 +11,14 @@ name: Oracle Pool - Keeper
 #
 # Both steps are idempotent and work from on-chain state, so a missed run is
 # picked up by the next one rather than needing a human.
+#
+# Основной триггер - repository_dispatch из воркера: он тикает раз в минуту и
+# шлёт run-keeper, как только раунд закрылся. Планировщик GitHub 31 августа
+# опоздал на три часа, а 1 сентября не запустил прогон вовсе, поэтому кроны
+# ниже оставлены страховкой, а не основным путём.
 on:
+  repository_dispatch:
+    types: [run-keeper]
   schedule:
     - cron: '0 16 * * *'
     - cron: '5 20 * * *'
@@ -49,6 +56,10 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "action=${{ github.event.inputs.action }}" >> $GITHUB_OUTPUT
+          elif [ -n "${{ github.event.client_payload.action }}" ]; then
+            # Воркер может попросить конкретное действие; по умолчанию both,
+            # который сначала считает закрытое, потом открывает следующее.
+            echo "action=${{ github.event.client_payload.action }}" >> $GITHUB_OUTPUT
           else
             echo "action=both" >> $GITHUB_OUTPUT
           fi

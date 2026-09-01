@@ -10,7 +10,12 @@ name: Oracle Pool - Mirror rounds
 # Скрипт идемпотентен и работает от состояния контракта: раунд с уже
 # записанным contract_round_id пропускается, пропущенный прогон подхватывает
 # следующий. Ключи не нужны - только чтение цепочки.
+#
+# Основной триггер - repository_dispatch из воркера сразу после того, как он
+# увидел рассчитанный раунд в контракте. Кроны оставлены страховкой.
 on:
+  repository_dispatch:
+    types: [run-mirror]
   schedule:
     - cron: '20 20 * * *'
     - cron: '20 8 * * *'
@@ -48,6 +53,8 @@ jobs:
           # winners.json уже есть - переносить их нельзя.
           MIRROR_FROM_DAILY: '23'
           MIRROR_FROM_WEEKLY: '4'
+          # У repository_dispatch нет inputs, поэтому сравнение просто даёт
+          # пустоту и режим остаётся боевым.
           DRY_RUN: ${{ github.event.inputs.dry_run == 'true' && '1' || '0' }}
         run: node .github/scripts/pool-mirror.js
 
