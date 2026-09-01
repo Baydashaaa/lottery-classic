@@ -253,6 +253,49 @@ async function settleDue(pool, addr, ctx) {
   console.warn(`[${pool}] stopped after ${MAX_SETTLE} settlements in one run`);
 }
 
+/**
+ * Поставить min_pot обоим пулам (или одному) от имени админа.
+ *
+ * Зачем: при нулевом пороге контракт разыгрывает раунд с любым потом, включая
+ * нулевой - так 30 августа daily-раунд 22 списал единственный вход и выдал
+ * победителю ноль. С порогом такой раунд уходит в skipped, а входы
+ * переносятся в следующий: контракт сдвигает last_entry_id назад.
+ *
+ * Значение в uluna. Пул выбирается через SET_POOL: daily, weekly или both.
+ */
+async function setMinPot(ctx) {
+  const raw = (process.env.SET_MIN_POT || '').trim();
+  if (!/^\d+$/.test(raw)) {
+    throw new Error('SET_MIN_POT must be a whole number of uluna');
+  }
+  const which = (process.env.SET_POOL || 'both').trim();
+  if (!['daily', 'weekly', 'both'].includes(which)) {
+    throw new Error('SET_POOL must be daily, weekly or both');
+  }
+
+  for (const [pool, addr] of Object.entries(POOLS)) {
+    if (!addr) continue;
+    if (which !== 'both' && which !== pool) continue;
+
+    const before = await query(addr, { config: {} });
+    if (before.admin !== ctx.address) {
+      throw new Error(`[${pool}] admin is ${before.admin}, keeper is ${ctx.address}`);
+    }
+    if (String(before.min_pot) === raw) {
+      console.log(`[${pool}] min_pot уже ${raw} uluna - пропуск`);
+      continue;
+    }
+
+    const msg = { update_config: { min_pot: raw } };
+    const memo = `oracle-pool: set ${pool} min_pot ${raw}`;
+    const g = await feeForMsg(ctx, 'open', addr, msg, memo);
+    const res = await ctx.client.execute(ctx.address, addr, msg, g.fee, memo);
+    const after = await query(addr, { config: {} });
+    console.log(`[${pool}] min_pot ${before.min_pot} -> ${after.min_pot} uluna, ` +
+      `tx ${res.transactionHash}`);
+  }
+}
+
 // ── Health checks ───────────────────────────────────────────────────────────
 // 14 августа keeper встал молча: кончился газ, расчёт не прошёл, и узнали об
 // этом сутки спустя, случайно. Обе проверки существуют, чтобы такой прогон
@@ -286,14 +329,22 @@ async function checkBalance(ctx) {
 // ── main ────────────────────────────────────────────────────────────────────
 
 const action = process.argv[2];
-if (!['open', 'settle', 'both'].includes(action)) {
-  console.error('usage: pool-keeper.js <open|settle|both>');
+if (!['open', 'settle', 'both', 'set-min-pot'].includes(action)) {
+  console.error('usage: pool-keeper.js <open|settle|both|set-min-pot>');
+  console.error('  set-min-pot читает SET_MIN_POT (uluna) и SET_POOL (daily|weekly|both)');
   process.exit(1);
 }
 
-console.log('pool-keeper build: gas-sim-2026-09-01');
+console.log('pool-keeper build: minpot-2026-09-01');
 const ctx = await connect();
 console.log(`keeper ${ctx.address} on ${CHAIN_ID}, action=${action}`);
+
+// Административное действие идёт отдельной веткой: оно ничего не считает и
+// не открывает, поэтому проверки очереди ниже к нему неприменимы.
+if (action === 'set-min-pot') {
+  await setMinPot(ctx);
+  process.exit(0);
+}
 
 let failed = false;
 for (const [pool, addr] of Object.entries(POOLS)) {

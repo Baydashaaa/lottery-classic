@@ -29,7 +29,17 @@ on:
         required: true
         default: 'both'
         type: choice
-        options: [open, settle, both]
+        options: [open, settle, both, set-min-pot]
+      min_pot:
+        description: 'Для set-min-pot: минимальный пот в uluna (25000000000 = 25 000 LUNC)'
+        required: false
+        default: ''
+      pool:
+        description: 'Для set-min-pot: какой пул'
+        required: false
+        default: 'both'
+        type: choice
+        options: [daily, weekly, both]
 
 concurrency:
   group: pool-keeper
@@ -70,4 +80,7 @@ jobs:
           POOL_KEEPER_MNEMONIC: ${{ secrets.POOL_KEEPER_MNEMONIC }}
           POOL_DAILY: terra1d9ga3dzhg63v6rmm8ahts55ekjpwlm6dusw5cwhpt60s6t0actqqsul6tm
           POOL_WEEKLY: terra19w39c3qz6kc756hap92x374reptah9kp5825f5c67hmquy383r5qd7dmd8
+          # Читаются только действием set-min-pot, для остальных пустые.
+          SET_MIN_POT: ${{ github.event.inputs.min_pot }}
+          SET_POOL: ${{ github.event.inputs.pool }}
         run: node .github/scripts/pool-keeper.js ${{ steps.what.outputs.action }}
