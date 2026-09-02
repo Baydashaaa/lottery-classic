@@ -259,7 +259,7 @@ async function renderDrawVerify(idx) {
     vfInputsHtml(w, snap) +
     vfStepsHtml(checks, tickets.length, w) +
     vfMapHtml(ranges, tickets.length, checks) +
-    vfReproduceHtml(w, snap, tickets.length);
+    vfReproduceHtml(w, snap, tickets.length, chain);
 }
 
 function vfVerdictHtml(ok, anyRecorded, w) {
@@ -301,7 +301,15 @@ function vfCommitHtml(chain, snap) {
 }
 
 function vfInputsHtml(w, snap) {
-  const rows = [
+  // У контрактных раундов высоты блока нет: строку показываем только там, где
+  // она есть, иначе в проверке остаётся прочерк, который выглядит поломкой.
+  const onChain = snap && snap.contract_round_id !== undefined && snap.secret;
+  const rows = onChain ? [
+    ['Pool',          w.type === 'daily' ? 'Daily' : 'Weekly'],
+    ['Round',         w.roundId || ('#' + w.round)],
+    ['Settled at',    w.blockTime || '&mdash;'],
+    ['Total entries', snap.total]
+  ] : [
     ['Pool',         w.type === 'daily' ? 'Daily' : 'Weekly'],
     ['Round',        w.roundId || ('#' + w.round)],
     ['Block height', w.blockHeight
@@ -384,7 +392,40 @@ function vfMapHtml(ranges, total, checks) {
     '<div class="vf-rows">' + list + '</div></div>';
 }
 
-function vfReproduceHtml(w, snap, total) {
+function vfReproduceHtml(w, snap, total, chain) {
+  // Контрактный раунд считается иначе во всём: хешируются СЫРЫЕ байты, номер
+  // места подмешивается как big-endian u64, индекс берётся из первых 16 байт.
+  // Показывать здесь старую формулу с хешем блока значило бы врать: такого
+  // хеша у этих раундов нет вовсе.
+  if (chain) {
+    const code =
+      '// секрет, энтропия и результат - base64 из снимка\n' +
+      'const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));\n' +
+      'const be64 = n => { const o = new Uint8Array(8); let v = BigInt(n);\n' +
+      '  for (let i = 7; i >= 0; i--) { o[i] = Number(v & 0xffn); v >>= 8n; } return o; };\n' +
+      'const sha = async b => new Uint8Array(await crypto.subtle.digest("SHA-256", b));\n' +
+      'const cat = a => { const o = new Uint8Array(a.reduce((n,x)=>n+x.length,0));\n' +
+      '  let k = 0; a.forEach(x => { o.set(x, k); k += x.length; }); return o; };\n\n' +
+      '// 1. секрет действительно тот, что обещали при открытии\n' +
+      'await sha(b64(secret))                 // === seed_hash\n\n' +
+      '// 2. результат раунда\n' +
+      'let s = await sha(cat([b64(secret), b64(entropy), be64(' +
+        snap.contract_round_id + ')]));      // === result\n\n' +
+      '// 3. места по порядку\n' +
+      'for (let p = 0; p < ' + chain.steps.length + '; p++) {\n' +
+      '  s = await sha(cat([s, be64(p)]));\n' +
+      '  let acc = 0n;\n' +
+      '  for (let i = 0; i < 16; i++) acc = (acc << 8n) | BigInt(s[i]);\n' +
+      '  let i = Number(acc % ' + total + 'n);\n' +
+      '  // дальше i двигается на +1 по кругу, пока кошелёк уже выигрывал\n' +
+      '}';
+    return '<div class="vf-card vf-repro"><div class="vf-h">Reproduce it yourself</div>' +
+      '<p class="vf-intro">Всё нужное лежит в снимке раунда и в самом контракте: ' +
+      '<code>{"proof":{"round_id":' + snap.contract_round_id + '}}</code>. ' +
+      'Хеш блока здесь ни при чём - случайность даёт пара «секрет кипера + энтропия минтеров».</p>' +
+      '<pre>' + code + '</pre></div>';
+  }
+
   const code = w.type === 'daily'
     ? 'BigInt("0x" + "' + (w.blockHash || '').slice(0, 24) + '...") % ' + total + 'n'
     : 'let s = "' + (w.blockHash || '').slice(0, 24) + '...";\n' +
