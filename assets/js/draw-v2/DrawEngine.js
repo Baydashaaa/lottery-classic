@@ -245,7 +245,12 @@ export default class DrawEngine {
         if (latest.key === this.state.roundKey) { this.state.hydrated = true; return; }
 
         // снимок билетов + модель колеса
-        const raw = await this.api.loadSnapshot(latest.key);
+        //
+        // У пропущенного раунда снимка нет и быть не может: розыгрыша не было,
+        // список билетов замораживать нечего. Запрос за ним всё равно уходил и
+        // возвращал 404 - обработчик его глотал, но в консоли оставалась
+        // красная строка, похожая на поломку.
+        const raw = latest.skipped ? null : await this.api.loadSnapshot(latest.key);
 
         // Пока грузился снимок, вкладку могли переключить - и не один раз.
         // Тогда наш результат устарел: записывать его нельзя, иначе раунд
