@@ -16,8 +16,12 @@ const CHAIN_ID           = 'columbus-5';
 const DENOM              = 'uluna';
 
 const COLLECTION_WALLET  = 'terra16m05j95p9qvq93cdtchjcpwgvny8f57vzdj06p';
-const DAILY_WALLET       = 'terra1amp68zg7vph3nq84ummnfma4dz753ezxfqa9px';
-const WEEKLY_WALLET      = 'terra1p5l6q95kfl3hes7edy76tywav9f79n6xlkz6qz';
+// Цель перевода - КОНТРАКТЫ пулов (переезд 1 сентября 2026). Обычный перевод
+// ложится на баланс контракта и при ближайшем расчёте уходит в carry, а оттуда
+// в пот следующего раунда: приз пополняется со сдвигом на раунд, зато без
+// ручных переливов и без правки контракта.
+const DAILY_WALLET       = 'terra1d9ga3dzhg63v6rmm8ahts55ekjpwlm6dusw5cwhpt60s6t0actqqsul6tm';
+const WEEKLY_WALLET      = 'terra19w39c3qz6kc756hap92x374reptah9kp5825f5c67hmquy383r5qd7dmd8';
 
 const MNEMONIC           = process.env.OPERATOR_MNEMONIC_COLLECTION;
 const DRAW_WORKER_URL    = process.env.DRAW_WORKER_URL     || 'https://oracle-draw.vladislav-baydan.workers.dev';
