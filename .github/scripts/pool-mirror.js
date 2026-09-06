@@ -162,8 +162,15 @@ export function buildRecord({ pool, round, proof, cfg, txHash, flat, meta }) {
   // Случайность контракта: sha256(secret, entropy, round_id). Хеша блока
   // здесь нет вовсе, поэтому старое поле randomness меняет значение, а
   // block_hash/block_height остаются пустыми - страница Verify это переживает.
+  //
+  // Пустой secret значит, что секрет так и не раскрыли и раунд посчитан
+  // запасным путём: result = sha256("oracle-pool:stale", entropy, round_id,
+  // seed_hash). Пометка обязана отличаться - иначе в данных будет написано,
+  // что раскрытие было, хотя его не было, и проверка по документации не
+  // сойдётся.
+  const stale = !round.secret;
   const proofFields = {
-    randomness: 'oracle-pool-commit-reveal',
+    randomness: stale ? 'oracle-pool-stale-fallback' : 'oracle-pool-commit-reveal',
     seed_hash: round.seed_hash,
     secret: round.secret,
     entropy: round.entropy,
