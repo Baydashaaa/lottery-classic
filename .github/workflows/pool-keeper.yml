@@ -63,7 +63,7 @@ jobs:
         # Версии зафиксированы намеренно: без этого npm ставит разные
         # минорные @cosmjs/stargate для клиента и для GasPrice, и проверка
         # instanceof падает на объекте из «чужой» копии пакета.
-        run: npm install @cosmjs/proto-signing@0.32.4 @cosmjs/cosmwasm-stargate@0.32.4 @cosmjs/stargate@0.32.4 @cosmjs/crypto@0.32.4
+        run: npm ci --ignore-scripts
 
       - name: Decide action
         id: what

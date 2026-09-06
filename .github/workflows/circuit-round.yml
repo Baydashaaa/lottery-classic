@@ -44,7 +44,7 @@ jobs:
           node-version: '22'
 
       - name: Install dependencies
-        run: npm install @cosmjs/proto-signing @cosmjs/stargate @cosmjs/crypto
+        run: npm ci --ignore-scripts
 
       # Ловит поломки загрузки модулей ДО того, как скрипт тронет деньги.
       # 2–3 августа 2026 розыгрыши не состоялись из-за require() в ESM-репо:
@@ -64,7 +64,7 @@ jobs:
         run: node circuit-draw.js
 
       # Снимок пишется только когда раунд реально закрылся. Коммитим ТОЧЕЧНО:
-      # шаг выше делает npm install в корне, и `git add -A` утащил бы
+      # шаг выше ставит зависимости в корне, и `git add -A` утащил бы
       # node_modules в репозиторий.
       - name: Commit round snapshot
         run: |

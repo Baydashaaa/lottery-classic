@@ -32,7 +32,7 @@ jobs:
       # Те же пакеты, что ставит боевой workflow: без них import упадёт
       # на @cosmjs и проверка загрузки будет бессмысленной
       - name: Install dependencies
-        run: npm install @cosmjs/proto-signing @cosmjs/stargate @cosmjs/crypto
+        run: npm ci --ignore-scripts
 
       - name: Preflight
         run: node dev/_preflight.js

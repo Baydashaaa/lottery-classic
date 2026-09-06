@@ -39,7 +39,7 @@ jobs:
       # cosmwasm-stargate нужен дополнительно к набору circuit-draw.js:
       # покупка и публикация корня - это MsgExecuteContract, а не MsgSend.
       - name: Install dependencies
-        run: npm install @cosmjs/proto-signing @cosmjs/stargate @cosmjs/crypto @cosmjs/cosmwasm-stargate
+        run: npm ci --ignore-scripts
 
       # Ловит поломки загрузки модулей ДО того, как скрипт тронет деньги.
       - name: Preflight
