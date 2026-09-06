@@ -306,8 +306,13 @@ async function main() {
   if (ACTIONS_SECRET) {
     console.log('Fetching 14-day streak milestones...');
     try {
-      const sRes = await fetch(ORACLE_WORKER + '/streak/milestone14-entries?secret=' + encodeURIComponent(ACTIONS_SECRET), {
-        headers: { 'Accept': 'application/json', 'User-Agent': 'TerraOracle/1.0' },
+      const sRes = await fetch(ORACLE_WORKER + '/streak/milestone14-entries', {
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'TerraOracle/1.0',
+          // Заголовком, а не в адресе: URL целиком попадает в логи прокси.
+          'X-Actions-Secret': ACTIONS_SECRET,
+        },
       });
       if (sRes.ok) {
         const sData = await sRes.json();
@@ -334,8 +339,12 @@ async function main() {
   if (ACTIONS_SECRET) {
     console.log('Fetching Trusted User entries...');
     try {
-      const tRes = await fetch(ORACLE_WORKER + '/streak/trusted-entries?secret=' + encodeURIComponent(ACTIONS_SECRET), {
-        headers: { 'Accept': 'application/json', 'User-Agent': 'TerraOracle/1.0' },
+      const tRes = await fetch(ORACLE_WORKER + '/streak/trusted-entries', {
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'TerraOracle/1.0',
+          'X-Actions-Secret': ACTIONS_SECRET,
+        },
       });
       if (tRes.ok) {
         const tData = await tRes.json();
