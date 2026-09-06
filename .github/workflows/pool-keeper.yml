@@ -22,6 +22,9 @@ on:
   schedule:
     - cron: '0 16 * * *'
     - cron: '5 20 * * *'
+    # Понедельник 18:00 UTC - бесплатные билеты в недельный раунд, за два
+    # часа до его закрытия. После close_time контракт их не примет.
+    - cron: '0 18 * * 1'
   workflow_dispatch:
     inputs:
       action:
@@ -29,7 +32,7 @@ on:
         required: true
         default: 'both'
         type: choice
-        options: [open, settle, both, set-limits]
+        options: [open, settle, both, set-limits, free-entries]
       min_pot:
         description: 'Для set-limits: минимальный пот в uluna (500000000000 = 500 000 LUNC)'
         required: false
@@ -70,6 +73,10 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "action=${{ github.event.inputs.action }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event.schedule }}" = "0 18 * * 1" ]; then
+            # Понедельничный крон - только билеты. Раунды он не трогает:
+            # открывать и считать по-прежнему дело двух других запусков.
+            echo "action=free-entries" >> $GITHUB_OUTPUT
           elif [ -n "${{ github.event.client_payload.action }}" ]; then
             # Воркер может попросить конкретное действие; по умолчанию both,
             # который сначала считает закрытое, потом открывает следующее.

@@ -27,6 +27,8 @@
  *   LCD, RPC, CHAIN_ID   optional overrides
  */
 import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
 import { DirectSecp256k1HdWallet } from '@cosmjs/proto-signing';
 import { SigningCosmWasmClient } from '@cosmjs/cosmwasm-stargate';
 import { stringToPath } from '@cosmjs/crypto';
@@ -337,13 +339,90 @@ async function checkBalance(ctx) {
   return false;
 }
 
+/// Отправляет бесплатные билеты недельного раунда в контракт.
+///
+/// Билеты берутся из free-entries.json как есть. Ничего не выбирается и не
+/// фильтруется: файл публичный и коммитится ежечасно, так что расхождение
+/// между ним и цепочкой заметит кто угодно - на этом и держится доверие,
+/// потому что подписывает эту транзакцию тот же ключ, который знает секрет.
+async function recordFreeEntries(addr, ctx) {
+  const file = path.resolve('free-entries.json');
+  if (!fs.existsSync(file)) {
+    console.log('[weekly] free-entries.json не найден - нечего отправлять');
+    return;
+  }
+  const data = JSON.parse(fs.readFileSync(file, 'utf8'));
+  const earned = data.entries || {};
+  if (!Object.keys(earned).length) {
+    console.log('[weekly] бесплатных билетов за раунд нет');
+    return;
+  }
+
+  const cfg = await query(addr, { config: {} });
+  const roundId = Number(cfg.last_round_id);
+  const round = await query(addr, { round: { round_id: roundId } });
+
+  // Дверь закрывается вместе с приёмом. Контракт и сам откажет, но упасть
+  // здесь понятнее, чем разбирать ошибку транзакции.
+  const closeMs = Math.floor(Number(round.close_time) / 1e6);
+  const nowMs = await chainNowMs();
+  if (nowMs >= closeMs) {
+    console.error(`[weekly] раунд ${roundId} уже закрыт - билеты в него не идут, ` +
+      `они попадут в следующий`);
+    return;
+  }
+
+  // Что уже записано. token_id детерминирован, поэтому повторный запуск
+  // ничего не задваивает - это и вся защита от двойной отправки.
+  const already = new Set();
+  let after = null;
+  for (let page = 0; page < 50; page++) {
+    const q = { entries: { limit: 100, ...(after ? { start_after: after } : {}) } };
+    const res = await query(addr, q);
+    const list = res.entries || [];
+    if (!list.length) break;
+    for (const e of list) already.add(e.entry.token_id);
+    after = list[list.length - 1].entry_id;
+    if (list.length < 100) break;
+  }
+
+  const items = [];
+  for (const [wallet, rec] of Object.entries(earned)) {
+    const tickets = Number(rec.total || 0);
+    if (tickets <= 0) continue;
+    const txHash = `weekly-${roundId}:${wallet}`;
+    if (already.has(`free:${txHash}`)) continue;
+    items.push({ wallet, tickets, tx_hash: txHash });
+  }
+
+  if (!items.length) {
+    console.log(`[weekly] все билеты раунда ${roundId} уже записаны`);
+    return;
+  }
+
+  console.log(`[weekly] отправляю ${items.length} кошельков, ` +
+    `${items.reduce((s, i) => s + i.tickets, 0)} билетов в раунд ${roundId}`);
+
+  // Пачками по 50: контракт принимает до 100, но газ растёт линейно, а
+  // упереться в лимит блока посреди отправки хуже, чем сделать два захода.
+  for (let i = 0; i < items.length; i += 50) {
+    const batch = items.slice(i, i + 50);
+    const msg = { record_free_entries: { entries: batch } };
+    const memo = `oracle-pool: free entries weekly round ${roundId}`;
+    const g = await feeForMsg(ctx, 'free-entries', addr, msg, memo);
+    const res = await ctx.client.execute(ctx.address, addr, msg, g.fee, memo);
+    console.log(`[weekly] пачка ${batch.length}, tx ${res.transactionHash}, ` +
+      `gas ${res.gasUsed}/${g.gas}`);
+  }
+}
+
 // ── main ────────────────────────────────────────────────────────────────────
 
 const action = process.argv[2];
 // set-min-pot оставлено псевдонимом: так называется действие в уже выложенном
 // воркфлоу, и ломать его ради переименования незачем.
-if (!['open', 'settle', 'both', 'set-limits', 'set-min-pot'].includes(action)) {
-  console.error('usage: pool-keeper.js <open|settle|both|set-limits>');
+if (!['open', 'settle', 'both', 'set-limits', 'set-min-pot', 'free-entries'].includes(action)) {
+  console.error('usage: pool-keeper.js <open|settle|both|set-limits|free-entries>');
   console.error('  set-limits читает SET_MIN_POT (uluna), SET_MIN_ENTRIES и SET_POOL (daily|weekly|both)');
   process.exit(1);
 }
@@ -356,6 +435,15 @@ console.log(`keeper ${ctx.address} on ${CHAIN_ID}, action=${action}`);
 // не открывает, поэтому проверки очереди ниже к нему неприменимы.
 if (action === 'set-limits' || action === 'set-min-pot') {
   await setLimits(ctx);
+  process.exit(0);
+}
+
+// Бесплатные билеты есть только у недельного пула.
+if (action === 'free-entries') {
+  if (!POOLS.weekly) {
+    console.error('POOL_WEEKLY не задан'); process.exit(1);
+  }
+  await recordFreeEntries(POOLS.weekly, ctx);
   process.exit(0);
 }
 
